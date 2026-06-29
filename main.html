@@ -411,17 +411,18 @@ const ICON_CSS = `
    STATIONS  -  EDIT "url" TO POINT EACH TILE AT A REAL PAGE.
    Leave url as "#" and the tile flashes a "not set" message.
    ============================================================ */
+const BASE = "https://cdsmith388.github.io/battlestation/";
 const STATIONS = [
-  { id:"finances",     label:"FINANCES",   tag:"ECONOMY CORE",  icon:"finances",     led:"g", url:"#" },
-  { id:"groceries",    label:"GROCERIES",  tag:"SUPPLY LINE",   icon:"groceries",    led:"g", url:"#" },
-  { id:"beach",        label:"BEACH TRIP", tag:"R&R OPERATION", icon:"beach",        led:"c", url:"#" },
-  { id:"macbeth",      label:"MACBETH",    tag:"STAGE WARFARE", icon:"macbeth",      led:"a", url:"#" },
-  { id:"spirituality", label:"SPIRIT",     tag:"INNER CORE",    icon:"spirituality", led:"g", url:"#" },
-  { id:"ooda",         label:"OODA LOOP",  tag:"TACTICAL SCAN", icon:"ooda",         led:"c", url:"#" },
-  { id:"habits",       label:"HABITS",     tag:"DAILY DRILL",   icon:"habits",       led:"g", url:"#" },
-  { id:"reno",         label:"FAWN RENO",  tag:"BASE BUILD",    icon:"house",        led:"a", url:"#" },
-  { id:"palisade",     label:"PALISADE",   tag:"MOTOR POOL",    icon:"car",          led:"g", url:"#" },
-  { id:"eleventh",     label:"11TH HOUR",  tag:"THEATER CMD",   icon:"theatre",      led:"c", url:"#" }
+  { id:"finances",     label:"FINANCES",   tag:"ECONOMY CORE",  icon:"finances",     led:"g", url:BASE+"finances.html" },
+  { id:"groceries",    label:"GROCERIES",  tag:"SUPPLY LINE",   icon:"groceries",    led:"g", url:BASE+"groceries.html" },
+  { id:"beach",        label:"BEACH TRIP", tag:"R&R OPERATION", icon:"beach",        led:"c", url:BASE+"beach.html" },
+  { id:"macbeth",      label:"MACBETH",    tag:"STAGE WARFARE", icon:"macbeth",      led:"a", url:BASE+"macbeth.html" },
+  { id:"spirituality", label:"SPIRIT",     tag:"INNER CORE",    icon:"spirituality", led:"g", url:BASE+"spirituality.html" },
+  { id:"ooda",         label:"OODA LOOP",  tag:"TACTICAL SCAN", icon:"ooda",         led:"c", url:BASE+"ooda.html" },
+  { id:"habits",       label:"HABITS",     tag:"DAILY DRILL",   icon:"habits",       led:"g", url:BASE+"habits.html" },
+  { id:"reno",         label:"FAWN RENO",  tag:"BASE BUILD",    icon:"house",        led:"a", url:BASE+"reno.html" },
+  { id:"palisade",     label:"PALISADE",   tag:"MOTOR POOL",    icon:"car",          led:"g", url:BASE+"palisade.html" },
+  { id:"eleventh",     label:"11TH HOUR",  tag:"THEATER CMD",   icon:"theatre",      led:"c", url:BASE+"eleventh.html" }
 ];
 
 /* ---------- build ---------- */
