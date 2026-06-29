@@ -1,0 +1,1349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Financial Command Center</title>
+<style>
+  :root{
+    --ink:#0E1116;
+    --panel:#161B22;
+    --raised:#1C232C;
+    --raised2:#222B36;
+    --line:#2A323D;
+    --text:#E8E6E1;
+    --muted:#9BA4B0;
+    --faint:#6B7480;
+    --brass:#C8A45C;
+    --brass-dim:#8A7642;
+    --sage:#74B98C;
+    --amber:#E0A33E;
+    --danger:#E06B6B;
+    --info:#7A9BD4;
+    --serif:Georgia,'Iowan Old Style','Times New Roman',serif;
+    --sans:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+    --mono:ui-monospace,'SF Mono','Cascadia Code',Menlo,Consolas,monospace;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{background:var(--ink);color:var(--text);font-family:var(--sans);-webkit-font-smoothing:antialiased}
+  body{padding-bottom:60px;line-height:1.5}
+  a{color:inherit}
+  ::selection{background:var(--brass);color:#0E1116}
+
+  /* Header */
+  .topbar{position:sticky;top:0;z-index:30;background:rgba(14,17,22,0.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+  .brand{display:flex;align-items:baseline;justify-content:space-between;gap:16px;padding:18px 22px 10px;max-width:1180px;margin:0 auto;flex-wrap:wrap}
+  .brand h1{font-family:var(--serif);font-weight:500;font-size:24px;letter-spacing:0.3px}
+  .brand h1 .glyph{color:var(--brass)}
+  .brand .sub{font-family:var(--mono);font-size:11px;color:var(--faint);letter-spacing:1.5px;text-transform:uppercase}
+  .savechip{font-family:var(--mono);font-size:11px;color:var(--faint);display:flex;align-items:center;gap:6px}
+  .savechip .dot{width:7px;height:7px;border-radius:50%;background:var(--sage);box-shadow:0 0 8px var(--sage)}
+  .savechip.dirty .dot{background:var(--amber);box-shadow:0 0 8px var(--amber)}
+
+  /* Tabs */
+  .tabs{display:flex;gap:2px;max-width:1180px;margin:0 auto;padding:0 14px;overflow-x:auto;scrollbar-width:none}
+  .tabs::-webkit-scrollbar{display:none}
+  .tab{flex:0 0 auto;background:none;border:none;color:var(--muted);font-family:var(--sans);font-size:13.5px;font-weight:500;padding:11px 14px;cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;transition:color .15s}
+  .tab:hover{color:var(--text)}
+  .tab.active{color:var(--brass);border-bottom-color:var(--brass)}
+
+  /* Layout */
+  .wrap{max-width:1180px;margin:0 auto;padding:22px}
+  .eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--faint);margin-bottom:14px}
+  .sec-title{font-family:var(--serif);font-weight:500;font-size:20px;margin-bottom:4px}
+  .sec-note{color:var(--muted);font-size:13.5px;margin-bottom:18px}
+
+  .grid{display:grid;gap:14px}
+  .g2{grid-template-columns:repeat(2,1fr)}
+  .g3{grid-template-columns:repeat(3,1fr)}
+  .g4{grid-template-columns:repeat(4,1fr)}
+  @media(max-width:880px){.g3,.g4{grid-template-columns:repeat(2,1fr)}}
+  @media(max-width:560px){.g2,.g3,.g4{grid-template-columns:1fr}}
+
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px}
+  .card.tight{padding:14px}
+  .card .label{font-family:var(--mono);font-size:10.5px;letter-spacing:1.5px;text-transform:uppercase;color:var(--faint);margin-bottom:8px}
+  .stat{font-family:var(--mono);font-size:26px;font-weight:600;font-variant-numeric:tabular-nums;letter-spacing:-0.5px}
+  .stat.sm{font-size:20px}
+  .stat.lg{font-size:34px}
+  .pos{color:var(--sage)}.neg{color:var(--danger)}.warnc{color:var(--amber)}.brassc{color:var(--brass)}
+  .sub2{font-size:12px;color:var(--muted);margin-top:6px;font-family:var(--mono);font-variant-numeric:tabular-nums}
+
+  /* Money input */
+  .num-input{font-family:var(--mono);font-variant-numeric:tabular-nums;background:transparent;border:none;border-bottom:1px dashed var(--line);color:var(--text);font-size:14px;padding:2px 2px;width:108px;text-align:right;transition:border-color .15s}
+  .num-input:focus{outline:none;border-bottom-color:var(--brass);color:var(--brass)}
+  .num-input.wide{width:130px}
+  .txt-input{font-family:var(--sans);background:transparent;border:none;border-bottom:1px dashed var(--line);color:var(--text);font-size:14px;padding:2px;width:100%}
+  .txt-input:focus{outline:none;border-bottom-color:var(--brass)}
+  .day-input{width:44px}
+
+  /* Rows */
+  .rowlist{display:flex;flex-direction:column}
+  .rrow{display:flex;align-items:center;gap:10px;padding:11px 0;border-bottom:1px solid var(--line)}
+  .rrow:last-child{border-bottom:none}
+  .rrow .nm{flex:1;min-width:0}
+  .rrow .nm .t{font-size:14px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .rrow .nm .d{font-size:11.5px;color:var(--faint);font-family:var(--mono);margin-top:2px}
+  .pill{font-family:var(--mono);font-size:10px;letter-spacing:.5px;text-transform:uppercase;padding:3px 8px;border-radius:20px;border:1px solid var(--line);color:var(--muted);white-space:nowrap}
+  .pill.red{color:var(--danger);border-color:rgba(224,107,107,.4);background:rgba(224,107,107,.08)}
+  .pill.amber{color:var(--amber);border-color:rgba(224,163,62,.4);background:rgba(224,163,62,.08)}
+  .pill.green{color:var(--sage);border-color:rgba(116,185,140,.4);background:rgba(116,185,140,.08)}
+  .pill.brass{color:var(--brass);border-color:rgba(200,164,92,.4);background:rgba(200,164,92,.08)}
+  .xbtn{background:none;border:none;color:var(--faint);cursor:pointer;font-size:18px;line-height:1;padding:4px 6px;border-radius:6px}
+  .xbtn:hover{color:var(--danger);background:var(--raised)}
+  .addbtn{margin-top:14px;background:var(--raised);border:1px dashed var(--line);color:var(--muted);font-family:var(--sans);font-size:13px;padding:9px 14px;border-radius:9px;cursor:pointer;width:100%}
+  .addbtn:hover{border-color:var(--brass);color:var(--brass)}
+
+  /* Meter */
+  .meter{height:8px;border-radius:6px;background:var(--raised);overflow:hidden;margin-top:8px}
+  .meter > span{display:block;height:100%;border-radius:6px;transition:width .3s,background .3s}
+
+  /* Alert banners */
+  .alert{display:flex;gap:12px;align-items:flex-start;padding:13px 15px;border-radius:11px;border:1px solid;margin-bottom:10px}
+  .alert.red{border-color:rgba(224,107,107,.45);background:rgba(224,107,107,.07)}
+  .alert.amber{border-color:rgba(224,163,62,.42);background:rgba(224,163,62,.07)}
+  .alert .ic{font-family:var(--mono);font-weight:700;font-size:13px;margin-top:1px}
+  .alert.red .ic{color:var(--danger)}
+  .alert.amber .ic{color:var(--amber)}
+  .alert .body{flex:1}
+  .alert .body b{font-weight:600}
+  .alert .amt{font-family:var(--mono);font-variant-numeric:tabular-nums;font-weight:600}
+
+  /* Donut + legend */
+  .donutwrap{display:flex;gap:22px;align-items:center;flex-wrap:wrap}
+  .donut{width:150px;height:150px;border-radius:50%;flex:0 0 auto;position:relative}
+  .donut::after{content:"";position:absolute;inset:26px;border-radius:50%;background:var(--panel)}
+  .donut .center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:2}
+  .donut .center .v{font-family:var(--mono);font-weight:600;font-size:17px}
+  .donut .center .l{font-size:10px;color:var(--faint);font-family:var(--mono);letter-spacing:1px;text-transform:uppercase}
+  .legend{flex:1;min-width:180px;display:flex;flex-direction:column;gap:7px}
+  .legend .li{display:flex;align-items:center;gap:9px;font-size:13px}
+  .legend .sw{width:11px;height:11px;border-radius:3px;flex:0 0 auto}
+  .legend .li .nm{flex:1;color:var(--muted)}
+  .legend .li .vl{font-family:var(--mono);font-variant-numeric:tabular-nums}
+
+  /* Calendar */
+  .calhead{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+  .calhead .mo{font-family:var(--serif);font-size:20px}
+  .navbtn{background:var(--raised);border:1px solid var(--line);color:var(--text);width:34px;height:34px;border-radius:9px;cursor:pointer;font-size:16px}
+  .navbtn:hover{border-color:var(--brass);color:var(--brass)}
+  .calgrid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+  .dow{font-family:var(--mono);font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--faint);text-align:center;padding-bottom:4px}
+  .cell{min-height:78px;background:var(--panel);border:1px solid var(--line);border-radius:9px;padding:6px;position:relative;overflow:hidden}
+  .cell.empty{background:transparent;border-color:transparent}
+  .cell.today{border-color:var(--brass);box-shadow:0 0 0 1px var(--brass) inset}
+  .cell .dn{font-family:var(--mono);font-size:11px;color:var(--muted);margin-bottom:4px}
+  .cell.today .dn{color:var(--brass);font-weight:700}
+  .ev{font-size:10.5px;line-height:1.25;padding:2px 5px;border-radius:5px;margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-family:var(--mono)}
+  .ev.b{background:rgba(200,164,92,.13);color:var(--brass)}
+  .ev.r{background:rgba(224,107,107,.14);color:var(--danger)}
+  .ev.a{background:rgba(224,163,62,.14);color:var(--amber)}
+  @media(max-width:560px){.cell{min-height:60px}.ev{font-size:9px;padding:1px 3px}.cell .dn{font-size:10px}}
+
+  .splitbar{display:flex;height:30px;border-radius:8px;overflow:hidden;margin:10px 0}
+  .splitbar > span{display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:11px;color:#0E1116;font-weight:600;min-width:0}
+
+  .kvtable{width:100%;border-collapse:collapse}
+  .kvtable td{padding:9px 0;border-bottom:1px solid var(--line);font-size:14px}
+  .kvtable td:last-child{text-align:right;font-family:var(--mono);font-variant-numeric:tabular-nums}
+  .kvtable tr:last-child td{border-bottom:none}
+
+  .note{font-size:12.5px;color:var(--faint);margin-top:12px;line-height:1.55}
+  .note b{color:var(--muted)}
+  .hr{height:1px;background:var(--line);margin:20px 0;border:none}
+  .ghostbtn{background:var(--raised);border:1px solid var(--line);color:var(--text);font-family:var(--sans);font-size:13px;padding:9px 16px;border-radius:9px;cursor:pointer}
+  .ghostbtn:hover{border-color:var(--brass);color:var(--brass)}
+  .ghostbtn.warn:hover{border-color:var(--danger);color:var(--danger)}
+  .flexbtns{display:flex;gap:10px;flex-wrap:wrap;margin-top:8px}
+
+  /* Budget category nav */
+  .catnav{display:flex;gap:8px;overflow-x:auto;padding-bottom:6px;margin-bottom:16px;scrollbar-width:none}
+  .catnav::-webkit-scrollbar{display:none}
+  .catchip{flex:0 0 auto;display:flex;align-items:center;gap:7px;background:var(--panel);border:1px solid var(--line);color:var(--muted);font-family:var(--sans);font-size:13px;padding:9px 13px;border-radius:10px;cursor:pointer;white-space:nowrap}
+  .catchip svg{opacity:.8}
+  .catchip:hover{color:var(--text);border-color:var(--faint)}
+  .catchip.active{color:var(--cc);border-color:var(--cc);background:rgba(255,255,255,.025)}
+  .cathead{display:flex;align-items:center;gap:12px}
+  .catic{display:flex;width:40px;height:40px;align-items:center;justify-content:center;border:1px solid var(--line);border-radius:10px;flex:0 0 auto}
+  .catrow{display:flex;align-items:center;gap:12px;width:100%;background:none;border:none;border-bottom:1px solid var(--line);padding:11px 2px;cursor:pointer;color:var(--text);text-align:left}
+  .catrow:last-child{border-bottom:none}
+  .catrow:hover{background:var(--raised)}
+  .catic2{display:flex;color:var(--muted);flex:0 0 22px}
+  .crname{flex:0 0 130px;font-size:14px;font-weight:500}
+  .crbar{flex:1;height:8px;background:var(--raised);border-radius:6px;overflow:hidden}
+  .crbar>span{display:block;height:100%;border-radius:6px}
+  .cramt{font-family:var(--mono);font-variant-numeric:tabular-nums;min-width:72px;text-align:right}
+  @media(max-width:560px){.crname{flex:0 0 92px;font-size:13px}}
+
+  /* Recommendation cards */
+  .reccard{display:flex;gap:14px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:12px}
+  .recnum{font-family:var(--serif);font-size:20px;color:var(--faint);flex:0 0 20px;line-height:1.3}
+  .recic{flex:0 0 40px;height:40px;display:flex;align-items:center;justify-content:center;border-radius:10px;border:1px solid var(--line)}
+  .recic.red{color:var(--danger)}.recic.amber{color:var(--amber)}.recic.info{color:var(--info)}.recic.brass{color:var(--brass)}
+  .recbody{flex:1;min-width:0}
+  .rectitle{font-weight:600;font-size:15px;margin-bottom:5px}
+  .rectext{color:var(--muted);font-size:13.5px;line-height:1.55}
+  .recimpact{display:inline-block;margin-top:9px;font-family:var(--mono);font-size:11px;letter-spacing:.5px;color:var(--brass);border:1px solid rgba(200,164,92,.4);background:rgba(200,164,92,.08);padding:3px 9px;border-radius:20px}
+
+  /* Sliders */
+  input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:6px;border-radius:6px;background:var(--raised);outline:none;margin:4px 0}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:22px;height:22px;border-radius:50%;background:var(--brass);cursor:pointer;border:4px solid var(--ink);box-shadow:0 0 0 1px var(--brass)}
+  input[type=range]::-moz-range-thumb{width:22px;height:22px;border:4px solid var(--ink);border-radius:50%;background:var(--brass);cursor:pointer;box-shadow:0 0 0 1px var(--brass)}
+  .slabel{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px;gap:10px}
+  .slabel .v{font-family:var(--mono);font-weight:600;font-variant-numeric:tabular-nums}
+  .chiprow{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+  .minichip{background:var(--raised);border:1px solid var(--line);color:var(--muted);font-size:12px;padding:6px 11px;border-radius:8px;cursor:pointer;font-family:var(--sans);white-space:nowrap}
+  .minichip:hover{border-color:var(--brass);color:var(--brass)}
+</style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <div>
+        <h1><span class="glyph">&#9670;</span> Financial Command Center</h1>
+        <div class="sub">Smith household ledger</div>
+      </div>
+      <div class="savechip" id="savechip"><span class="dot"></span><span id="savetext">Saved</span></div>
+    </div>
+    <nav class="tabs" id="tabs"></nav>
+  </header>
+  <main class="wrap" id="view"></main>
+
+<script>
+//////////////////// DEFAULT DATA ////////////////////
+const DEFAULTS = {
+  meta:{ updated:"2026-06-19", varVer:2 },
+  income:{ takeHome1:2932.66, takeHome2:2932.66, fsa1:288.46, fsa2:288.46, childSupport:463.20 },
+  variable:{ groceries:490, dining:1000, gas:450, shopping:275, subscriptions:440, entertainment:300, other:450 },
+  bills:[
+    {id:"b_mortgage",  name:"Mortgage (2202 Fawn Dr)", amount:2141.80, dueDay:1,  cat:"Housing",   autopay:false},
+    {id:"b_water",     name:"Water",                    amount:30.00,   dueDay:2,  cat:"Utilities", autopay:false},
+    {id:"b_ngemc",     name:"North Georgia EMC",        amount:300.00,  dueDay:6,  cat:"Utilities", autopay:false},
+    {id:"b_tmobile",   name:"T-Mobile",                 amount:198.18,  dueDay:6,  cat:"Utilities", autopay:false},
+    {id:"b_prog",      name:"Progressive Auto Insurance",amount:149.00, dueDay:7,  cat:"Insurance", autopay:false},
+    {id:"b_discover",  name:"Discover Credit Card",     amount:89.00,   dueDay:8,  cat:"Debt",      autopay:false},
+    {id:"b_platinum",  name:"Capital One Platinum",     amount:120.00,  dueDay:17, cat:"Debt",      autopay:false},
+    {id:"b_quick",     name:"Capital One Quicksilver",  amount:196.00,  dueDay:17, cat:"Debt",      autopay:false},
+    {id:"b_paypal",    name:"PayPal Credit",            amount:114.00,  dueDay:19, cat:"Debt",      autopay:true},
+    {id:"b_hvac",      name:"HVAC Loan (Upgrade)",      amount:160.26,  dueDay:25, cat:"Debt",      autopay:true},
+    {id:"b_dalton",    name:"Dalton Utilities",         amount:89.00,   dueDay:29, cat:"Utilities", autopay:false},
+    {id:"b_trinity",   name:"Trinity Disposal",         amount:90.00,   dueDay:1,  cat:"Utilities", autopay:false, freq:"quarterly"}
+  ],
+  affirm:[
+    {id:"a_outdoorsy", name:"Outdoorsy",                 amount:105.78, due:"2026-06-13", status:"overdue"},
+    {id:"a_homedepot", name:"The Home Depot",            amount:246.00, due:"2026-06-28", status:"due"},
+    {id:"a_ngemc",     name:"North Georgia EMC (Affirm)",amount:109.51, due:"2026-07-01", status:"due"}
+  ],
+  debts:[
+    {id:"d_platinum", name:"Capital One Platinum",   balance:3129.55, limit:3000,  minPayment:101,    apr:0, type:"revolving",  note:"Past due fee $39 added Jun 18"},
+    {id:"d_quick",    name:"Capital One Quicksilver",balance:5660.82, limit:5500,  minPayment:203,    apr:0, type:"revolving",  note:"Past due fee $40 added Jun 18"},
+    {id:"d_paypal",   name:"PayPal Credit",          balance:3470.40, limit:3400,  minPayment:115,    apr:0, type:"revolving",  note:"Autopay on for the 19th"},
+    {id:"d_hvac",     name:"HVAC Loan (Upgrade)",    balance:3673.75, limit:4500,  minPayment:162.66, apr:0, type:"installment",note:"36 month term, started at $4,500"},
+    {id:"d_affirm",   name:"Affirm (Buy Now Pay Later)",balance:3174.61, limit:0,  minPayment:0,      apr:0, type:"installment",note:"Sum of open Affirm plans"},
+    {id:"d_discover", name:"Discover Credit Card",   balance:0,       limit:0,     minPayment:89,     apr:0, type:"revolving",  note:"Balance not provided yet, fill in"}
+  ],
+  mortgage:{ balance:229951.71, equity:178331, principalPaid:6392.29, pi:1532.92, escrow:608.88, total:2141.80, dueDay:1, kind:"FHA 30-Year", address:"2202 Fawn Drive" },
+  cash:[
+    {id:"ca_c1check", name:"Capital One Checking (...0705)", balance:0},
+    {id:"ca_c1save",  name:"Capital One Savings (...3694)",  balance:0},
+    {id:"ca_discheck",name:"Discover Checking (...6370)",    balance:0},
+    {id:"ca_dissave", name:"Discover Savings (...4134)",     balance:0},
+    {id:"ca_paypal",  name:"PayPal Balance",                 balance:0}
+  ],
+  retirement:[
+    {id:"rt_401k",    name:"Advance 401(k) (Fidelity)", balance:10868.00, type:"401(k)"},
+    {id:"rt_ira",     name:"Rollover IRA",              balance:0.34,     type:"IRA"},
+    {id:"rt_529m",    name:"529 College (Maizy)",       balance:21.46,    type:"529"},
+    {id:"rt_529b",    name:"529 College (Benjamin)",    balance:23.77,    type:"529"},
+    {id:"rt_hsa",     name:"HSA (Fidelity)",            balance:195.09,   type:"HSA"}
+  ],
+  contrib:{ empPerCheck:83.22, employerPerCheck:49.93, loanRepayLast:127.42, checksPerYear:26 },
+  sell:{ salePrice:408283, commissionPct:5.5, concessionsPct:0, transferPct:0.1,
+    costs:[
+      {id:"sc_attorney", name:"Closing attorney & settlement", amount:900},
+      {id:"sc_prep",     name:"Prep, repairs & staging",       amount:0},
+      {id:"sc_mom",      name:"Repay Mom (help)",               amount:10000}
+    ],
+    payoff:{} }
+};
+
+//////////////////// STATE + PERSISTENCE ////////////////////
+const KEY = "fcc_state_v1";
+let state = null;
+let canPersist = (typeof window !== "undefined" && window.storage && typeof window.storage.get === "function");
+let saveTimer = null;
+
+function deepClone(o){ return JSON.parse(JSON.stringify(o)); }
+
+async function loadState(){
+  if(canPersist){
+    try{
+      const res = await window.storage.get(KEY);
+      if(res && res.value){ state = JSON.parse(res.value); return; }
+    }catch(e){ /* key missing, fall through */ }
+  }
+  state = deepClone(DEFAULTS);
+  await saveState(true);
+}
+async function saveState(silent){
+  if(!silent) markDirty();
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(async ()=>{
+    if(canPersist){
+      try{ await window.storage.set(KEY, JSON.stringify(state)); }catch(e){}
+    }
+    markSaved();
+  }, 250);
+}
+function markDirty(){ const c=document.getElementById("savechip"); const t=document.getElementById("savetext"); if(c){c.classList.add("dirty"); t.textContent="Saving";} }
+function markSaved(){ const c=document.getElementById("savechip"); const t=document.getElementById("savetext"); if(c){c.classList.remove("dirty"); t.textContent = canPersist ? "Saved" : "Session only";} }
+
+//////////////////// HELPERS ////////////////////
+const $ = (id)=>document.getElementById(id);
+function fmt(n){ n = Number(n)||0; return (n<0?"-$":"$") + Math.abs(n).toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2}); }
+function fmt0(n){ n = Number(n)||0; return (n<0?"-$":"$") + Math.abs(n).toLocaleString("en-US",{maximumFractionDigits:0}); }
+function pct(n){ return (Math.round(n*10)/10) + "%"; }
+function parseNum(v){ const x = parseFloat(String(v).replace(/[^0-9.\-]/g,"")); return isNaN(x)?0:x; }
+function esc(s){ return String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
+const MONTHS=["January","February","March","April","May","June","July","August","September","October","November","December"];
+const TODAY = new Date(2026,5,19); // Jun 19 2026 reference
+
+//////////////////// DERIVED MATH ////////////////////
+function monthlyBill(b){ return (b.freq==="quarterly") ? (Number(b.amount)||0)/3 : (Number(b.amount)||0); }
+function compute(){
+  const inc = state.income;
+  const incomeTotal = (inc.takeHome1||0)+(inc.takeHome2||0)+(inc.fsa1||0)+(inc.fsa2||0)+(inc.childSupport||0);
+  const billsMonthly = state.bills.reduce((s,b)=>s+monthlyBill(b),0);
+  const VLABELS={groceries:"Groceries",dining:"Dining & coffee",gas:"Gas",shopping:"Shopping & home",subscriptions:"Subscriptions & apps",entertainment:"Entertainment & travel",other:"Other"};
+  const variable = Object.values(state.variable).reduce((s,x)=>s+(Number(x)||0),0);
+  const outflow = billsMonthly + variable;
+  const leftover = incomeTotal - outflow;
+
+  const revolving = state.debts.filter(d=>d.type==="revolving");
+  const consumerDebt = state.debts.reduce((s,d)=>s+(Number(d.balance)||0),0);
+  const minPayments = state.debts.reduce((s,d)=>s+(Number(d.minPayment)||0),0);
+  const ccLimit = revolving.reduce((s,d)=>s+(Number(d.limit)||0),0);
+  const ccBalance = revolving.reduce((s,d)=>s+(Number(d.balance)||0),0);
+  const utilization = ccLimit>0 ? (ccBalance/ccLimit*100) : 0;
+
+  const cashTotal = state.cash.reduce((s,a)=>s+(Number(a.balance)||0),0);
+  const retireTotal = state.retirement.reduce((s,a)=>s+(Number(a.balance)||0),0);
+  const m = state.mortgage;
+  const homeValue = (Number(m.equity)||0)+(Number(m.balance)||0);
+
+  const assets = homeValue + cashTotal + retireTotal;
+  const liabilities = (Number(m.balance)||0) + consumerDebt;
+  const netWorth = assets - liabilities;
+
+  // category breakdown for budget donut (fixed bill cats + variable cats)
+  const cats = {};
+  state.bills.forEach(b=>{ cats[b.cat]=(cats[b.cat]||0)+monthlyBill(b); });
+  Object.keys(state.variable).forEach(k=>{ const v=Number(state.variable[k])||0; if(v>0){ const lbl=VLABELS[k]; cats[lbl]=(cats[lbl]||0)+v; } });
+
+  return {incomeTotal,billsMonthly,variable,outflow,leftover,consumerDebt,minPayments,ccLimit,ccBalance,utilization,cashTotal,retireTotal,homeValue,assets,liabilities,netWorth,cats};
+}
+
+//////////////////// EDITABLE INPUT WIRING ////////////////////
+// inputs carry data-path like "income.takeHome1" or "bill.b_water.amount"
+function bindInputs(scope){
+  scope.querySelectorAll("[data-path]").forEach(el=>{
+    el.addEventListener("focus", e=>{ if(el.select) el.select(); });
+    el.addEventListener("input", e=>{
+      const path = el.getAttribute("data-path");
+      const isNum = el.getAttribute("data-type")!=="text";
+      const val = isNum ? parseNum(el.value) : el.value;
+      applyPath(path, val);
+      saveState();
+      sync();
+    });
+  });
+}
+function applyPath(path, val){
+  const parts = path.split(".");
+  if(parts[0]==="income"){ state.income[parts[1]] = val; return; }
+  if(parts[0]==="variable"){ state.variable[parts[1]] = val; return; }
+  if(parts[0]==="mortgage"){ state.mortgage[parts[1]] = val; return; }
+  if(parts[0]==="contrib"){ state.contrib[parts[1]] = val; return; }
+  if(parts[0]==="sell"){ state.sell[parts[1]] = val; return; }
+  if(parts[0]==="sellcost"){ const c=state.sell.costs.find(x=>x.id===parts[1]); if(c) c[parts[2]]=val; return; }
+  if(parts[0]==="sellpay"){ state.sell.payoff[parts[1]]=state.sell.payoff[parts[1]]||{}; state.sell.payoff[parts[1]][parts[2]]=val; return; }
+  if(parts[0]==="bill"){ const b=state.bills.find(x=>x.id===parts[1]); if(b) b[parts[2]]=val; return; }
+  if(parts[0]==="debt"){ const d=state.debts.find(x=>x.id===parts[1]); if(d) d[parts[2]]=val; return; }
+  if(parts[0]==="cash"){ const a=state.cash.find(x=>x.id===parts[1]); if(a) a[parts[2]]=val; return; }
+  if(parts[0]==="ret"){ const a=state.retirement.find(x=>x.id===parts[1]); if(a) a[parts[2]]=val; return; }
+  if(parts[0]==="affirm"){ const a=state.affirm.find(x=>x.id===parts[1]); if(a) a[parts[2]]=val; return; }
+}
+
+// live update of derived display nodes (no input rebuild) for the active tab
+let syncFn = ()=>{};
+function sync(){ try{ syncFn(); }catch(e){} }
+
+//////////////////// TABS ////////////////////
+const TABS = [
+  {id:"overview",  label:"Overview"},
+  {id:"calendar",  label:"Bill Calendar"},
+  {id:"income",    label:"Income"},
+  {id:"debts",     label:"Debts"},
+  {id:"budget",    label:"Budget"},
+  {id:"mortgage",  label:"Mortgage"},
+  {id:"sell",      label:"Sell / Equity"},
+  {id:"savings",   label:"Savings & 401(k)"},
+  {id:"recommend", label:"Recommendations"},
+  {id:"settings",  label:"Settings"}
+];
+let activeTab = "overview";
+let calMonth = 5, calYear = 2026; // June 2026
+
+function renderTabs(){
+  $("tabs").innerHTML = TABS.map(t=>`<button class="tab ${t.id===activeTab?"active":""}" data-tab="${t.id}">${t.label}</button>`).join("");
+  $("tabs").querySelectorAll(".tab").forEach(b=>b.addEventListener("click",()=>{ activeTab=b.getAttribute("data-tab"); renderTabs(); renderView(); window.scrollTo(0,0); }));
+}
+function renderView(){
+  syncFn = ()=>{};
+  const v = $("view");
+  if(activeTab==="overview") return renderOverview(v);
+  if(activeTab==="calendar") return renderCalendar(v);
+  if(activeTab==="income")   return renderIncome(v);
+  if(activeTab==="debts")    return renderDebts(v);
+  if(activeTab==="budget")   return renderBudget(v);
+  if(activeTab==="mortgage") return renderMortgage(v);
+  if(activeTab==="sell")     return renderSell(v);
+  if(activeTab==="savings")  return renderSavings(v);
+  if(activeTab==="recommend") return renderRecommend(v);
+  if(activeTab==="settings") return renderSettings(v);
+}
+
+//////////////////// OVERVIEW ////////////////////
+function renderOverview(v){
+  v.innerHTML = `
+    <div class="eyebrow">As of June 19, 2026</div>
+    <div id="ov_alerts"></div>
+    <div class="grid g4" style="margin-bottom:14px">
+      <div class="card tight"><div class="label">Net Worth</div><div class="stat" id="ov_net"></div><div class="sub2" id="ov_net_sub"></div></div>
+      <div class="card tight"><div class="label">Monthly Leftover</div><div class="stat" id="ov_left"></div><div class="sub2">income minus all outflow</div></div>
+      <div class="card tight"><div class="label">Consumer Debt</div><div class="stat" id="ov_debt"></div><div class="sub2">cards, loans, Affirm</div></div>
+      <div class="card tight"><div class="label">Card Utilization</div><div class="stat" id="ov_util"></div><div class="meter"><span id="ov_util_bar"></span></div></div>
+    </div>
+    <div class="grid g2">
+      <div class="card">
+        <div class="label">Cash flow this month</div>
+        <div class="splitbar" id="ov_flow"></div>
+        <table class="kvtable">
+          <tr><td>Income</td><td id="ov_inc" class="pos"></td></tr>
+          <tr><td>Fixed bills</td><td id="ov_fixed"></td></tr>
+          <tr><td>Variable spending</td><td id="ov_var"></td></tr>
+          <tr><td><b>Leftover</b></td><td id="ov_left2"></td></tr>
+        </table>
+      </div>
+      <div class="card">
+        <div class="label">Next 14 days due</div>
+        <div class="rowlist" id="ov_upcoming"></div>
+      </div>
+    </div>
+    <div class="note">Tap any number on the other tabs to edit it. Changes save automatically and stay put next time you open this.</div>
+  `;
+  syncFn = syncOverview;
+  syncOverview();
+}
+function syncOverview(){
+  const c = compute();
+  if(!$("ov_net")) return;
+  $("ov_net").textContent = fmt0(c.netWorth);
+  $("ov_net").className = "stat " + (c.netWorth>=0?"pos":"neg");
+  $("ov_net_sub").textContent = "assets " + fmt0(c.assets) + " minus debt " + fmt0(c.liabilities);
+  $("ov_left").textContent = fmt(c.leftover);
+  $("ov_left").className = "stat " + (c.leftover>=0?"pos":"neg");
+  $("ov_debt").textContent = fmt0(c.consumerDebt);
+  $("ov_debt").className = "stat warnc";
+  $("ov_util").textContent = pct(c.utilization);
+  $("ov_util").className = "stat " + (c.utilization>100?"neg":c.utilization>30?"warnc":"pos");
+  const ub=$("ov_util_bar");
+  ub.style.width = Math.min(100,c.utilization)+"%";
+  ub.style.background = c.utilization>100?"var(--danger)":c.utilization>30?"var(--amber)":"var(--sage)";
+
+  $("ov_inc").textContent = fmt(c.incomeTotal);
+  $("ov_fixed").textContent = fmt(c.billsMonthly);
+  $("ov_var").textContent = fmt(c.variable);
+  $("ov_left2").textContent = fmt(c.leftover);
+  $("ov_left2").className = c.leftover>=0?"pos":"neg";
+
+  // flow bar
+  const flow=$("ov_flow");
+  const tot = Math.max(c.incomeTotal, c.outflow, 1);
+  const fixedW = c.billsMonthly/tot*100, varW=c.variable/tot*100, leftW=Math.max(0,c.leftover)/tot*100;
+  flow.innerHTML =
+    `<span style="width:${fixedW}%;background:var(--brass)">${fixedW>14?"Bills":""}</span>`+
+    `<span style="width:${varW}%;background:var(--amber)">${varW>14?"Variable":""}</span>`+
+    `<span style="width:${leftW}%;background:var(--sage)">${leftW>14?"Leftover":""}</span>`;
+
+  // alerts
+  const al=$("ov_alerts"); let html="";
+  state.affirm.filter(a=>a.status==="overdue").forEach(a=>{
+    html += `<div class="alert red"><div class="ic">!</div><div class="body"><b>${esc(a.name)} is overdue.</b> Payment of <span class="amt">${fmt(a.amount)}</span> was due ${fmtDate(a.due)}.</div></div>`;
+  });
+  state.debts.filter(d=>d.limit>0 && d.balance>d.limit).forEach(d=>{
+    html += `<div class="alert amber"><div class="ic">&#9650;</div><div class="body"><b>${esc(d.name)} is over its limit</b> by <span class="amt">${fmt(d.balance-d.limit)}</span> (balance ${fmt(d.balance)} on a ${fmt(d.limit)} line).</div></div>`;
+  });
+  al.innerHTML = html;
+
+  // upcoming 14 days
+  const up = upcomingDue(14);
+  $("ov_upcoming").innerHTML = up.length ? up.map(e=>`
+    <div class="rrow"><div class="nm"><div class="t">${esc(e.name)}</div><div class="d">${e.label}</div></div>
+    <span class="pill ${e.cls}">${e.when}</span>
+    <div style="font-family:var(--mono);font-variant-numeric:tabular-nums;min-width:84px;text-align:right">${fmt(e.amount)}</div></div>
+  `).join("") : `<div class="note">Nothing due in the next 14 days.</div>`;
+}
+function fmtDate(iso){ const d=new Date(iso+"T00:00:00"); return MONTHS[d.getMonth()].slice(0,3)+" "+d.getDate(); }
+function upcomingDue(days){
+  const out=[];
+  const start=new Date(TODAY); const end=new Date(TODAY); end.setDate(end.getDate()+days);
+  // recurring bills: next occurrence of dueDay
+  state.bills.forEach(b=>{
+    const occ = nextOccurrence(b.dueDay);
+    if(occ>=start && occ<=end){
+      const dd=Math.round((occ-start)/86400000);
+      out.push({name:b.name, amount:monthlyBill(b), date:occ, label:"Due day "+b.dueDay+(b.freq==="quarterly"?" (quarterly)":""), when:dd<=0?"today":(dd+"d"), cls:dd<=2?"red":dd<=5?"amber":"brass"});
+    }
+  });
+  // affirm by exact date
+  state.affirm.forEach(a=>{
+    const d=new Date(a.due+"T00:00:00");
+    if(d>=start && d<=end || a.status==="overdue"){
+      const dd=Math.round((d-start)/86400000);
+      out.push({name:a.name+" (Affirm)", amount:a.amount, date:d, label:fmtDate(a.due), when:a.status==="overdue"?"overdue":(dd<=0?"today":dd+"d"), cls:a.status==="overdue"?"red":dd<=5?"amber":"brass"});
+    }
+  });
+  out.sort((x,y)=>x.date-y.date);
+  return out;
+}
+function nextOccurrence(day){
+  let d=new Date(TODAY.getFullYear(),TODAY.getMonth(),day);
+  if(d<new Date(TODAY.getFullYear(),TODAY.getMonth(),TODAY.getDate())) d=new Date(TODAY.getFullYear(),TODAY.getMonth()+1,day);
+  return d;
+}
+
+//////////////////// CALENDAR ////////////////////
+function renderCalendar(v){
+  v.innerHTML = `
+    <div class="eyebrow">Bill calendar</div>
+    <div class="calhead">
+      <button class="navbtn" id="cal_prev">&#8249;</button>
+      <div class="mo" id="cal_mo"></div>
+      <button class="navbtn" id="cal_next">&#8250;</button>
+    </div>
+    <div class="calgrid" id="cal_dows">${["Sun","Mon","Tue","Wed","Thu","Fri","Sat"].map(d=>`<div class="dow">${d}</div>`).join("")}</div>
+    <div class="calgrid" id="cal_grid" style="margin-top:6px"></div>
+    <div class="hr"></div>
+    <div class="label" style="font-family:var(--mono);font-size:10.5px;letter-spacing:1.5px;text-transform:uppercase;color:var(--faint);margin-bottom:10px">This month, in order</div>
+    <div class="rowlist" id="cal_list"></div>
+  `;
+  $("cal_prev").onclick=()=>{ calMonth--; if(calMonth<0){calMonth=11;calYear--;} drawCalendar(); };
+  $("cal_next").onclick=()=>{ calMonth++; if(calMonth>11){calMonth=0;calYear++;} drawCalendar(); };
+  drawCalendar();
+}
+function drawCalendar(){
+  $("cal_mo").textContent = MONTHS[calMonth]+" "+calYear;
+  const first=new Date(calYear,calMonth,1).getDay();
+  const days=new Date(calYear,calMonth+1,0).getDate();
+  const evByDay={};
+  state.bills.forEach(b=>{ const dd=Math.min(b.dueDay,days); (evByDay[dd]=evByDay[dd]||[]).push({t:b.name,amount:monthlyBill(b),cls:"b",q:b.freq==="quarterly"}); });
+  state.affirm.forEach(a=>{ const d=new Date(a.due+"T00:00:00"); if(d.getMonth()===calMonth && d.getFullYear()===calYear){ (evByDay[d.getDate()]=evByDay[d.getDate()]||[]).push({t:a.name,amount:a.amount,cls:a.status==="overdue"?"r":"a"}); } });
+
+  let cells="";
+  for(let i=0;i<first;i++) cells+=`<div class="cell empty"></div>`;
+  for(let d=1;d<=days;d++){
+    const isToday = (d===TODAY.getDate() && calMonth===TODAY.getMonth() && calYear===TODAY.getFullYear());
+    const evs=(evByDay[d]||[]).map(e=>`<div class="ev ${e.cls}">${esc(e.t.split(" (")[0])}</div>`).join("");
+    cells+=`<div class="cell ${isToday?"today":""}"><div class="dn">${d}</div>${evs}</div>`;
+  }
+  $("cal_grid").innerHTML=cells;
+
+  // ordered list
+  const list=[];
+  state.bills.forEach(b=>list.push({day:b.dueDay, name:b.name, amount:monthlyBill(b), tag:b.freq==="quarterly"?"quarterly":(b.autopay?"autopay":""), cls:"brass"}));
+  state.affirm.forEach(a=>{ const d=new Date(a.due+"T00:00:00"); if(d.getMonth()===calMonth&&d.getFullYear()===calYear) list.push({day:d.getDate(), name:a.name+" (Affirm)", amount:a.amount, tag:a.status, cls:a.status==="overdue"?"red":"amber"}); });
+  list.sort((x,y)=>x.day-y.day);
+  let total=list.reduce((s,e)=>s+e.amount,0);
+  $("cal_list").innerHTML = list.map(e=>`
+    <div class="rrow"><div style="font-family:var(--mono);width:34px;color:var(--muted);font-size:13px">${e.day}</div>
+      <div class="nm"><div class="t">${esc(e.name)}</div></div>
+      ${e.tag?`<span class="pill ${e.cls}">${e.tag}</span>`:""}
+      <div style="font-family:var(--mono);font-variant-numeric:tabular-nums;min-width:84px;text-align:right">${fmt(e.amount)}</div></div>
+  `).join("") + `<div class="rrow"><div style="width:34px"></div><div class="nm"><div class="t" style="color:var(--muted)">Total scheduled this month</div></div><div style="font-family:var(--mono);font-weight:600;min-width:84px;text-align:right">${fmt(total)}</div></div>`;
+}
+
+//////////////////// INCOME ////////////////////
+function renderIncome(v){
+  const i=state.income;
+  v.innerHTML = `
+    <div class="eyebrow">Income</div>
+    <div class="sec-title">Monthly income sources</div>
+    <div class="sec-note">Edit any amount. The household total updates as you type.</div>
+    <div class="grid g2">
+      <div class="card">
+        <div class="rowlist">
+          ${incRow("Take Home 1","income.takeHome1",i.takeHome1)}
+          ${incRow("Take Home 2","income.takeHome2",i.takeHome2)}
+          ${incRow("FSA 1","income.fsa1",i.fsa1)}
+          ${incRow("FSA 2","income.fsa2",i.fsa2)}
+          ${incRow("Child Support","income.childSupport",i.childSupport)}
+        </div>
+        <div class="hr"></div>
+        <div class="rrow"><div class="nm"><div class="t">Total monthly income</div></div><div class="stat sm pos" id="inc_total"></div></div>
+      </div>
+      <div class="card">
+        <div class="label">Where it goes</div>
+        <table class="kvtable">
+          <tr><td>Total income</td><td id="inc_k_inc" class="pos"></td></tr>
+          <tr><td>Fixed bills</td><td id="inc_k_bills"></td></tr>
+          <tr><td>Variable spending</td><td id="inc_k_var"></td></tr>
+          <tr><td><b>Leftover each month</b></td><td id="inc_k_left"></td></tr>
+        </table>
+        <div class="note">FSA dollars are usually earmarked for medical costs, so your true spendable income may be a little lower than the headline total. Adjust if you want to exclude them.</div>
+      </div>
+    </div>
+  `;
+  bindInputs(v);
+  syncFn = ()=>{
+    const c=compute();
+    $("inc_total").textContent=fmt(c.incomeTotal);
+    $("inc_k_inc").textContent=fmt(c.incomeTotal);
+    $("inc_k_bills").textContent=fmt(c.billsMonthly);
+    $("inc_k_var").textContent=fmt(c.variable);
+    $("inc_k_left").textContent=fmt(c.leftover);
+    $("inc_k_left").className=c.leftover>=0?"pos":"neg";
+  };
+  sync();
+}
+function incRow(label,path,val){
+  return `<div class="rrow"><div class="nm"><div class="t">${label}</div></div>
+    <span style="color:var(--faint);font-family:var(--mono)">$</span>
+    <input class="num-input" type="text" inputmode="decimal" data-path="${path}" value="${(val||0).toFixed(2)}"></div>`;
+}
+
+//////////////////// DEBTS ////////////////////
+function renderDebts(v){
+  v.innerHTML = `
+    <div class="eyebrow">Debts</div>
+    <div class="sec-title">What you owe</div>
+    <div class="sec-note">Balances, limits, and minimum payments. Utilization meters turn red when a card is over its limit.</div>
+    <div class="grid g4" style="margin-bottom:16px">
+      <div class="card tight"><div class="label">Consumer debt</div><div class="stat sm warnc" id="db_total"></div><div class="sub2">excludes mortgage</div></div>
+      <div class="card tight"><div class="label">Min payments / mo</div><div class="stat sm" id="db_min"></div></div>
+      <div class="card tight"><div class="label">Card balances</div><div class="stat sm" id="db_ccbal"></div></div>
+      <div class="card tight"><div class="label">Overall card use</div><div class="stat sm" id="db_util"></div><div class="meter"><span id="db_util_bar"></span></div></div>
+    </div>
+    <div class="grid g2" id="db_cards"></div>
+    <button class="addbtn" id="db_add">+ Add a debt</button>
+  `;
+  drawDebtCards();
+  $("db_add").onclick=()=>{
+    state.debts.push({id:"d_"+Date.now(), name:"New debt", balance:0, limit:0, minPayment:0, apr:0, type:"revolving", note:""});
+    saveState(); drawDebtCards();
+  };
+  syncFn = syncDebtTotals;
+  syncDebtTotals();
+}
+function drawDebtCards(){
+  const host=$("db_cards");
+  host.innerHTML = state.debts.map(d=>{
+    const over = d.limit>0 && d.balance>d.limit;
+    return `<div class="card">
+      <div class="rrow" style="padding-top:0;border-bottom:none">
+        <input class="txt-input" data-path="debt.${d.id}.name" data-type="text" value="${esc(d.name)}" style="font-weight:600;font-size:15px">
+        <button class="xbtn" data-del="${d.id}">&times;</button>
+      </div>
+      <table class="kvtable">
+        <tr><td>Balance</td><td><input class="num-input wide" inputmode="decimal" data-path="debt.${d.id}.balance" value="${(d.balance||0).toFixed(2)}"></td></tr>
+        <tr><td>Credit limit</td><td><input class="num-input wide" inputmode="decimal" data-path="debt.${d.id}.limit" value="${(d.limit||0).toFixed(2)}"></td></tr>
+        <tr><td>Minimum payment</td><td><input class="num-input wide" inputmode="decimal" data-path="debt.${d.id}.minPayment" value="${(d.minPayment||0).toFixed(2)}"></td></tr>
+      </table>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px">
+        <span class="pill ${over?"red":d.type==="installment"?"brass":"green"}" id="db_pill_${d.id}"></span>
+        <span style="font-family:var(--mono);font-size:12px;color:var(--muted)" id="db_util_t_${d.id}"></span>
+      </div>
+      <div class="meter"><span id="db_meter_${d.id}"></span></div>
+      ${d.note?`<div class="note">${esc(d.note)}</div>`:""}
+    </div>`;
+  }).join("");
+  bindInputs(host);
+  host.querySelectorAll("[data-del]").forEach(b=>b.onclick=()=>{
+    state.debts=state.debts.filter(x=>x.id!==b.getAttribute("data-del"));
+    saveState(); drawDebtCards(); syncDebtTotals();
+  });
+  state.debts.forEach(updateDebtCard);
+}
+function updateDebtCard(d){
+  const over = d.limit>0 && d.balance>d.limit;
+  const util = d.limit>0 ? d.balance/d.limit*100 : 0;
+  const pill=$("db_pill_"+d.id), ut=$("db_util_t_"+d.id), mt=$("db_meter_"+d.id);
+  if(pill){ pill.className="pill "+(over?"red":d.type==="installment"?"brass":"green");
+    pill.textContent = over ? "Over by "+fmt(d.balance-d.limit) : d.type==="installment" ? "Installment" : "Revolving"; }
+  if(ut) ut.textContent = d.limit>0 ? pct(util)+" used" : "";
+  if(mt){ mt.style.width=Math.min(100,util)+"%"; mt.style.background=over?"var(--danger)":util>30?"var(--amber)":"var(--sage)"; }
+}
+function syncDebtTotals(){
+  const c=compute();
+  if($("db_total")){
+    $("db_total").textContent=fmt0(c.consumerDebt);
+    $("db_min").textContent=fmt(c.minPayments);
+    $("db_ccbal").textContent=fmt0(c.ccBalance);
+    $("db_util").textContent=pct(c.utilization);
+    $("db_util").className="stat sm "+(c.utilization>100?"neg":c.utilization>30?"warnc":"pos");
+    const b=$("db_util_bar"); b.style.width=Math.min(100,c.utilization)+"%"; b.style.background=c.utilization>100?"var(--danger)":c.utilization>30?"var(--amber)":"var(--sage)";
+  }
+  state.debts.forEach(updateDebtCard);
+}
+
+//////////////////// BUDGET ////////////////////
+const CATCOLORS={Housing:"#C8A45C",Utilities:"#7A9BD4",Insurance:"#9B7ACB",Debt:"#E06B6B","Groceries":"#74B98C","Dining & coffee":"#E0A33E","Gas":"#C9805C","Shopping & home":"#5C9BC9","Subscriptions & apps":"#B884D0","Entertainment & travel":"#7FC9A0","Other":"#8A93A0"};
+const FOODDATA={
+  typical:{groceries:517,delivery:362,coffee:77,restaurants:556},
+  months:[
+    {m:"Jan",groc:130,eat:712,total:843,complete:false,note:"no Discover data"},
+    {m:"Feb",groc:214,eat:993,total:1207,complete:false,note:"Discover from the 10th"},
+    {m:"Mar",groc:523,eat:1034,total:1557,complete:true},
+    {m:"Apr",groc:405,eat:746,total:1152,complete:true},
+    {m:"May",groc:623,eat:1207,total:1830,complete:true},
+    {m:"Jun",groc:549,eat:455,total:1003,complete:false,note:"no PayPal statement"}
+  ],
+  doordash:[{m:"Jan",n:9,a:301},{m:"Feb",n:9,a:336},{m:"Mar",n:16,a:468},{m:"Apr",n:8,a:248},{m:"May",n:10,a:371},{m:"Jun",n:2,a:36}],
+  merchants:[
+    {n:"DoorDash",c:54,t:1760},{n:"Walmart",c:12,t:1414},{n:"Chipotle",c:32,t:642},
+    {n:"Chick-fil-A",c:37,t:564},{n:"Dollar General",c:14,t:503},{n:"Lookout Waffles",c:10,t:404},
+    {n:"Las Palmas",c:6,t:224},{n:"McDonald's",c:18,t:187},{n:"Casa Del Cafe",c:17,t:185},{n:"Zaxby's",c:8,t:144}
+  ]
+};
+const CATDATA={
+  gas:[{n:"Circle K",mo:94},{n:"RaceTrac",mo:76},{n:"Mapco",mo:61},{n:"Other stations",mo:93},{n:"Shell",mo:36},{n:"Take 5 oil change",mo:33,note:"auto maintenance, not fuel"}],
+  subscriptions:[{n:"Google",mo:92,note:"38 charges, likely several stacked plans"},{n:"Adobe",mo:89,note:"21 charges, check for duplicate plans"},{n:"Dalton Optilink (internet)",mo:52},{n:"Peak Fitness (gym)",mo:51},{n:"PlayStation / Sony",mo:38},{n:"Topaz Labs",mo:30},{n:"Microsoft",mo:29},{n:"Anthropic (Claude)",mo:20},{n:"NJ.com news",mo:15},{n:"Nintendo",mo:14},{n:"23andMe",mo:14}],
+  shopping:[{n:"Home Depot",mo:297,note:"home projects, lumpy"},{n:"RAV Electric",mo:141,note:"one-time repair"},{n:"Amazon",mo:64},{n:"Ross",mo:62},{n:"Lowe's",mo:59},{n:"Etsy",mo:58},{n:"Habitat ReStore",mo:51},{n:"Hot Topic",mo:33},{n:"Goodwill",mo:17},{n:"Walgreens",mo:16}],
+  entertainment:[{n:"Airbnb",mo:106},{n:"Martial arts (kids)",mo:60},{n:"Parking",mo:35},{n:"Sonesta hotel",mo:31},{n:"Xtreme Air",mo:29},{n:"Urban Air",mo:19},{n:"AMC Theatres",mo:17},{n:"Seven Feathers",mo:17}]
+};
+
+function icon(name){
+  const p={
+    grid:'<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>',
+    food:'<path d="M5 3v6c0 1 .6 1.6 1.5 1.6S8 9.9 8 9V3M6.5 10.5V21M16 3c-1.6 1-2.2 3-2.2 5.2 0 1.8 .7 2.8 2.2 2.8v10"/>',
+    gas:'<rect x="4" y="4" width="9" height="16" rx="1"/><path d="M4 11h9M16 8.5l2 2V17a2 2 0 01-2 0M16 12h2"/>',
+    sub:'<path d="M4 8a8 8 0 0113-3.5M20 16a8 8 0 01-13 3.5M17 4.5h3.5V1M7 19.5H3.5V23"/>',
+    bag:'<path d="M6 8h12l-1 12H7L6 8z"/><path d="M9 8a3 3 0 016 0"/>',
+    ticket:'<path d="M3 8a2 2 0 012-2h14a2 2 0 012 2 2 2 0 000 4 2 2 0 010 4 2 2 0 01-2 2H5a2 2 0 01-2-2 2 2 0 000-4 2 2 0 010-4z"/>',
+    dots:'<circle cx="5" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="19" cy="12" r="1.7"/>',
+    bolt:'<path d="M13 2L4 14h7l-1 8 9-12h-7l1-8z"/>',
+    house:'<path d="M4 11l8-7 8 7M6 10v10h12V10"/>',
+    shield:'<path d="M12 3l8 3v6c0 5-4 8-8 9-4-1-8-4-8-9V6l8-3z"/>',
+    card:'<rect x="3" y="6" width="18" height="12" rx="2"/><path d="M3 10h18"/>',
+    bulb:'<path d="M9 18h6M10 21h4M12 3a6 6 0 014 10.5c-.7.7-1 1.3-1 2.5H9c0-1.2-.3-1.8-1-2.5A6 6 0 0112 3z"/>'
+  };
+  return `<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">${p[name]||p.dots}</svg>`;
+}
+
+const BUDGET_CATS=[
+  {key:"overview",label:"Overview",icon:"grid"},
+  {key:"food",label:"Food",icon:"food",kind:"var",vk:["groceries","dining"]},
+  {key:"gas",label:"Gas",icon:"gas",kind:"var",vk:["gas"]},
+  {key:"subscriptions",label:"Subscriptions",icon:"sub",kind:"var",vk:["subscriptions"]},
+  {key:"shopping",label:"Shopping",icon:"bag",kind:"var",vk:["shopping"]},
+  {key:"entertainment",label:"Fun & travel",icon:"ticket",kind:"var",vk:["entertainment"]},
+  {key:"other",label:"Other",icon:"dots",kind:"var",vk:["other"]},
+  {key:"utilities",label:"Utilities",icon:"bolt",kind:"fix",fcat:"Utilities"},
+  {key:"housing",label:"Housing",icon:"house",kind:"fix",fcat:"Housing"},
+  {key:"insurance",label:"Insurance",icon:"shield",kind:"fix",fcat:"Insurance"},
+  {key:"debt",label:"Debt",icon:"card",kind:"fix",fcat:"Debt"}
+];
+let budgetCat="overview";
+function catColor(key){ const m={food:"var(--sage)",gas:"#C9805C",subscriptions:"#B884D0",shopping:"#5C9BC9",entertainment:"#7FC9A0",other:"#8A93A0",utilities:"#7A9BD4",housing:"var(--brass)",insurance:"#9B7ACB",debt:"var(--danger)"}; return m[key]||"var(--brass)"; }
+function catAmount(cat){
+  if(cat.kind==="var") return cat.vk.reduce((s,k)=>s+(Number(state.variable[k])||0),0);
+  if(cat.kind==="fix") return state.bills.filter(b=>b.cat===cat.fcat).reduce((s,b)=>s+monthlyBill(b),0);
+  return 0;
+}
+
+function renderBudget(v){
+  v.innerHTML=`
+    <div class="eyebrow">Budget</div>
+    <div class="sec-title">Income against outflow</div>
+    <div class="sec-note">Pick a category to see exactly what is inside it. Variable amounts are editable.</div>
+    <div id="bd_gap"></div>
+    <div class="card" style="margin-bottom:16px">
+      <div class="label">Monthly snapshot</div>
+      <table class="kvtable">
+        <tr><td>Income</td><td id="bd_inc" class="pos"></td></tr>
+        <tr><td>Fixed bills</td><td id="bd_bills"></td></tr>
+        <tr><td>Variable spending</td><td id="bd_var"></td></tr>
+        <tr><td><b>Leftover</b></td><td id="bd_left"></td></tr>
+      </table>
+      <div class="splitbar" id="bd_flow" style="margin-top:14px"></div>
+    </div>
+    <div class="catnav" id="bd_nav"></div>
+    <div id="bd_detail"></div>
+  `;
+  $("bd_nav").innerHTML=BUDGET_CATS.map(c=>`<button class="catchip ${c.key===budgetCat?'active':''}" data-cat="${c.key}" style="--cc:${c.key==='overview'?'var(--brass)':catColor(c.key)}">${icon(c.icon)}<span>${c.label}</span></button>`).join("");
+  $("bd_nav").querySelectorAll(".catchip").forEach(b=>b.addEventListener("click",()=>{ budgetCat=b.getAttribute("data-cat"); $("bd_nav").querySelectorAll(".catchip").forEach(x=>x.classList.toggle("active",x===b)); drawBudgetDetail(); }));
+  syncFn=syncBudget;
+  drawBudgetDetail();
+}
+
+function drawBudgetDetail(){
+  const cat=BUDGET_CATS.find(c=>c.key===budgetCat);
+  const host=$("bd_detail");
+  if(budgetCat==="overview") host.innerHTML=overviewDetail();
+  else if(budgetCat==="food") host.innerHTML=foodDetail();
+  else if(cat.kind==="var") host.innerHTML=varCatDetail(cat);
+  else host.innerHTML=fixedCatDetail(cat);
+  bindInputs(host);
+  syncBudget();
+  if(budgetCat==="food") drawFoodDonut();
+}
+
+function overviewDetail(){
+  return `
+    <div class="grid g2">
+      <div class="card">
+        <div class="label">Where every dollar goes</div>
+        <div class="donutwrap">
+          <div class="donut" id="bd_donut"><div class="center"><div class="v" id="bd_donut_v"></div><div class="l">out / mo</div></div></div>
+          <div class="legend" id="bd_legend"></div>
+        </div>
+      </div>
+      <div class="card"><div class="label">Health check</div><div id="bd_health"></div></div>
+    </div>
+    <div class="card" style="margin-top:16px">
+      <div class="label">All categories, biggest first</div>
+      <div id="bd_catlist"></div>
+      <div class="note">Tap a category for its full breakdown. Variable lines can be edited inside.</div>
+    </div>`;
+}
+
+function varCatDetail(cat){
+  const key=cat.key, amt=catAmount(cat), items=CATDATA[key]||[];
+  const max=items.length?Math.max.apply(null,items.map(i=>i.mo)):1;
+  const rows=items.map(i=>`
+    <div class="rrow"><div class="nm"><div class="t">${esc(i.n)}</div>${i.note?`<div class="d">${esc(i.note)}</div>`:""}</div>
+      <div style="flex:0 0 100px;max-width:100px"><div class="meter" style="margin-top:0"><span style="width:${i.mo/max*100}%;background:${catColor(key)}"></span></div></div>
+      <div style="font-family:var(--mono);font-variant-numeric:tabular-nums;min-width:70px;text-align:right">${fmt0(i.mo)}/mo</div></div>`).join("");
+  return `
+    <div class="card" style="margin-bottom:16px">
+      <div class="cathead"><span class="catic" style="color:${catColor(key)}">${icon(cat.icon)}</span><div><div class="sec-title" style="font-size:18px">${cat.label}</div><div class="sec-note" style="margin:0">about ${fmt0(amt)} a month</div></div></div>
+      <div class="hr"></div>
+      <div class="rrow"><div class="nm"><div class="t">Monthly budget for ${esc(cat.label.toLowerCase())}</div></div>
+        <span style="color:var(--faint);font-family:var(--mono)">$</span>
+        <input class="num-input wide" inputmode="decimal" data-path="variable.${cat.vk[0]}" value="${(state.variable[cat.vk[0]]||0).toFixed(2)}"></div>
+    </div>
+    <div class="card">
+      <div class="label">What's inside (typical month)</div>
+      <div class="rowlist">${rows||'<div class="note" style="margin-top:0">These are small, irregular charges with no single recurring merchant.</div>'}</div>
+      ${(key==='shopping'||key==='entertainment')?'<div class="note">This category is lumpy. Project and trip months run much higher than a typical month.</div>':''}
+    </div>`;
+}
+
+function fixedCatDetail(cat){
+  const bills=state.bills.filter(b=>b.cat===cat.fcat);
+  const total=bills.reduce((s,b)=>s+monthlyBill(b),0);
+  const rows=bills.map(b=>`
+    <div class="rrow"><div class="nm"><div class="t">${esc(b.name)}</div><div class="d">due day ${b.dueDay}${b.freq==='quarterly'?', billed quarterly':''}</div></div>
+      <span style="color:var(--faint);font-family:var(--mono)">$</span>
+      <input class="num-input" inputmode="decimal" data-path="bill.${b.id}.amount" value="${(b.amount||0).toFixed(2)}"></div>`).join("");
+  let extra="";
+  if(cat.key==="housing") extra='<div class="note">Full escrow split and equity are on the Mortgage tab.</div>';
+  if(cat.key==="debt") extra='<div class="note">These are the monthly payments. Balances and payoff are on the Debts tab.</div>';
+  if(cat.key==="utilities") extra='<div class="note">Internet (Dalton Optilink, about $52/mo) runs on your card and is counted under Subscriptions, not here.</div>';
+  return `
+    <div class="card" style="margin-bottom:16px">
+      <div class="cathead"><span class="catic" style="color:${catColor(cat.key)}">${icon(cat.icon)}</span><div><div class="sec-title" style="font-size:18px">${cat.label}</div><div class="sec-note" style="margin:0">${fmt0(total)} a month in fixed bills</div></div></div>
+    </div>
+    <div class="card">
+      <div class="label">Bills in this category</div>
+      <div class="rowlist">${rows||'<div class="note" style="margin-top:0">No bills here yet.</div>'}</div>
+      ${extra}
+    </div>`;
+}
+
+function foodDetail(){
+  const t=FOODDATA.typical, eatOut=t.delivery+t.coffee+t.restaurants, all=t.groceries+eatOut;
+  const ddAvgN=Math.round((16+8+10)/3), ddAvgA=Math.round((468+248+371)/3);
+  const maxTotal=Math.max.apply(null,FOODDATA.months.map(m=>m.total)), H=140;
+  const bars=FOODDATA.months.map(m=>{ const gPx=m.groc/maxTotal*H,ePx=m.eat/maxTotal*H,op=m.complete?1:0.38;
+    return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;min-width:0"><div style="font-family:var(--mono);font-size:10px;color:${m.complete?'var(--text)':'var(--faint)'};margin-bottom:4px">${fmt0(m.total)}</div><div style="width:100%;max-width:40px;display:flex;flex-direction:column;justify-content:flex-end;height:${H}px"><div style="height:${ePx}px;background:var(--amber);opacity:${op};border-radius:4px 4px 0 0"></div><div style="height:${gPx}px;background:var(--sage);opacity:${op};border-radius:0 0 4px 4px"></div></div><div style="font-size:11px;margin-top:6px;color:${m.complete?'var(--muted)':'var(--faint)'}">${m.m}${m.complete?'':'*'}</div></div>`; }).join("");
+  const merchMax=Math.max.apply(null,FOODDATA.merchants.map(x=>x.t));
+  const merchRows=FOODDATA.merchants.map(x=>`<div class="rrow"><div class="nm"><div class="t">${esc(x.n)}</div><div class="d">${x.c} buys, avg ${fmt(x.t/x.c)}</div></div><div style="flex:0 0 100px;max-width:100px"><div class="meter" style="margin-top:0"><span style="width:${x.t/merchMax*100}%;background:var(--brass)"></span></div></div><div style="font-family:var(--mono);font-variant-numeric:tabular-nums;min-width:64px;text-align:right">${fmt0(x.t)}</div></div>`).join("");
+  return `
+    <div class="card" style="margin-bottom:16px">
+      <div class="cathead"><span class="catic" style="color:var(--sage)">${icon('food')}</span><div><div class="sec-title" style="font-size:18px">Food</div><div class="sec-note" style="margin:0">about ${fmt0(all)} a month, two thirds of it eating out</div></div></div>
+      <div class="hr"></div>
+      <div class="rrow"><div class="nm"><div class="t">Groceries budget</div><div class="d">steady, accurate</div></div><span style="color:var(--faint);font-family:var(--mono)">$</span><input class="num-input wide" inputmode="decimal" data-path="variable.groceries" value="${(state.variable.groceries||0).toFixed(2)}"></div>
+      <div class="rrow"><div class="nm"><div class="t">Eating out budget</div><div class="d">dining, coffee, delivery, your biggest variable line</div></div><span style="color:var(--faint);font-family:var(--mono)">$</span><input class="num-input wide" inputmode="decimal" data-path="variable.dining" value="${(state.variable.dining||0).toFixed(2)}"></div>
+    </div>
+    <div class="grid g4" style="margin-bottom:16px">
+      <div class="card tight"><div class="label">Food / mo</div><div class="stat sm brassc">${fmt0(all)}</div></div>
+      <div class="card tight"><div class="label">Eating out</div><div class="stat sm warnc">${fmt0(eatOut)}</div></div>
+      <div class="card tight"><div class="label">Groceries</div><div class="stat sm pos">${fmt0(t.groceries)}</div></div>
+      <div class="card tight"><div class="label">DoorDash / mo</div><div class="stat sm">${fmt0(ddAvgA)}</div><div class="sub2">~${ddAvgN} orders</div></div>
+    </div>
+    <div class="card" style="margin-bottom:16px">
+      <div class="label">Food by month</div>
+      <div style="display:flex;align-items:flex-end;gap:9px;margin:16px 0 4px">${bars}</div>
+      <div class="legend" style="flex-direction:row;gap:18px;margin-top:10px"><div class="li"><span class="sw" style="background:var(--sage)"></span><span class="nm">Groceries</span></div><div class="li"><span class="sw" style="background:var(--amber)"></span><span class="nm">Eating out</span></div></div>
+      <div class="note">Bars marked <b>*</b> are missing a data source, so they read low. Mar, Apr, May are complete.</div>
+    </div>
+    <div class="grid g2">
+      <div class="card">
+        <div class="label">Eating out split (typical month)</div>
+        <div class="donutwrap"><div class="donut" id="fd_donut"><div class="center"><div class="v">${fmt0(eatOut)}</div><div class="l">eat out</div></div></div>
+          <div class="legend">
+            <div class="li"><span class="sw" style="background:var(--amber)"></span><span class="nm">Restaurants &amp; fast food</span><span class="vl">${fmt0(t.restaurants)}</span></div>
+            <div class="li"><span class="sw" style="background:var(--brass)"></span><span class="nm">Delivery</span><span class="vl">${fmt0(t.delivery)}</span></div>
+            <div class="li"><span class="sw" style="background:var(--info)"></span><span class="nm">Coffee</span><span class="vl">${fmt0(t.coffee)}</span></div>
+          </div></div>
+      </div>
+      <div class="card"><div class="label">Top food merchants</div><div class="rowlist">${merchRows}</div></div>
+    </div>`;
+}
+function drawFoodDonut(){
+  const t=FOODDATA.typical, eatOut=t.delivery+t.coffee+t.restaurants;
+  const segs=[[t.restaurants,"var(--amber)"],[t.delivery,"var(--brass)"],[t.coffee,"var(--info)"]];
+  let acc=0; const stops=segs.map(s=>{ const a=acc/eatOut*360; acc+=s[0]; const b=acc/eatOut*360; return `${s[1]} ${a}deg ${b}deg`; });
+  const d=$("fd_donut"); if(d) d.style.background=`conic-gradient(${stops.join(",")})`;
+}
+
+function syncBudget(){
+  const c=compute();
+  if(!$("bd_inc")) return;
+  $("bd_inc").textContent=fmt(c.incomeTotal);
+  $("bd_bills").textContent=fmt(c.billsMonthly);
+  $("bd_var").textContent=fmt(c.variable);
+  $("bd_left").textContent=fmt(c.leftover); $("bd_left").className=c.leftover>=0?"pos":"neg";
+  const gap=$("bd_gap");
+  if(gap){
+    if(c.leftover<0) gap.innerHTML=`<div class="alert red"><div class="ic">&#9660;</div><div class="body"><b>Monthly shortfall of <span class="amt">${fmt(-c.leftover)}</span>.</b> A typical month runs close to even, but project and trip months push you into the red and onto the cards.</div></div>`;
+    else gap.innerHTML=`<div class="alert amber" style="border-color:rgba(116,185,140,.4);background:rgba(116,185,140,.07)"><div class="ic" style="color:var(--sage)">&#9650;</div><div class="body"><b>You have <span class="amt">${fmt(c.leftover)}</span> left each month</b> after bills and variable spending.</div></div>`;
+  }
+  const tot=Math.max(c.incomeTotal,c.outflow,1);
+  const fw=c.billsMonthly/tot*100, vw=c.variable/tot*100, lw=Math.max(0,c.leftover)/tot*100;
+  $("bd_flow").innerHTML=
+    `<span style="width:${fw}%;background:var(--brass)">${fw>14?"Bills":""}</span>`+
+    `<span style="width:${vw}%;background:var(--amber)">${vw>12?"Variable":""}</span>`+
+    `<span style="width:${lw}%;background:var(--sage)">${lw>14?"Leftover":""}</span>`;
+  if($("bd_donut")){
+    const entries=Object.entries(c.cats).sort((a,b)=>b[1]-a[1]);
+    const sum=entries.reduce((s,e)=>s+e[1],0)||1; let acc=0,stops=[];
+    entries.forEach(([k,val])=>{ const col=CATCOLORS[k]||CATCOLORS.Other; const s0=acc/sum*360; acc+=val; const e0=acc/sum*360; stops.push(`${col} ${s0}deg ${e0}deg`); });
+    $("bd_donut").style.background=`conic-gradient(${stops.join(",")})`;
+    $("bd_donut_v").textContent=fmt0(sum);
+    $("bd_legend").innerHTML=entries.map(([k,val])=>`<div class="li"><span class="sw" style="background:${CATCOLORS[k]||CATCOLORS.Other}"></span><span class="nm">${k}</span><span class="vl">${fmt(val)}</span></div>`).join("");
+  }
+  if($("bd_health")){
+    const dti=c.incomeTotal>0?c.minPayments/c.incomeTotal*100:0, sr=c.incomeTotal>0?c.leftover/c.incomeTotal*100:0;
+    $("bd_health").innerHTML=`<table class="kvtable"><tr><td>Minimum debt payments vs income</td><td class="${dti>20?'neg':dti>10?'warnc':'pos'}">${pct(dti)}</td></tr><tr><td>Leftover as share of income</td><td class="${sr<0?'neg':sr<10?'warnc':'pos'}">${pct(sr)}</td></tr><tr><td>Card balances over limit</td><td class="${c.ccBalance>c.ccLimit?'neg':'pos'}">${c.ccBalance>c.ccLimit?fmt(c.ccBalance-c.ccLimit):'none'}</td></tr></table>`;
+  }
+  if($("bd_catlist")){
+    const list=BUDGET_CATS.filter(x=>x.key!=="overview").map(x=>({cat:x,amt:catAmount(x)})).sort((a,b)=>b.amt-a.amt);
+    const max=Math.max.apply(null,list.map(x=>x.amt).concat([1]));
+    $("bd_catlist").innerHTML=list.map(o=>`<button class="catrow" data-gocat="${o.cat.key}"><span class="catic2" style="color:${catColor(o.cat.key)}">${icon(o.cat.icon)}</span><span class="crname">${o.cat.label}</span><span class="crbar"><span style="width:${o.amt/max*100}%;background:${catColor(o.cat.key)}"></span></span><span class="cramt">${fmt0(o.amt)}</span></button>`).join("");
+    $("bd_catlist").querySelectorAll(".catrow").forEach(b=>b.addEventListener("click",()=>{ budgetCat=b.getAttribute("data-gocat"); const nav=$("bd_nav"); if(nav) nav.querySelectorAll(".catchip").forEach(x=>x.classList.toggle("active",x.getAttribute("data-cat")===budgetCat)); drawBudgetDetail(); window.scrollTo({top:120,behavior:'smooth'}); }));
+  }
+}
+
+//////////////////// RECOMMENDATIONS ////////////////////
+function renderRecommend(v){
+  const c=compute();
+  const over=Math.max(0,c.ccBalance-c.ccLimit);
+  const recs=[
+    {icon:"card",tone:"red",title:"Get the three cards back under their limits",
+     body:`Platinum, Quicksilver, and PayPal Credit are all over their limits, about ${fmt0(over)} combined, and two added past due fees this month. Until each balance drops below its limit you keep paying over limit and late fees and your available credit stays at zero. Clearing the overage first stops those fees right away.`,
+     impact:"Stops about $79+ a month in fees"},
+    {icon:"food",tone:"amber",title:"Switch DoorDash to pickup, or cut it in half",
+     body:"Delivery runs about $360 a month across roughly 10 orders at $32.60 each, and a large share of that is fees, service charges, and tips. The same food picked up is closer to $15 to $18. No change to what you eat, just collecting it.",
+     impact:"About $180 a month back"},
+    {icon:"sub",tone:"amber",title:"Audit the subscription stack",
+     body:"Subscriptions total about $506 a month. Google shows 38 separate charges (around $92 a month) and Adobe 21 (around $89), which usually points to duplicate or forgotten plans. Peak Fitness, PlayStation, Topaz, and Nintendo sit on top. Cancelling what you do not actively use is found money.",
+     impact:"$100 to $150 a month likely"},
+    {icon:"bag",tone:"info",title:"Pause home projects until the cards recover",
+     body:"In a normal month you are close to break even. The red months are project months, where Home Depot and related spending hits $1,200 to $2,400 and lands on the cards. Holding non urgent projects until the cards are under their limits breaks the cycle that built the balances.",
+     impact:"Protects your break even"},
+    {icon:"shield",tone:"info",title:"Stop the cash advances",
+     body:"Quicksilver shows cash advance fees and cash advance interest, which begin charging immediately with no grace period and at a higher rate than purchases. Avoiding cash advances removes one of your most expensive borrowing costs.",
+     impact:"Cuts your highest rate interest"},
+    {icon:"bulb",tone:"brass",title:"Then attack the highest rate balance first",
+     body:"Once the cards are under their limits, point every freed up dollar from delivery and subscriptions at the highest interest balance, then roll that payment to the next one. The roughly $300 a month freed by steps 2 and 3 covers a card minimum several times over.",
+     impact:"Builds payoff momentum"}
+  ];
+  v.innerHTML=`
+    <div class="eyebrow">Recommendations</div>
+    <div class="sec-title">Where to start</div>
+    <div class="sec-note">Built from your own numbers and ordered by impact. This is organizing your data, not financial advice.</div>
+    ${recs.map((r,i)=>`<div class="reccard"><div class="recnum">${i+1}</div><div class="recic ${r.tone}">${icon(r.icon)}</div><div class="recbody"><div class="rectitle">${esc(r.title)}</div><div class="rectext">${r.body}</div>${r.impact?`<span class="recimpact">${esc(r.impact)}</span>`:""}</div></div>`).join("")}
+    <div class="note">For free, nonprofit help, the National Foundation for Credit Counseling (nfcc.org) is the usual starting point. They can sometimes lower card rates through a debt management plan. If you are ever feeling overwhelmed by all of this, that is worth a call too.</div>
+  `;
+  syncFn=()=>{};
+}
+
+//////////////////// MORTGAGE ////////////////////
+function renderMortgage(v){
+  const m=state.mortgage;
+  v.innerHTML=`
+    <div class="eyebrow">Mortgage</div>
+    <div class="sec-title">${esc(m.address)}</div>
+    <div class="sec-note">${esc(m.kind)} loan, serviced by Rocket. Next payment due day ${m.dueDay}.</div>
+    <div class="grid g4" style="margin-bottom:16px">
+      <div class="card tight"><div class="label">Balance owed</div><div class="stat sm" id="mg_bal"></div></div>
+      <div class="card tight"><div class="label">Estimated equity</div><div class="stat sm pos" id="mg_eq"></div></div>
+      <div class="card tight"><div class="label">Est. home value</div><div class="stat sm" id="mg_hv"></div></div>
+      <div class="card tight"><div class="label">Payment / mo</div><div class="stat sm brassc" id="mg_pay"></div></div>
+    </div>
+    <div class="grid g2">
+      <div class="card">
+        <div class="label">Edit loan figures</div>
+        <table class="kvtable">
+          <tr><td>Balance owed</td><td><input class="num-input wide" inputmode="decimal" data-path="mortgage.balance" value="${(m.balance||0).toFixed(2)}"></td></tr>
+          <tr><td>Estimated equity</td><td><input class="num-input wide" inputmode="decimal" data-path="mortgage.equity" value="${(m.equity||0).toFixed(2)}"></td></tr>
+          <tr><td>Principal &amp; interest</td><td><input class="num-input wide" inputmode="decimal" data-path="mortgage.pi" value="${(m.pi||0).toFixed(2)}"></td></tr>
+          <tr><td>Escrow (taxes + insurance)</td><td><input class="num-input wide" inputmode="decimal" data-path="mortgage.escrow" value="${(m.escrow||0).toFixed(2)}"></td></tr>
+          <tr><td>Principal paid to date</td><td><input class="num-input wide" inputmode="decimal" data-path="mortgage.principalPaid" value="${(m.principalPaid||0).toFixed(2)}"></td></tr>
+          <tr><td>Due day</td><td><input class="num-input day-input" inputmode="numeric" data-path="mortgage.dueDay" value="${m.dueDay}"></td></tr>
+        </table>
+      </div>
+      <div class="card">
+        <div class="label">Payment makeup</div>
+        <div class="splitbar" id="mg_split"></div>
+        <div class="legend" style="margin-top:8px">
+          <div class="li"><span class="sw" style="background:var(--brass)"></span><span class="nm">Principal &amp; interest</span><span class="vl" id="mg_pi"></span></div>
+          <div class="li"><span class="sw" style="background:var(--info)"></span><span class="nm">Escrow</span><span class="vl" id="mg_esc"></span></div>
+        </div>
+        <div class="hr"></div>
+        <div class="label">Equity position</div>
+        <div class="meter" style="height:12px"><span id="mg_eqbar"></span></div>
+        <div class="note"><b id="mg_eqpct"></b> of your home's estimated value is equity. The total payment Rocket showed was ${fmt(2141.80)} due on the 1st.</div>
+      </div>
+    </div>
+  `;
+  bindInputs(v);
+  syncFn=syncMortgage;
+  syncMortgage();
+}
+function syncMortgage(){
+  const m=state.mortgage; if(!$("mg_bal")) return;
+  const total=(Number(m.pi)||0)+(Number(m.escrow)||0);
+  const hv=(Number(m.equity)||0)+(Number(m.balance)||0);
+  $("mg_bal").textContent=fmt0(m.balance);
+  $("mg_eq").textContent=fmt0(m.equity);
+  $("mg_hv").textContent=fmt0(hv);
+  $("mg_pay").textContent=fmt(total);
+  const piW = total>0 ? (m.pi/total*100):0, escW=total>0?(m.escrow/total*100):0;
+  $("mg_split").innerHTML=`<span style="width:${piW}%;background:var(--brass)">P&amp;I</span><span style="width:${escW}%;background:var(--info)">Escrow</span>`;
+  $("mg_pi").textContent=fmt(m.pi);
+  $("mg_esc").textContent=fmt(m.escrow);
+  const eqpct = hv>0 ? m.equity/hv*100 : 0;
+  $("mg_eqbar").style.width=Math.min(100,eqpct)+"%"; $("mg_eqbar").style.background="var(--sage)";
+  $("mg_eqpct").textContent=pct(eqpct);
+}
+
+//////////////////// SAVINGS & 401k ////////////////////
+function renderSavings(v){
+  const con=state.contrib;
+  v.innerHTML=`
+    <div class="eyebrow">Savings, retirement &amp; cash</div>
+    <div class="grid g3" style="margin-bottom:16px">
+      <div class="card tight"><div class="label">Cash on hand</div><div class="stat sm" id="sv_cash"></div><div class="sub2">checking + savings</div></div>
+      <div class="card tight"><div class="label">Retirement &amp; education</div><div class="stat sm brassc" id="sv_ret"></div><div class="sub2">401k, IRA, 529, HSA</div></div>
+      <div class="card tight"><div class="label">Total liquid + invested</div><div class="stat sm pos" id="sv_all"></div></div>
+    </div>
+    <div class="grid g2">
+      <div class="card">
+        <div class="label">Cash accounts</div>
+        <div class="note" style="margin-top:0;margin-bottom:8px">These started blank. Drop your current balances in.</div>
+        <div class="rowlist" id="sv_cashlist"></div>
+        <button class="addbtn" id="sv_addcash">+ Add a cash account</button>
+      </div>
+      <div class="card">
+        <div class="label">Retirement &amp; education (Fidelity)</div>
+        <div class="rowlist" id="sv_retlist"></div>
+        <button class="addbtn" id="sv_addret">+ Add an account</button>
+      </div>
+    </div>
+    <div class="card" style="margin-top:14px">
+      <div class="label">401(k) contributions</div>
+      <div class="grid g2">
+        <table class="kvtable">
+          <tr><td>Your contribution / paycheck</td><td><span style="color:var(--faint)">$</span><input class="num-input" inputmode="decimal" data-path="contrib.empPerCheck" value="${(con.empPerCheck||0).toFixed(2)}"></td></tr>
+          <tr><td>Employer match / paycheck</td><td><span style="color:var(--faint)">$</span><input class="num-input" inputmode="decimal" data-path="contrib.employerPerCheck" value="${(con.employerPerCheck||0).toFixed(2)}"></td></tr>
+          <tr><td>Paychecks per year</td><td><input class="num-input day-input" inputmode="numeric" data-path="contrib.checksPerYear" value="${con.checksPerYear}"></td></tr>
+        </table>
+        <div>
+          <table class="kvtable">
+            <tr><td>You per year</td><td id="sv_empyr"></td></tr>
+            <tr><td>Employer per year</td><td id="sv_emyr" class="pos"></td></tr>
+            <tr><td><b>Total added per year</b></td><td id="sv_totyr" class="brassc"></td></tr>
+          </table>
+          <div class="note">Heads up: your 401(k) also has an active <b>loan repayment</b> coming out of each paycheck (last one was ${fmt(con.loanRepayLast)}). That repays the loan, it does not add new retirement savings.</div>
+        </div>
+      </div>
+    </div>
+  `;
+  drawCashList(); drawRetList();
+  $("sv_addcash").onclick=()=>{ state.cash.push({id:"ca_"+Date.now(),name:"New account",balance:0}); saveState(); drawCashList(); syncSavings(); };
+  $("sv_addret").onclick=()=>{ state.retirement.push({id:"rt_"+Date.now(),name:"New account",balance:0,type:"Other"}); saveState(); drawRetList(); syncSavings(); };
+  bindInputs(v);
+  syncFn=syncSavings;
+  syncSavings();
+}
+function drawCashList(){
+  $("sv_cashlist").innerHTML = state.cash.map(a=>`
+    <div class="rrow"><input class="txt-input" data-path="cash.${a.id}.name" data-type="text" value="${esc(a.name)}">
+      <span style="color:var(--faint);font-family:var(--mono)">$</span>
+      <input class="num-input" inputmode="decimal" data-path="cash.${a.id}.balance" value="${(a.balance||0).toFixed(2)}">
+      <button class="xbtn" data-delc="${a.id}">&times;</button></div>`).join("");
+  bindInputs($("sv_cashlist"));
+  $("sv_cashlist").querySelectorAll("[data-delc]").forEach(b=>b.onclick=()=>{ state.cash=state.cash.filter(x=>x.id!==b.getAttribute("data-delc")); saveState(); drawCashList(); syncSavings(); });
+}
+function drawRetList(){
+  $("sv_retlist").innerHTML = state.retirement.map(a=>`
+    <div class="rrow"><div class="nm"><input class="txt-input" data-path="ret.${a.id}.name" data-type="text" value="${esc(a.name)}"></div>
+      <span style="color:var(--faint);font-family:var(--mono)">$</span>
+      <input class="num-input" inputmode="decimal" data-path="ret.${a.id}.balance" value="${(a.balance||0).toFixed(2)}">
+      <button class="xbtn" data-delr="${a.id}">&times;</button></div>`).join("");
+  bindInputs($("sv_retlist"));
+  $("sv_retlist").querySelectorAll("[data-delr]").forEach(b=>b.onclick=()=>{ state.retirement=state.retirement.filter(x=>x.id!==b.getAttribute("data-delr")); saveState(); drawRetList(); syncSavings(); });
+}
+function syncSavings(){
+  const c=compute(); const con=state.contrib;
+  if(!$("sv_cash")) return;
+  $("sv_cash").textContent=fmt(c.cashTotal);
+  $("sv_ret").textContent=fmt(c.retireTotal);
+  $("sv_all").textContent=fmt(c.cashTotal+c.retireTotal);
+  const emp=(con.empPerCheck||0)*(con.checksPerYear||0), em=(con.employerPerCheck||0)*(con.checksPerYear||0);
+  if($("sv_empyr")){ $("sv_empyr").textContent=fmt(emp); $("sv_emyr").textContent=fmt(em); $("sv_totyr").textContent=fmt(emp+em); }
+}
+
+//////////////////// SELL & EQUITY ////////////////////
+function sellCompute(){
+  const m=state.mortgage, s=state.sell;
+  const sp=Number(s.salePrice)||0, payoff=Number(m.balance)||0;
+  const commission=sp*(Number(s.commissionPct)||0)/100;
+  const concessions=sp*(Number(s.concessionsPct)||0)/100;
+  const transfer=sp*(Number(s.transferPct)||0)/100;
+  const flat=(s.costs||[]).reduce((a,c)=>a+(Number(c.amount)||0),0);
+  const sellingCosts=commission+concessions+transfer+flat;
+  const net=sp-payoff-sellingCosts;
+  let debtPaid=0; const debtLines=[];
+  state.debts.forEach(d=>{
+    const p=s.payoff&&s.payoff[d.id];
+    const pay=p?p.pay!==false:true;
+    const amount=(p&&typeof p.amount==="number")?p.amount:(Number(d.balance)||0);
+    if(pay&&amount>0){ debtPaid+=amount; debtLines.push({name:d.name,amount}); }
+  });
+  return {sp,payoff,commission,concessions,transfer,flat,sellingCosts,net,debtPaid,debtLines,equity:Number(m.equity)||0};
+}
+
+function renderSell(v){
+  const s=state.sell, m=state.mortgage;
+  const rocket=Math.round((Number(m.equity)||0)+(Number(m.balance)||0));
+  v.innerHTML=`
+    <div class="eyebrow">Sell &amp; equity</div>
+    <div class="sec-title">What you'd actually walk away with</div>
+    <div class="sec-note">Drag the sale price, adjust every cost, and pick which debts to clear at closing. Everything updates live.</div>
+
+    <div class="card" style="margin-bottom:16px">
+      <div class="slabel"><span class="label" style="margin:0">Estimated sale price</span><span class="v brassc stat sm" id="se_sp_lbl"></span></div>
+      <input type="range" id="se_sp" min="300000" max="600000" step="2500" data-path="sell.salePrice" value="${s.salePrice}">
+      <div class="chiprow" id="se_chips">
+        <button class="minichip" data-sp="${rocket}">Rocket estimate, ${fmt0(rocket)}</button>
+        <button class="minichip" data-sp="${rocket+15000}">+$15k improvements</button>
+        <button class="minichip" data-sp="${rocket+30000}">+$30k improvements</button>
+        <button class="minichip" data-sp="${rocket-15000}">-$15k</button>
+      </div>
+      <div class="note" id="se_vsrocket"></div>
+    </div>
+
+    <div class="grid g2" style="margin-bottom:16px">
+      <div class="card">
+        <div class="slabel"><span class="label" style="margin:0">Agent commission</span><span class="v" id="se_comm_lbl"></span></div>
+        <input type="range" id="se_comm" min="0" max="6.5" step="0.25" data-path="sell.commissionPct" value="${s.commissionPct}">
+        <div class="note" style="margin-top:8px">Often 5 to 5.5% in Georgia, split between the two agents.</div>
+      </div>
+      <div class="card">
+        <div class="slabel"><span class="label" style="margin:0">Concessions to buyer</span><span class="v" id="se_conc_lbl"></span></div>
+        <input type="range" id="se_conc" min="0" max="3" step="0.25" data-path="sell.concessionsPct" value="${s.concessionsPct}">
+        <div class="note" style="margin-top:8px">Credits toward the buyer's closing costs. Zero if none.</div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-bottom:16px">
+      <div class="label">Closing costs (adjust anything, add your own)</div>
+      <div class="rrow"><div class="nm"><div class="t">Georgia transfer tax</div><div class="d">state rate, $1 per $1,000 of price</div></div>
+        <input class="num-input" inputmode="decimal" data-path="sell.transferPct" value="${(Number(s.transferPct)||0).toFixed(2)}"><span style="color:var(--faint);font-family:var(--mono)">%</span></div>
+      <div class="rowlist" id="se_costlist"></div>
+      <button class="addbtn" id="se_addcost">+ Add a closing cost</button>
+    </div>
+
+    <div class="card" style="margin-bottom:16px">
+      <div class="label">Pay off debts at closing</div>
+      <div class="note" style="margin-top:0;margin-bottom:8px">Check the debts you'd clear from the sale proceeds. Every amount is editable.</div>
+      <div class="rowlist" id="se_debtlist"></div>
+      <div class="hr"></div>
+      <div class="rrow"><div class="nm"><div class="t">Total debts cleared</div></div><div class="stat sm neg" id="se_debttotal"></div></div>
+    </div>
+
+    <div class="card" style="margin-bottom:16px">
+      <div class="label">Where the sale price goes</div>
+      <div class="splitbar" id="se_bar" style="height:34px"></div>
+      <div class="legend" style="flex-direction:row;gap:16px;margin-top:12px;flex-wrap:wrap">
+        <div class="li"><span class="sw" style="background:var(--brass-dim)"></span><span class="nm">Mortgage payoff</span></div>
+        <div class="li"><span class="sw" style="background:var(--danger)"></span><span class="nm">Selling costs</span></div>
+        <div class="li"><span class="sw" style="background:var(--info)"></span><span class="nm">Debts cleared</span></div>
+        <div class="li"><span class="sw" style="background:var(--sage)"></span><span class="nm">Cash to you</span></div>
+      </div>
+    </div>
+
+    <div class="grid g2">
+      <div class="card">
+        <div class="label">Itemized net sheet</div>
+        <table class="kvtable" id="se_sheet"></table>
+      </div>
+      <div class="card">
+        <div class="label">Cash in hand after clearing debts</div>
+        <div class="stat lg" id="se_final" style="margin:4px 0 6px"></div>
+        <div class="sub2">estimated proceeds, minus the debts you checked</div>
+        <div class="hr"></div>
+        <table class="kvtable">
+          <tr><td>Net proceeds before debts</td><td id="se_net"></td></tr>
+          <tr><td>Debts cleared</td><td id="se_debt2" class="neg"></td></tr>
+          <tr><td>Total selling costs</td><td id="se_costs" class="neg"></td></tr>
+          <tr><td>Costs as share of price</td><td id="se_costpct" class="warnc"></td></tr>
+        </table>
+        <div class="note">Selling costs include commission, concessions, transfer tax, and everything in your closing costs list, your mom's $10,000 included.</div>
+      </div>
+    </div>
+  `;
+  bindInputs(v);
+  drawSellCosts();
+  drawSellDebts();
+  v.querySelectorAll("#se_chips .minichip").forEach(b=>b.addEventListener("click",()=>{ const sp=parseNum(b.getAttribute("data-sp")); state.sell.salePrice=sp; const sl=$("se_sp"); if(sl) sl.value=sp; saveState(); syncSell(); }));
+  $("se_addcost").onclick=()=>{ state.sell.costs.push({id:"sc_"+Date.now(),name:"New cost",amount:0}); saveState(); drawSellCosts(); syncSell(); };
+  syncFn=syncSell;
+  syncSell();
+}
+
+function drawSellCosts(){
+  const host=$("se_costlist"); if(!host) return;
+  host.innerHTML=state.sell.costs.map(c=>`
+    <div class="rrow"><div class="nm"><input class="txt-input" data-path="sellcost.${c.id}.name" data-type="text" value="${esc(c.name)}"></div>
+      <span style="color:var(--faint);font-family:var(--mono)">$</span>
+      <input class="num-input" inputmode="decimal" data-path="sellcost.${c.id}.amount" value="${(Number(c.amount)||0).toFixed(2)}">
+      <button class="xbtn" data-delc="${c.id}">&times;</button></div>`).join("");
+  bindInputs(host);
+  host.querySelectorAll("[data-delc]").forEach(b=>b.onclick=()=>{ state.sell.costs=state.sell.costs.filter(x=>x.id!==b.getAttribute("data-delc")); saveState(); drawSellCosts(); syncSell(); });
+}
+
+function drawSellDebts(){
+  const host=$("se_debtlist"); if(!host) return;
+  host.innerHTML=state.debts.map(d=>{
+    const p=state.sell.payoff&&state.sell.payoff[d.id];
+    const pay=p?p.pay!==false:true;
+    const amount=(p&&typeof p.amount==="number")?p.amount:(Number(d.balance)||0);
+    return `<div class="rrow">
+      <input type="checkbox" class="se_chk" data-debt="${d.id}" ${pay?"checked":""} style="width:18px;height:18px;accent-color:var(--brass);cursor:pointer;flex:0 0 auto">
+      <div class="nm"><div class="t">${esc(d.name)}</div></div>
+      <span style="color:var(--faint);font-family:var(--mono)">$</span>
+      <input class="num-input" inputmode="decimal" data-path="sellpay.${d.id}.amount" value="${amount.toFixed(2)}"></div>`;
+  }).join("");
+  bindInputs(host);
+  host.querySelectorAll(".se_chk").forEach(cb=>cb.addEventListener("change",()=>{
+    const id=cb.getAttribute("data-debt");
+    state.sell.payoff[id]=state.sell.payoff[id]||{};
+    state.sell.payoff[id].pay=cb.checked;
+    saveState(); syncSell();
+  }));
+}
+
+function syncSell(){
+  if(!$("se_sheet")) return;
+  const r=sellCompute(), s=state.sell;
+  const finalCash=r.net-r.debtPaid;
+  $("se_sp_lbl").textContent=fmt0(r.sp);
+  $("se_comm_lbl").textContent=(Number(s.commissionPct)||0).toFixed(2)+"%";
+  $("se_conc_lbl").textContent=(Number(s.concessionsPct)||0).toFixed(2)+"%";
+  const rocket=Math.round(r.equity+r.payoff), diff=r.sp-rocket;
+  $("se_vsrocket").innerHTML= diff===0?`Right at the Rocket estimate of ${fmt0(rocket)}.`:`${fmt0(Math.abs(diff))} ${diff>0?"above":"below"} the Rocket estimate of ${fmt0(rocket)}.`;
+  const denom=Math.max(r.sp, r.payoff+r.sellingCosts+r.debtPaid, 1);
+  $("se_bar").innerHTML=[[r.payoff,"var(--brass-dim)"],[r.sellingCosts,"var(--danger)"],[r.debtPaid,"var(--info)"],[Math.max(0,finalCash),"var(--sage)"]].map(x=>`<span style="width:${x[0]/denom*100}%;background:${x[1]}"></span>`).join("");
+  let rows=`<tr><td>Sale price</td><td class="pos">${fmt(r.sp)}</td></tr>`;
+  rows+=`<tr><td>Mortgage payoff (Rocket)</td><td class="neg">-${fmt(r.payoff)}</td></tr>`;
+  rows+=`<tr><td>Agent commission (${(Number(s.commissionPct)||0).toFixed(2)}%)</td><td class="neg">-${fmt(r.commission)}</td></tr>`;
+  rows+=`<tr><td>Georgia transfer tax</td><td class="neg">-${fmt(r.transfer)}</td></tr>`;
+  if(r.concessions>0) rows+=`<tr><td>Concessions (${(Number(s.concessionsPct)||0).toFixed(2)}%)</td><td class="neg">-${fmt(r.concessions)}</td></tr>`;
+  s.costs.forEach(c=>{ rows+=`<tr><td>${esc(c.name)}</td><td class="neg">-${fmt(Number(c.amount)||0)}</td></tr>`; });
+  rows+=`<tr><td><b>Net proceeds before debts</b></td><td><b>${fmt(r.net)}</b></td></tr>`;
+  r.debtLines.forEach(d=>{ rows+=`<tr><td>Pay off: ${esc(d.name)}</td><td class="neg">-${fmt(d.amount)}</td></tr>`; });
+  rows+=`<tr><td><b>Cash to you after debts</b></td><td><b class="${finalCash>=0?'pos':'neg'}">${fmt(finalCash)}</b></td></tr>`;
+  $("se_sheet").innerHTML=rows;
+  $("se_final").textContent=fmt0(finalCash); $("se_final").className="stat lg "+(finalCash>=0?"pos":"neg");
+  $("se_net").textContent=fmt(r.net);
+  $("se_debt2").textContent="-"+fmt(r.debtPaid);
+  $("se_costs").textContent="-"+fmt(r.sellingCosts);
+  $("se_costpct").textContent= r.sp>0?pct(r.sellingCosts/r.sp*100):"0%";
+  if($("se_debttotal")) $("se_debttotal").textContent="-"+fmt(r.debtPaid);
+}
+
+//////////////////// SETTINGS ////////////////////
+function renderSettings(v){
+  v.innerHTML=`
+    <div class="eyebrow">Settings</div>
+    <div class="sec-title">Your data</div>
+    <div class="sec-note">Everything you edit is stored ${canPersist?"in this app and persists between sessions":"for this session only (persistent storage is not available here)"}.</div>
+    <div class="card">
+      <div class="label">Backup &amp; restore</div>
+      <div class="note" style="margin-top:0">Export pulls all your numbers into a file you can keep. Import loads them back in.</div>
+      <div class="flexbtns">
+        <button class="ghostbtn" id="set_export">Export data</button>
+        <button class="ghostbtn" id="set_import">Import data</button>
+        <input type="file" id="set_file" accept="application/json" style="display:none">
+      </div>
+    </div>
+    <div class="card" style="margin-top:14px">
+      <div class="label">Reset</div>
+      <div class="note" style="margin-top:0">Restores the original starting numbers. This clears any edits you have made.</div>
+      <div class="flexbtns"><button class="ghostbtn warn" id="set_reset">Reset to starting data</button></div>
+    </div>
+    ${!canPersist?`<div class="alert amber" style="margin-top:14px"><div class="ic">i</div><div class="body">Persistent storage is not active in this environment. Your edits work now but will not survive a reload. Use Export to keep a copy.</div></div>`:""}
+  `;
+  $("set_export").onclick=()=>{
+    const blob=new Blob([JSON.stringify(state,null,2)],{type:"application/json"});
+    const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download="financial-command-center-backup.json"; a.click();
+  };
+  $("set_import").onclick=()=>$("set_file").click();
+  $("set_file").onchange=(e)=>{
+    const f=e.target.files[0]; if(!f) return;
+    const r=new FileReader(); r.onload=()=>{ try{ state=JSON.parse(r.result); saveState(true); renderView(); alert("Data imported."); }catch(err){ alert("That file could not be read."); } }; r.readAsText(f);
+  };
+  $("set_reset").onclick=()=>{ if(confirm("Reset everything to the original starting numbers?")){ state=deepClone(DEFAULTS); saveState(true); renderView(); } };
+}
+
+//////////////////// BOOT ////////////////////
+(async function(){
+  await loadState();
+  // guard against older/missing fields
+  if(!state.variable || typeof state.variable!=="object") state.variable=deepClone(DEFAULTS.variable);
+  if(!state.meta) state.meta={};
+  if(state.meta.varVer !== DEFAULTS.meta.varVer){ state.variable=deepClone(DEFAULTS.variable); state.meta.varVer=DEFAULTS.meta.varVer; await saveState(true); }
+  if(!state.sell || typeof state.sell!=="object") state.sell=deepClone(DEFAULTS.sell);
+  if(!Array.isArray(state.sell.costs)){
+    state.sell.costs=[
+      {id:"sc_attorney",name:"Closing attorney & settlement",amount:Number(state.sell.attorneyFee)||900},
+      {id:"sc_prep",name:"Prep, repairs & staging",amount:Number(state.sell.prepCost)||0},
+      {id:"sc_mom",name:"Repay Mom (help)",amount:10000}
+    ];
+    delete state.sell.attorneyFee; delete state.sell.prepCost;
+  }
+  if(typeof state.sell.transferPct==="undefined") state.sell.transferPct=0.1;
+  if(!state.sell.payoff || typeof state.sell.payoff!=="object") state.sell.payoff={};
+  if(!state.contrib) state.contrib=deepClone(DEFAULTS.contrib);
+  renderTabs();
+  renderView();
+  markSaved();
+})();
+</script>
+</body>
+</html>
