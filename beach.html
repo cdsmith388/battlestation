@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Beach Trip Checklist</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Nunito+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --sand:        #FBF4E6;
+    --sand-deep:   #F2E6CE;
+    --foam:        #FFFFFF;
+    --tide:        #2A9D8F;
+    --tide-deep:   #1E7F73;
+    --sea:         #14546B;
+    --sea-ink:     #0E3A4A;
+    --sun:         #F6B24B;
+    --coral:       #EE7B5A;
+    --coral-soft:  #F8C9B8;
+    --line:        #E6D8BC;
+    --muted:       #6E7E83;
+    --done-bg:     #EAF4F1;
+    --shadow:      0 8px 28px rgba(14,58,74,.10);
+    --radius:      16px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:'Nunito Sans', system-ui, -apple-system, sans-serif;
+    color:var(--sea-ink);
+    background:
+      radial-gradient(120% 80% at 50% -10%, #BFE7E0 0%, #DFF1EC 28%, var(--sand) 60%) fixed;
+    min-height:100vh;
+    line-height:1.45;
+    -webkit-font-smoothing:antialiased;
+  }
+
+  /* ---------- Header ---------- */
+  header{
+    position:relative;
+    padding:34px 20px 0;
+    text-align:center;
+    overflow:hidden;
+  }
+  .sun{
+    position:absolute;
+    top:18px; right:26px;
+    width:62px; height:62px;
+    border-radius:50%;
+    background:radial-gradient(circle at 38% 36%, #FFD98A, var(--sun));
+    box-shadow:0 0 0 10px rgba(246,178,75,.16), 0 0 0 22px rgba(246,178,75,.08);
+  }
+  .kicker{
+    font-size:.78rem; font-weight:800; letter-spacing:.22em;
+    text-transform:uppercase; color:var(--tide-deep);
+    margin:0 0 6px;
+  }
+  h1{
+    font-family:'Fraunces', Georgia, serif;
+    font-weight:600;
+    font-size:clamp(2rem, 7vw, 3rem);
+    line-height:1.02;
+    margin:0;
+    color:var(--sea-ink);
+  }
+  h1 em{ font-style:italic; color:var(--coral); }
+  .sub{ color:var(--muted); font-weight:600; margin:8px 0 0; font-size:.95rem; }
+
+  /* ---------- Progress ---------- */
+  .progress-wrap{
+    max-width:640px;
+    margin:22px auto 0;
+    padding:0 4px;
+  }
+  .progress-meta{
+    display:flex; justify-content:space-between; align-items:baseline;
+    margin-bottom:8px;
+  }
+  .progress-meta .pct{
+    font-family:'Fraunces', serif; font-weight:600;
+    font-size:1.5rem; color:var(--tide-deep);
+  }
+  .progress-meta .count{ font-weight:700; color:var(--muted); font-size:.9rem; }
+  .tide{
+    position:relative;
+    height:18px;
+    border-radius:999px;
+    background:var(--sand-deep);
+    overflow:hidden;
+    box-shadow:inset 0 1px 3px rgba(14,58,74,.12);
+  }
+  .tide-fill{
+    position:absolute; inset:0 auto 0 0;
+    width:0%;
+    border-radius:999px;
+    background:linear-gradient(90deg, var(--tide) 0%, #43B8AA 60%, var(--sun) 130%);
+    transition:width .5s cubic-bezier(.22,1,.36,1);
+  }
+  .tide-fill::after{
+    content:"";
+    position:absolute; top:0; right:-2px; bottom:0; width:14px;
+    background:linear-gradient(90deg, rgba(255,255,255,0), rgba(255,255,255,.55));
+  }
+
+  /* ---------- Wave divider ---------- */
+  .wave{ display:block; width:100%; height:42px; margin-top:18px; }
+
+  /* ---------- Tabs ---------- */
+  .tabs-shell{ background:var(--foam); border-top:1px solid var(--line); }
+  .tabs{
+    display:flex; gap:8px;
+    max-width:920px; margin:0 auto;
+    padding:12px 16px;
+    overflow-x:auto;
+    scrollbar-width:thin;
+    -webkit-overflow-scrolling:touch;
+  }
+  .tabs::-webkit-scrollbar{ height:6px; }
+  .tabs::-webkit-scrollbar-thumb{ background:var(--line); border-radius:999px; }
+  .tab{
+    flex:0 0 auto;
+    border:1.5px solid var(--line);
+    background:var(--sand);
+    color:var(--sea-ink);
+    border-radius:999px;
+    padding:9px 15px;
+    font-family:inherit; font-weight:800; font-size:.9rem;
+    cursor:pointer;
+    display:inline-flex; align-items:center; gap:8px;
+    transition:transform .12s ease, background .15s ease, border-color .15s ease, color .15s ease;
+    white-space:nowrap;
+  }
+  .tab:hover{ transform:translateY(-1px); }
+  .tab .emoji{ font-size:1rem; }
+  .tab .frac{
+    font-size:.72rem; font-weight:800;
+    background:var(--foam); color:var(--muted);
+    border-radius:999px; padding:1px 8px;
+    border:1px solid var(--line);
+    min-width:34px; text-align:center;
+  }
+  .tab[aria-selected="true"]{
+    background:var(--sea); color:var(--foam); border-color:var(--sea);
+  }
+  .tab[aria-selected="true"] .frac{ background:rgba(255,255,255,.18); color:#EAF6F4; border-color:transparent; }
+  .tab.complete .frac{ background:var(--tide); color:#fff; border-color:transparent; }
+  .tab[aria-selected="true"].complete .frac{ background:var(--sun); color:var(--sea-ink); }
+
+  /* ---------- Panel ---------- */
+  main{ max-width:760px; margin:0 auto; padding:22px 16px 80px; }
+  .panel-head{
+    display:flex; align-items:center; gap:12px;
+    margin:4px 2px 18px;
+  }
+  .panel-head .big-emoji{ font-size:1.8rem; }
+  .panel-head h2{
+    font-family:'Fraunces', serif; font-weight:600;
+    font-size:1.55rem; margin:0; color:var(--sea-ink);
+  }
+  .panel-head .ph-count{ margin-left:auto; font-weight:800; color:var(--tide-deep); font-size:.92rem; }
+
+  .group{ margin-bottom:22px; }
+  .group-title{
+    font-size:.74rem; font-weight:800; letter-spacing:.16em;
+    text-transform:uppercase; color:var(--coral);
+    margin:0 0 10px 4px;
+  }
+  ul{ list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:8px; }
+  li.item{
+    display:flex; align-items:flex-start; gap:13px;
+    background:var(--foam);
+    border:1.5px solid var(--line);
+    border-radius:14px;
+    padding:13px 15px;
+    cursor:pointer;
+    transition:background .15s ease, border-color .15s ease, transform .08s ease;
+  }
+  li.item:hover{ border-color:var(--coral-soft); }
+  li.item:active{ transform:scale(.995); }
+  li.item.done{ background:var(--done-bg); border-color:#CBE6DF; }
+
+  .box{
+    flex:0 0 auto;
+    width:24px; height:24px; margin-top:1px;
+    border-radius:8px;
+    border:2px solid var(--tide);
+    background:var(--foam);
+    display:grid; place-items:center;
+    transition:background .15s ease, border-color .15s ease;
+  }
+  .box svg{ width:14px; height:14px; opacity:0; transform:scale(.5); transition:opacity .15s ease, transform .15s ease; }
+  li.item.done .box{ background:var(--tide); border-color:var(--tide); }
+  li.item.done .box svg{ opacity:1; transform:scale(1); }
+  .label{ font-weight:600; font-size:1rem; color:var(--sea-ink); }
+  li.item.done .label{ color:var(--muted); text-decoration:line-through; text-decoration-color:rgba(110,126,131,.5); }
+
+  /* ---------- Footer / actions ---------- */
+  .actions{
+    max-width:760px; margin:0 auto; padding:0 16px 50px;
+    display:flex; align-items:center; gap:14px; flex-wrap:wrap;
+  }
+  .reset{
+    background:none; border:1.5px solid var(--line);
+    color:var(--muted); font-family:inherit; font-weight:800; font-size:.85rem;
+    padding:9px 16px; border-radius:999px; cursor:pointer;
+    transition:border-color .15s ease, color .15s ease;
+  }
+  .reset:hover{ border-color:var(--coral); color:var(--coral); }
+  .note{ color:var(--muted); font-size:.82rem; }
+
+  .celebrate{
+    display:none;
+    text-align:center;
+    background:linear-gradient(135deg, #FFF4DF, #E9F6F2);
+    border:1.5px solid var(--sun);
+    border-radius:var(--radius);
+    padding:18px; margin:0 2px 18px;
+    font-weight:800; color:var(--tide-deep);
+    box-shadow:var(--shadow);
+  }
+  .celebrate.show{ display:block; }
+  .celebrate span{ font-size:1.3rem; }
+
+  :focus-visible{ outline:3px solid var(--sun); outline-offset:2px; border-radius:8px; }
+
+  @media (prefers-reduced-motion: reduce){
+    *{ transition:none !important; }
+  }
+  @media (max-width:480px){
+    .sun{ width:46px; height:46px; top:14px; right:16px; }
+    main{ padding-top:16px; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <div class="sun" aria-hidden="true"></div>
+  <p class="kicker">Two weeks at the coast</p>
+  <h1>Beach Trip <em>Checklist</em></h1>
+  <p class="sub">Tap anything to pack it, plan it, or cross it off.</p>
+
+  <div class="progress-wrap">
+    <div class="progress-meta">
+      <span class="pct" id="pct">0%</span>
+      <span class="count" id="count">0 of 0 done</span>
+    </div>
+    <div class="tide" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-label="Overall packing progress">
+      <div class="tide-fill" id="tideFill"></div>
+    </div>
+  </div>
+</header>
+
+<svg class="wave" viewBox="0 0 1440 42" preserveAspectRatio="none" aria-hidden="true">
+  <path d="M0,20 C180,42 360,0 540,14 C720,28 900,44 1080,28 C1260,12 1380,18 1440,22 L1440,42 L0,42 Z" fill="#FFFFFF"/>
+</svg>
+
+<div class="tabs-shell">
+  <div class="tabs" id="tabs" role="tablist" aria-label="Checklist categories"></div>
+</div>
+
+<main>
+  <div class="celebrate" id="celebrate"><span>You did it.</span><br>Everything is checked off. Time for the beach.</div>
+  <div class="panel-head">
+    <span class="big-emoji" id="panelEmoji">🧳</span>
+    <h2 id="panelTitle">Clothes &amp; Laundry</h2>
+    <span class="ph-count" id="panelCount"></span>
+  </div>
+  <div id="panel"></div>
+</main>
+
+<div class="actions">
+  <button class="reset" id="reset">Reset all</button>
+  <span class="note" id="storeNote"></span>
+</div>
+
+<script>
+const DATA = [
+  { id:"clothes", label:"Clothes", emoji:"🧳", title:"Clothes &amp; Laundry", groups:[
+    { title:"Me", items:["7 shirts","7 pairs underwear","7 pairs socks","3 to 4 pairs shorts","1 to 2 nicer outfits","Sleep clothes","Hoodie / light jacket","Sandals / flip-flops","Sneakers","Hat / sunglasses"] },
+    { title:"Maisie", items:["7 shirts / outfits","7 pairs underwear","7 pairs socks","Shorts / skirts / comfy clothes","Sleep clothes","Hoodie / light jacket","Sandals / flip-flops","Sneakers","Hair ties / brush / accessories"] },
+    { title:"Ben", items:["7 shirts","7 pairs underwear","7 pairs socks","Shorts / comfy clothes","Sleep clothes","Hoodie / light jacket","Sandals / flip-flops","Sneakers"] },
+    { title:"Laundry before packing", items:["Do all laundry before packing","Wash swimsuits and towels","Fold and sort clothes by person","Set aside one week per person","Pack clean beach towels"] }
+  ]},
+  { id:"beach", label:"Beach & Swim", emoji:"🏖️", title:"Beach &amp; Swim", groups:[
+    { title:null, items:["Swimsuits for me","Swimsuits for Maisie","Swimsuits for Ben","Beach towels","Regular bath towels, if needed","Snorkels","Swim masks / goggles","Flippers","Sunscreen","Aloe / after-sun lotion","Beach bag","Cooler","Water bottles","Beach chairs","Umbrella / shade tent","Sand toys / buckets / shovels","Boogie boards / floats","Wet clothes bag","Extra plastic bags","Bug spray","First-aid kit"] }
+  ]},
+  { id:"toiletries", label:"Toiletries & Meds", emoji:"🧴", title:"Toiletries &amp; Meds", groups:[
+    { title:null, items:["Toothbrushes","Toothpaste","Shampoo / conditioner","Body wash / soap","Deodorant","Hairbrush / comb","Razor / shaving stuff","Kids' medicine","Adult medicine","Allergy medicine","Pain reliever","Band-Aids","Any prescriptions","Contacts / glasses, if needed"] }
+  ]},
+  { id:"food", label:"Food", emoji:"🍉", title:"Food", groups:[
+    { title:"Shopping", items:["Go grocery shopping before leaving","Buy food we can take with us","Focus on non-perishables","Road-trip snacks","Breakfast items / easy morning food","Lunch items / easy beach-house food","Drinks / bottled water","Cooler items, if needed"] },
+    { title:"Meal planning", items:["Make a rough plan for beach meals","Come up with a few eating-out options","Decide which nights we eat out","Decide which nights we eat at the house"] }
+  ]},
+  { id:"kids", label:"Kids & Fun", emoji:"🎲", title:"Kids &amp; Fun", groups:[
+    { title:null, items:["Books for the car","Writing pads","Pencils / pens / markers","Tablets for the kids, if using","Download movies / shows / games","Headphones","Board games","Card games / small travel games"] }
+  ]},
+  { id:"travel", label:"Travel", emoji:"🚗", title:"Travel &amp; Driving", groups:[
+    { title:null, items:["Confirm with Kaylee that Maisie is driving with her group","Confirm Charlotte / Carowinds pit stop plan","Confirm timing for the pit stop","Confirm who is riding in which car","Confirm departure time","Confirm arrival plan"] }
+  ]},
+  { id:"luna", label:"Luna", emoji:"🐾", title:"Luna", groups:[
+    { title:null, items:["Board Luna","Confirm Luna's boarding reservation","Let Bryson know I am boarding Luna","Pack Luna's food / meds / instructions, if needed","Confirm drop-off and pickup times"] }
+  ]},
+  { id:"macbeth", label:"Macbeth", emoji:"🎭", title:"Macbeth", groups:[
+    { title:null, items:["Cast Macbeth","Contact cast","Schedule the first read-through","Send read-through details to cast","Work on the script over vacation","Bring Macbeth script / notes","Bring anything needed for planning rehearsals"] }
+  ]},
+  { id:"work", label:"Work", emoji:"💻", title:"Work Prep", groups:[
+    { title:"Pack", items:["Pack computer for work","Pack computer charger","Pack work devices / accessories","Make sure I can work during the second week","Save important files locally or somewhere accessible"] },
+    { title:"Launch readiness", items:["Get the NGA experience globalized","Confirm the app launch plan is ready","Make sure the app launch is live / moving forward","Check that all campaign setup is complete","Confirm campaign links / CTAs are correct","Confirm campaign targeting / segments are correct","Confirm campaign terms / offers / pricing are correct","Confirm app-related messaging is ready","Confirm any last approvals needed before launch"] },
+    { title:"Hand-off", items:["Send final updates to the team before leaving","Note anything someone else may need to cover"] }
+  ]},
+  { id:"lessons", label:"Lessons", emoji:"📚", title:"Kid Lessons", groups:[
+    { title:null, items:["Consider taking the projector","Pack projector, if taking it","Pack projector cables / power cord","Pack HDMI adapter, if needed","Bring lesson materials for the kids","Plan simple nightly lessons"] }
+  ]},
+  { id:"house", label:"House & Yard", emoji:"🏠", title:"House &amp; Yard Prep", groups:[
+    { title:"Yard", items:["Cut grass before leaving","Trim bushes before leaving","Put all construction stuff away","Secure tools / materials","Clean up yard / outdoor stuff","Make sure nothing loose is left outside"] },
+    { title:"Inside", items:["Get house cleaned","Throw away / use up perishable foods","Clean fridge of anything that will spoil","Run dishwasher","Take out all trash","Check doors and windows","Adjust thermostat","Unplug unnecessary electronics","Make sure bills / mail / packages are handled"] }
+  ]},
+  { id:"car", label:"Car", emoji:"🛞", title:"Car Prep", groups:[
+    { title:"Maintenance", items:["Check wheels","Check tire pressure","Inspect tires for wear / damage","Get brakes looked at","Check oil","Check windshield wipers","Check washer fluid","Check coolant"] },
+    { title:"Clean and load", items:["Clean out car extremely well","Vacuum car","Remove trash","Organize trunk / cargo space","Put emergency kit in car","Confirm insurance / registration are in car"] }
+  ]},
+  { id:"tech", label:"Tech & Docs", emoji:"🔌", title:"Tech &amp; Documents", groups:[
+    { title:"Chargers and devices", items:["Phone chargers","Tablet / device chargers","Power bank","Extension cord / power strip"] },
+    { title:"Wallet and documents", items:["Wallet","IDs","Credit / debit cards","Cash","Reservation info","House / rental access info"] }
+  ]},
+  { id:"lastday", label:"Last Day", emoji:"🌅", title:"Last Day Before Leaving", groups:[
+    { title:null, items:["Pack cooler","Load car","Put swimsuits / beach stuff somewhere easy to reach","Check fridge one last time","Take out trash","Lock windows","Lock doors","Turn off lights","Final bathroom check","Final bedroom check","Final kitchen check","Leave dirty laundry baskets empty","Leave on time"] }
+  ]}
+];
+
+const STORE_KEY = "beach-trip-checklist-v1";
+let checked = {};
+let storageOK = true;
+
+function load(){
+  try{
+    const raw = localStorage.getItem(STORE_KEY);
+    checked = raw ? JSON.parse(raw) : {};
+  }catch(e){ storageOK = false; checked = {}; }
+}
+function save(){
+  try{ localStorage.setItem(STORE_KEY, JSON.stringify(checked)); }
+  catch(e){ storageOK = false; }
+}
+
+function keyFor(catId, text){ return catId + "::" + text; }
+
+function catCounts(cat){
+  let total = 0, done = 0;
+  cat.groups.forEach(g => g.items.forEach(it => {
+    total++;
+    if(checked[keyFor(cat.id, it)]) done++;
+  }));
+  return {done, total};
+}
+function allCounts(){
+  let total = 0, done = 0;
+  DATA.forEach(cat => { const c = catCounts(cat); total += c.total; done += c.done; });
+  return {done, total};
+}
+
+let activeId = DATA[0].id;
+
+const tabsEl = document.getElementById("tabs");
+const panelEl = document.getElementById("panel");
+const panelTitle = document.getElementById("panelTitle");
+const panelEmoji = document.getElementById("panelEmoji");
+const panelCount = document.getElementById("panelCount");
+
+const checkSVG = '<svg viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="#fff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+
+function renderTabs(){
+  tabsEl.innerHTML = "";
+  DATA.forEach(cat => {
+    const c = catCounts(cat);
+    const btn = document.createElement("button");
+    btn.className = "tab" + (c.done === c.total && c.total>0 ? " complete" : "");
+    btn.setAttribute("role","tab");
+    btn.setAttribute("aria-selected", cat.id === activeId ? "true" : "false");
+    btn.innerHTML = '<span class="emoji">'+cat.emoji+'</span>'+cat.label+
+      '<span class="frac">'+(c.done===c.total&&c.total>0 ? "✓" : c.done+"/"+c.total)+'</span>';
+    btn.addEventListener("click", () => { activeId = cat.id; renderTabs(); renderPanel(); });
+    tabsEl.appendChild(btn);
+  });
+}
+
+function renderPanel(){
+  const cat = DATA.find(c => c.id === activeId);
+  panelTitle.innerHTML = cat.title;
+  panelEmoji.textContent = cat.emoji;
+  const c = catCounts(cat);
+  panelCount.textContent = c.done + " / " + c.total;
+
+  panelEl.innerHTML = "";
+  cat.groups.forEach(g => {
+    const wrap = document.createElement("div");
+    wrap.className = "group";
+    if(g.title){
+      const gt = document.createElement("p");
+      gt.className = "group-title";
+      gt.textContent = g.title;
+      wrap.appendChild(gt);
+    }
+    const ul = document.createElement("ul");
+    g.items.forEach(text => {
+      const k = keyFor(cat.id, text);
+      const li = document.createElement("li");
+      li.className = "item" + (checked[k] ? " done" : "");
+      li.setAttribute("role","checkbox");
+      li.setAttribute("aria-checked", checked[k] ? "true":"false");
+      li.tabIndex = 0;
+      li.innerHTML = '<span class="box">'+checkSVG+'</span><span class="label">'+text+'</span>';
+      const toggle = () => {
+        if(checked[k]) delete checked[k]; else checked[k] = true;
+        save();
+        li.classList.toggle("done");
+        li.setAttribute("aria-checked", checked[k] ? "true":"false");
+        renderTabs();
+        updateProgress();
+        panelCount.textContent = catCounts(cat).done + " / " + catCounts(cat).total;
+      };
+      li.addEventListener("click", toggle);
+      li.addEventListener("keydown", e => { if(e.key===" "||e.key==="Enter"){ e.preventDefault(); toggle(); } });
+      ul.appendChild(li);
+    });
+    wrap.appendChild(ul);
+    panelEl.appendChild(wrap);
+  });
+}
+
+const pctEl = document.getElementById("pct");
+const countEl = document.getElementById("count");
+const fillEl = document.getElementById("tideFill");
+const tideBar = document.querySelector(".tide");
+const celebrate = document.getElementById("celebrate");
+
+function updateProgress(){
+  const {done, total} = allCounts();
+  const pct = total ? Math.round((done/total)*100) : 0;
+  pctEl.textContent = pct + "%";
+  countEl.textContent = done + " of " + total + " done";
+  fillEl.style.width = pct + "%";
+  tideBar.setAttribute("aria-valuenow", pct);
+  celebrate.classList.toggle("show", pct === 100);
+}
+
+document.getElementById("reset").addEventListener("click", () => {
+  if(confirm("Clear every check and start the list fresh?")){
+    checked = {};
+    save();
+    renderTabs(); renderPanel(); updateProgress();
+  }
+});
+
+load();
+if(!storageOK){
+  document.getElementById("storeNote").textContent = "Saving is off in this preview, but your checks work for now. Download the file to keep progress.";
+}
+renderTabs();
+renderPanel();
+updateProgress();
+</script>
+</body>
+</html>
