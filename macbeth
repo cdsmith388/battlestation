@@ -1,0 +1,808 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Macbeth: Casting the Damned</title>
+<style>
+:root{
+  --night:#0a0608;
+  --crypt:#130a10;
+  --panel:#170c12;
+  --panel-2:#1f1019;
+  --oxblood:#3a0d14;
+  --blood:#a01421;
+  --blood-bright:#c8202f;
+  --gold:#c9a24b;
+  --gold-dim:#8a6e34;
+  --bone:#e9dfcd;
+  --bone-dim:#b8ad99;
+  --mauve:#8a7480;
+  --ash:#6a5d66;
+  --line:#3a2530;
+  --line-soft:#281820;
+  --yes:#6f9e63;
+  --maybe:#d2a23e;
+  --no:#9c6f6f;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:
+    radial-gradient(900px 520px at 50% -8%, rgba(160,20,33,0.18), transparent 60%),
+    radial-gradient(700px 500px at 12% 8%, rgba(201,162,75,0.06), transparent 55%),
+    linear-gradient(180deg,#0c0709 0%, #0a0608 40%, #080406 100%);
+  color:var(--bone);
+  font-family:Georgia,"Iowan Old Style","Times New Roman",serif;
+  min-height:100vh;
+  -webkit-font-smoothing:antialiased;
+}
+.vignette{position:fixed;inset:0;pointer-events:none;z-index:1;
+  box-shadow:inset 0 0 240px 60px rgba(0,0,0,0.85), inset 0 0 60px 10px rgba(0,0,0,0.6);
+  background:radial-gradient(120% 90% at 50% 40%, transparent 55%, rgba(0,0,0,0.55) 100%);}
+
+/* Topbar */
+.topbar{position:relative;z-index:3;display:flex;flex-wrap:wrap;gap:18px;align-items:flex-end;
+  justify-content:space-between;padding:30px 26px 22px;border-bottom:1px solid var(--line-soft);
+  background:linear-gradient(180deg, rgba(58,13,20,0.18), transparent);}
+.brand{min-width:0}
+.eyebrow{font-size:11px;letter-spacing:0.42em;text-transform:uppercase;color:var(--blood-bright);
+  font-family:Georgia,serif;opacity:0.92;margin-bottom:8px;font-variant:small-caps;letter-spacing:0.3em;}
+h1{margin:0;font-family:"Hoefler Text","Didot","Bodoni MT",Garamond,"Times New Roman",serif;
+  font-weight:600;font-size:clamp(42px,7vw,76px);line-height:0.9;letter-spacing:-0.01em;
+  color:var(--bone);text-shadow:0 2px 30px rgba(160,20,33,0.25);position:relative;display:inline-block;}
+h1::after{content:"";position:absolute;left:2px;bottom:-10px;width:62%;height:2px;
+  background:linear-gradient(90deg,var(--blood-bright),var(--blood) 40%,transparent);
+  box-shadow:0 0 14px rgba(200,32,47,0.7);}
+.sub{margin-top:18px;font-style:italic;color:var(--mauve);font-size:15px;letter-spacing:0.04em}
+.actions{display:flex;gap:9px;flex-wrap:wrap;align-items:center}
+.btn{font-family:Georgia,serif;font-size:12.5px;letter-spacing:0.12em;text-transform:uppercase;
+  font-variant:small-caps;color:var(--bone-dim);background:linear-gradient(180deg,#1d1019,#160b11);
+  border:1px solid var(--line);padding:9px 14px;border-radius:2px;cursor:pointer;
+  transition:all .18s ease;white-space:nowrap}
+.btn:hover{color:var(--bone);border-color:var(--gold-dim);box-shadow:0 0 0 1px rgba(201,162,75,0.15), 0 6px 20px rgba(0,0,0,0.4)}
+.btn.blood{color:#f0d9d9;border-color:#5a141c;background:linear-gradient(180deg,#46121a,#2c0c12)}
+.btn.blood:hover{border-color:var(--blood);box-shadow:0 0 18px rgba(160,20,33,0.4)}
+.btn:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible,.char:focus-visible,.actor:focus-visible,.chip:focus-visible{
+  outline:2px solid var(--gold);outline-offset:2px}
+
+/* Layout */
+.wrap{position:relative;z-index:2;display:grid;grid-template-columns:minmax(0,304px) minmax(0,1fr);
+  gap:24px;padding:24px 26px 90px;max-width:1480px;margin:0 auto;align-items:start}
+@media(max-width:880px){.wrap{grid-template-columns:1fr;gap:18px}}
+
+/* Roster */
+.roster{position:sticky;top:14px;background:linear-gradient(180deg,var(--panel),var(--crypt));
+  border:1px solid var(--line);border-radius:4px;padding:16px 15px;
+  box-shadow:0 18px 50px rgba(0,0,0,0.5), inset 0 1px 0 rgba(201,162,75,0.05)}
+@media(max-width:880px){.roster{position:static}}
+.panel-head{display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin-bottom:4px}
+.panel-title{font-family:"Hoefler Text",Didot,Garamond,serif;font-size:19px;color:var(--gold);
+  letter-spacing:0.04em;font-variant:small-caps}
+.count{font-family:ui-monospace,"Courier New",monospace;font-size:11px;color:var(--ash);
+  border:1px solid var(--line);border-radius:20px;padding:2px 9px}
+.add-row{display:flex;gap:7px;margin:13px 0 6px}
+.add-row input{flex:1;min-width:0;background:#0c0608;border:1px solid var(--line);color:var(--bone);
+  font-family:Georgia,serif;font-size:14px;padding:9px 10px;border-radius:2px}
+.add-row input::placeholder{color:var(--ash);font-style:italic}
+.icon-btn{background:linear-gradient(180deg,#46121a,#2c0c12);border:1px solid #5a141c;color:#f0d9d9;
+  width:38px;border-radius:2px;cursor:pointer;font-size:18px;line-height:1;transition:all .18s}
+.icon-btn:hover{border-color:var(--blood);box-shadow:0 0 14px rgba(160,20,33,0.45)}
+.roster-list{display:flex;flex-direction:column;gap:8px;margin-top:10px;min-height:40px}
+.hint{margin-top:12px;font-size:11.5px;color:var(--ash);font-style:italic;line-height:1.5;
+  border-top:1px solid var(--line-soft);padding-top:11px}
+.empty-note{color:var(--ash);font-style:italic;font-size:13px;padding:14px 4px;text-align:center}
+
+/* Actor card */
+.actor{position:relative;display:flex;align-items:center;gap:10px;background:linear-gradient(180deg,#1d1019,#160b11);
+  border:1px solid var(--line);border-radius:3px;padding:10px 11px;cursor:grab;
+  touch-action:none;transition:border-color .15s, box-shadow .15s, transform .05s;user-select:none}
+.actor:hover{border-color:var(--gold-dim);box-shadow:0 5px 18px rgba(0,0,0,0.4)}
+.actor:active{cursor:grabbing}
+.actor.dragging-src{opacity:0.35}
+.actor .nm{flex:1;min-width:0;font-size:15px;color:var(--bone);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.actor .roles-badge{font-family:ui-monospace,monospace;font-size:10px;color:var(--gold);opacity:0.8;
+  border:1px solid var(--line);border-radius:20px;padding:1px 7px;flex:none}
+.dots{display:flex;gap:3px;flex:none}
+.dot{width:8px;height:8px;border-radius:50%;box-shadow:0 0 0 1px rgba(0,0,0,0.4)}
+
+/* Stage */
+.stage{display:flex;flex-direction:column;gap:30px;min-width:0}
+.group-title{display:flex;align-items:center;gap:14px;margin:0 0 14px;
+  font-family:"Hoefler Text",Didot,Garamond,serif;font-size:14px;letter-spacing:0.28em;
+  text-transform:uppercase;font-variant:small-caps;color:var(--gold-dim)}
+.group-title::before{content:"\2666";color:var(--blood);font-size:10px}
+.group-title::after{content:"";flex:1;height:1px;
+  background:linear-gradient(90deg,var(--line),transparent)}
+.char-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(232px,1fr));gap:14px}
+
+/* Character card */
+.char{position:relative;background:linear-gradient(180deg,var(--panel-2),var(--crypt));
+  border:1px solid var(--line);border-radius:4px;padding:14px 14px 13px;cursor:pointer;
+  transition:border-color .15s, box-shadow .15s;min-height:118px;display:flex;flex-direction:column}
+.char:hover{border-color:var(--gold-dim)}
+.char.drop-active{border-color:var(--blood-bright);
+  box-shadow:0 0 0 1px var(--blood), 0 0 26px rgba(200,32,47,0.45);background:linear-gradient(180deg,#2a121b,#1a0c13)}
+.char-name{font-family:"Hoefler Text",Didot,Garamond,serif;font-size:20px;color:var(--bone);
+  letter-spacing:0.01em;line-height:1.1}
+.char-desc{font-size:12px;color:var(--mauve);font-style:italic;margin-top:4px;line-height:1.4}
+.char-meta{display:flex;gap:8px;margin-top:6px;align-items:center}
+.tag-mini{font-family:ui-monospace,monospace;font-size:10px;color:var(--ash);
+  display:inline-flex;align-items:center;gap:4px}
+.candidates{display:flex;flex-wrap:wrap;gap:6px;margin-top:11px;min-height:8px}
+
+/* Candidate chip */
+.chip{position:relative;display:inline-flex;align-items:center;gap:6px;
+  background:linear-gradient(180deg,#241019,#180b11);border:1px solid var(--line);
+  border-radius:20px;padding:4px 9px 4px 7px;cursor:grab;touch-action:none;user-select:none;
+  transition:border-color .15s, box-shadow .15s}
+.chip:hover{border-color:var(--gold-dim)}
+.chip.dragging-src{opacity:0.35}
+.chip.cast{border-color:var(--blood);background:linear-gradient(180deg,#3a121b,#240c12);
+  box-shadow:0 0 14px rgba(160,20,33,0.3)}
+.chip .cnm{font-size:13px;color:var(--bone);max-width:120px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.seal{flex:none;width:18px;height:18px;border-radius:50%;border:1px solid var(--line);
+  background:#120a0e;cursor:pointer;display:grid;place-items:center;padding:0;transition:all .15s}
+.seal:hover{border-color:var(--blood)}
+.seal svg{width:11px;height:11px;opacity:0.5}
+.chip.cast .seal{border-color:var(--blood-bright);
+  background:radial-gradient(circle at 35% 30%, #d6303d, #8a0f1a 70%, #5a0a12);
+  box-shadow:0 0 10px rgba(200,32,47,0.6)}
+.chip.cast .seal svg{opacity:1}
+.chip .cdots{display:flex;gap:2px}
+
+/* Drawer */
+.scrim{position:fixed;inset:0;background:rgba(4,2,3,0.7);backdrop-filter:blur(2px);
+  opacity:0;pointer-events:none;transition:opacity .25s;z-index:40}
+.scrim.open{opacity:1;pointer-events:auto}
+.drawer{position:fixed;top:0;right:0;height:100%;width:min(420px,92vw);z-index:50;
+  background:linear-gradient(180deg,#160c12,#0c0608);border-left:1px solid var(--line);
+  box-shadow:-30px 0 80px rgba(0,0,0,0.6);transform:translateX(102%);transition:transform .28s cubic-bezier(.4,0,.2,1);
+  overflow-y:auto;padding:24px 22px 60px}
+.drawer.open{transform:translateX(0)}
+.drawer-eyebrow{font-size:10.5px;letter-spacing:0.3em;text-transform:uppercase;color:var(--blood-bright);
+  font-variant:small-caps;letter-spacing:0.22em}
+.drawer h2{font-family:"Hoefler Text",Didot,Garamond,serif;font-weight:600;font-size:28px;
+  margin:8px 0 2px;color:var(--bone)}
+.drawer .x{position:absolute;top:18px;right:18px;background:none;border:1px solid var(--line);
+  color:var(--bone-dim);width:32px;height:32px;border-radius:2px;cursor:pointer;font-size:16px}
+.drawer .x:hover{border-color:var(--blood);color:var(--bone)}
+.field{margin-top:20px}
+.field-label{font-size:11px;letter-spacing:0.16em;text-transform:uppercase;color:var(--gold-dim);
+  font-variant:small-caps;letter-spacing:0.12em;margin-bottom:7px;display:block}
+.drawer input[type=text],.drawer textarea,.drawer select{width:100%;background:#0c0608;
+  border:1px solid var(--line);color:var(--bone);font-family:Georgia,serif;font-size:14px;
+  padding:9px 11px;border-radius:2px;resize:vertical}
+.drawer textarea{min-height:78px;line-height:1.5}
+.label-pool{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:9px}
+.lbl{font-size:12px;font-variant:small-caps;letter-spacing:0.04em;padding:4px 11px;border-radius:20px;
+  cursor:pointer;border:1px solid var(--line);color:var(--bone-dim);background:#120a0e;transition:all .14s;
+  display:inline-flex;align-items:center;gap:6px;user-select:none}
+.lbl .swatch{width:9px;height:9px;border-radius:50%}
+.lbl.on{color:var(--night);font-weight:bold;border-color:transparent}
+.newlabel{display:flex;gap:7px;align-items:center;margin-top:4px}
+.newlabel input{flex:1}
+.swatch-row{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
+.sw{width:22px;height:22px;border-radius:50%;cursor:pointer;border:2px solid transparent}
+.sw.sel{border-color:var(--bone)}
+.q-list{display:flex;flex-direction:column;gap:8px}
+.q-item{display:flex;gap:8px;align-items:flex-start;background:#0e0709;border:1px solid var(--line-soft);
+  border-radius:3px;padding:9px 10px}
+.q-item .qtext{flex:1;font-size:14px;color:var(--bone);line-height:1.45}
+.q-item .qx{background:none;border:none;color:var(--ash);cursor:pointer;font-size:15px;padding:0 2px}
+.q-item .qx:hover{color:var(--blood-bright)}
+.add-q{display:flex;gap:7px;margin-top:9px}
+.add-q input{flex:1}
+.role-list{display:flex;flex-direction:column;gap:6px;margin-top:4px}
+.role-row{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--bone-dim);
+  background:#0e0709;border:1px solid var(--line-soft);border-radius:3px;padding:7px 10px}
+.role-row .rg{flex:1}
+.role-row.is-cast{color:var(--bone);border-color:var(--blood)}
+.mini{font-size:11px;color:var(--ash);font-style:italic;margin-top:5px}
+.danger{margin-top:26px;border-top:1px solid var(--line-soft);padding-top:16px}
+.btn.del{color:#d99;border-color:#4a1219;background:#1a0b0e;width:100%}
+.btn.del:hover{border-color:var(--blood);box-shadow:0 0 16px rgba(160,20,33,0.35)}
+
+/* Drag ghost */
+.ghost{position:fixed;z-index:200;pointer-events:none;left:0;top:0;
+  background:linear-gradient(180deg,#3a121b,#1d0c12);border:1px solid var(--blood);
+  border-radius:20px;padding:6px 13px;font-family:Georgia,serif;font-size:14px;color:var(--bone);
+  box-shadow:0 14px 34px rgba(0,0,0,0.6), 0 0 22px rgba(160,20,33,0.4);transform:translate(-50%,-50%) rotate(-2deg)}
+body.dragging{cursor:grabbing}
+body.dragging .char,body.dragging .actor,body.dragging .chip{cursor:grabbing}
+
+footer{position:relative;z-index:2;text-align:center;color:var(--ash);font-size:12px;font-style:italic;
+  padding:0 20px 40px}
+
+/* Progress band */
+.band{position:relative;z-index:3;display:flex;flex-wrap:wrap;align-items:center;gap:16px 26px;
+  padding:14px 26px;border-bottom:1px solid var(--line-soft);
+  background:linear-gradient(180deg,rgba(20,11,16,0.55),transparent)}
+.band-main{display:flex;align-items:center;gap:14px;min-width:240px;flex:1}
+.band-label{font-size:11px;letter-spacing:0.2em;text-transform:uppercase;font-variant:small-caps;
+  color:var(--gold-dim);white-space:nowrap}
+.bar{flex:1;height:12px;min-width:110px;background:#0c0608;border:1px solid var(--line);
+  border-radius:20px;overflow:hidden;box-shadow:inset 0 1px 4px rgba(0,0,0,0.6)}
+.bar-fill{height:100%;width:0;border-radius:20px;
+  background:linear-gradient(90deg,#5a0f17,#a01421 60%,#c8202f);
+  box-shadow:0 0 14px rgba(200,32,47,0.6);transition:width .4s ease}
+.band-pct{font-family:"Hoefler Text",Didot,Garamond,serif;font-size:26px;color:var(--bone);
+  min-width:56px;text-align:right}
+.band-count{font-family:ui-monospace,monospace;font-size:11px;color:var(--ash);white-space:nowrap}
+.tallies{display:flex;gap:14px;flex-wrap:wrap}
+.tally{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--bone-dim);
+  font-variant:small-caps;letter-spacing:0.04em}
+.pdot{width:9px;height:9px;border-radius:50%}
+
+/* verdict + certainty on chips */
+.chip.v-definitely{border-left:3px solid var(--yes)}
+.chip.v-maybe{border-left:3px solid var(--maybe)}
+.chip.v-no{border-left:3px solid var(--no)}
+.chip.v-no .cnm{opacity:0.55;text-decoration:line-through;text-decoration-color:var(--no)}
+.pips{display:inline-flex;gap:2px;align-items:center}
+.pip{width:6px;height:6px;border-radius:50%;background:#2a1a22;border:1px solid var(--line)}
+.pip.on{background:var(--gold);border-color:var(--gold);box-shadow:0 0 5px rgba(201,162,75,0.5)}
+
+/* drawer verdict + certainty controls */
+.cand-block{background:#0e0709;border:1px solid var(--line-soft);border-radius:4px;padding:11px;margin-bottom:9px}
+.cand-head{display:flex;align-items:center;gap:8px}
+.cand-head .cn{flex:1;font-size:15px;color:var(--bone)}
+.verdict-row{display:flex;gap:6px;margin-top:9px}
+.vbtn{flex:1;font-size:11.5px;font-variant:small-caps;letter-spacing:0.06em;padding:6px 4px;border-radius:2px;
+  cursor:pointer;border:1px solid var(--line);background:#0c0608;color:var(--bone-dim);transition:all .14s}
+.vbtn:hover{border-color:var(--gold-dim);color:var(--bone)}
+.vbtn.on-definitely{background:var(--yes);border-color:var(--yes);color:#0a0608;font-weight:bold}
+.vbtn.on-maybe{background:var(--maybe);border-color:var(--maybe);color:#0a0608;font-weight:bold}
+.vbtn.on-no{background:var(--no);border-color:var(--no);color:#0a0608;font-weight:bold}
+.cert-row{display:flex;align-items:center;gap:9px;margin-top:9px}
+.cert-label{font-size:11px;color:var(--ash);font-variant:small-caps;letter-spacing:0.08em}
+.cert-pips{display:flex;gap:5px}
+.cpip{width:20px;height:20px;border-radius:50%;border:1px solid var(--line);background:#0c0608;cursor:pointer;
+  display:grid;place-items:center;font-size:10px;color:var(--ash);transition:all .14s}
+.cpip:hover{border-color:var(--gold-dim)}
+.cpip.on{background:radial-gradient(circle at 35% 30%,#e6c25e,#9a7826);border-color:var(--gold);color:#0a0608;font-weight:bold}
+
+/* line presence */
+.presence{margin-top:9px}
+.pbar{height:5px;background:#0c0608;border:1px solid var(--line);border-radius:20px;overflow:hidden}
+.pbar-fill{height:100%;background:linear-gradient(90deg,var(--gold-dim),var(--gold));
+  border-radius:20px;box-shadow:0 0 6px rgba(201,162,75,0.4)}
+.pstat{font-family:ui-monospace,"Courier New",monospace;font-size:10.5px;color:var(--bone-dim);
+  margin-top:4px;letter-spacing:0.02em}
+.drawer-presence{margin-top:14px}
+.drawer-presence .pbar{height:6px}
+.pstat-full{font-size:11.5px;color:var(--mauve);font-style:italic;margin-top:6px;line-height:1.45}
+
+@media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+<div class="vignette"></div>
+
+<header class="topbar">
+  <div class="brand">
+    <div class="eyebrow">A Tragedy in Shadow</div>
+    <h1>Macbeth</h1>
+    <div class="sub">Casting the Damned. Drag a name onto the soul it should wear.</div>
+  </div>
+  <div class="actions">
+    <button class="btn" id="addTopBtn">+ Add name</button>
+    <button class="btn" id="exportBtn">Export</button>
+    <label class="btn" for="importInput" style="margin:0">Import</label>
+    <input type="file" id="importInput" accept="application/json" hidden>
+    <button class="btn blood" id="resetBtn">Reset</button>
+  </div>
+</header>
+
+<div class="band">
+  <div class="band-main">
+    <span class="band-label">Roles cast</span>
+    <div class="bar"><div class="bar-fill" id="barFill"></div></div>
+    <span class="band-pct" id="bandPct">0%</span>
+  </div>
+  <span class="band-count" id="bandCount">0 / 0 roles cast</span>
+  <div class="tallies">
+    <span class="tally"><span class="pdot" style="background:var(--yes)"></span><span id="tDef">0</span> definitely</span>
+    <span class="tally"><span class="pdot" style="background:var(--maybe)"></span><span id="tMay">0</span> maybe</span>
+    <span class="tally"><span class="pdot" style="background:var(--no)"></span><span id="tNo">0</span> no</span>
+  </div>
+</div>
+
+<div class="wrap">
+  <aside class="roster" id="roster" data-drop="roster">
+    <div class="panel-head">
+      <span class="panel-title">The Summoned</span>
+      <span class="count" id="rosterCount">0</span>
+    </div>
+    <div class="add-row">
+      <input type="text" id="nameInput" placeholder="A name to summon" autocomplete="off">
+      <button class="icon-btn" id="addBtn" title="Summon">+</button>
+    </div>
+    <div class="roster-list" id="rosterList"></div>
+    <div class="hint">Drag a name onto a role to consider them. Drag a name between roles to move them. Drop here to set them loose. Tap a name to add notes and marks. Tap a role for notes and questions. Press the seal to bind your final choice in blood.</div>
+  </aside>
+
+  <main class="stage" id="stage"></main>
+</div>
+
+<footer>By the pricking of my thumbs, something wicked this way comes.</footer>
+
+<div class="scrim" id="scrim"></div>
+<aside class="drawer" id="drawer"></aside>
+
+<script>
+"use strict";
+
+const SEAL_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="#f3dada" stroke-width="2"><path d="M12 2l2.6 6.3L21 9l-5 4.4L17.5 21 12 17.3 6.5 21 8 13.4 3 9l6.4-.7L12 2z"/></svg>';
+const SWATCHES = ['#a01421','#c9a24b','#7a4a8a','#3a7a6a','#c8622a','#9aa0a6','#b0556a','#4a6fa5'];
+
+function uid(){return Math.random().toString(36).slice(2,9);}
+
+/* Approximate line counts per OpenSourceShakespeare. Editions vary. */
+const PLAY_LINES=2400;
+const MAX_LINES=719;
+const LINES={'Macbeth':719,'Lady Macbeth':259,'Malcolm':215,'Macduff':180,'Ross':135,'Banquo':113,'Duncan':71,'Lennox':70,'First Witch':52,'Porter':46,'Lady Macduff':41,'Hecate':39,'Doctor':38,'Siward':30,'First Murderer':26,'Gentlewoman':23,'Son of Macduff':17,'Third Witch':17,'Second Witch':15,'Angus':14,'Second Murderer':12,'Caithness':11,'Donalbain':9,'Menteith':9,'Seyton':8,'Fleance':6,'Young Siward':6};
+function presence(name){
+  const n=LINES[name];if(n==null)return null;
+  const pct=n/PLAY_LINES*100;
+  return {lines:n,pctLabel:pct<1?'<1%':Math.round(pct)+'%',barW:Math.max(3,Math.round(n/MAX_LINES*100))};
+}
+
+const DEFAULT_CHARS = [
+  ['The Crown',[
+    ['Duncan','King of Scotland. Gracious, trusting, soon to be slain.'],
+    ['Malcolm','Duncan\u2019s elder son and rightful heir.'],
+    ['Donalbain','Duncan\u2019s younger son, who flees to Ireland.'],
+  ]],
+  ['House Macbeth',[
+    ['Macbeth','The valiant general consumed by ambition.'],
+    ['Lady Macbeth','His wife, fierce and slowly unspooling.'],
+    ['Seyton','Macbeth\u2019s loyal officer at the bitter end.'],
+  ]],
+  ['The Weird Sisters',[
+    ['First Witch','Keeper of the first prophecy.'],
+    ['Second Witch','Hailer of Cawdor.'],
+    ['Third Witch','Herald of the crown to come.'],
+    ['Hecate','Goddess of witches, mistress of the dark.'],
+  ]],
+  ['The Hunted',[
+    ['Banquo','Macbeth\u2019s fellow general, father of kings.'],
+    ['Fleance','Banquo\u2019s son, who escapes the blade.'],
+    ['Macduff','Thane of Fife, the avenger.'],
+    ['Lady Macduff','Macduff\u2019s wife, slaughtered at Fife.'],
+    ['Son of Macduff','A bright child, cut down young.'],
+  ]],
+  ['Thanes of Scotland',[
+    ['Ross','Nobleman and bearer of grim news.'],
+    ['Lennox','A thane who turns against the tyrant.'],
+    ['Angus','A thane of the rebel cause.'],
+    ['Menteith','A Scottish lord in revolt.'],
+    ['Caithness','A Scottish lord in revolt.'],
+  ]],
+  ['The English Aid',[
+    ['Siward','Earl of Northumberland, English general.'],
+    ['Young Siward','His son, slain by Macbeth.'],
+  ]],
+  ['Shadows and Servants',[
+    ['Porter','The drunken gatekeeper of hell\u2019s gate.'],
+    ['Doctor','Witness to Lady Macbeth\u2019s sleepwalking.'],
+    ['Gentlewoman','Attendant to Lady Macbeth.'],
+    ['First Murderer','Hired to kill Banquo.'],
+    ['Second Murderer','Hired to kill Banquo.'],
+  ]],
+];
+
+function defaultState(){
+  const characters = [];
+  DEFAULT_CHARS.forEach(([group,rows])=>{
+    rows.forEach(([name,desc])=>{
+      characters.push({id:uid(),group,name,desc,candidates:[],castId:null,notes:'',questions:[]});
+    });
+  });
+  return {
+    actors:[],
+    labels:[
+      {id:uid(),name:'Callback',color:'#c9a24b'},
+      {id:uid(),name:'Strong voice',color:'#a01421'},
+      {id:uid(),name:'Movement',color:'#7a4a8a'},
+    ],
+    characters,
+  };
+}
+
+const KEY='macbeth-casting-v1';
+let state = normalize(load() || defaultState());
+
+function normalize(s){
+  if(!s.actors)s.actors=[];if(!s.labels)s.labels=[];if(!s.characters)s.characters=[];
+  s.actors.forEach(a=>{if(!a.labels)a.labels=[];if(a.notes==null)a.notes='';});
+  s.characters.forEach(c=>{if(!c.meta)c.meta={};if(!c.questions)c.questions=[];if(c.notes==null)c.notes='';if(!c.candidates)c.candidates=[];if(c.castId===undefined)c.castId=null;});
+  return s;
+}
+
+function load(){
+  try{const r=localStorage.getItem(KEY);return r?JSON.parse(r):null;}catch(e){return null;}
+}
+function save(){
+  try{localStorage.setItem(KEY,JSON.stringify(state));}catch(e){}
+}
+
+function esc(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function actor(id){return state.actors.find(a=>a.id===id);}
+function char(id){return state.characters.find(c=>c.id===id);}
+function label(id){return state.labels.find(l=>l.id===id);}
+function rolesFor(actorId){return state.characters.filter(c=>c.candidates.includes(actorId));}
+
+/* ---------- mutations ---------- */
+function addActor(name){
+  name=name.trim();if(!name)return null;
+  const a={id:uid(),name,notes:'',labels:[]};
+  state.actors.push(a);commit();return a;
+}
+function assignActor(actorId,toCharId,fromCharId){
+  if(fromCharId){
+    const from=char(fromCharId);
+    if(from){from.candidates=from.candidates.filter(x=>x!==actorId);if(from.castId===actorId)from.castId=null;if(from.meta)delete from.meta[actorId];}
+  }
+  const to=char(toCharId);
+  if(to && !to.candidates.includes(actorId))to.candidates.push(actorId);
+  commit();
+}
+function unassign(actorId,fromCharId){
+  const c=char(fromCharId);if(!c)return;
+  c.candidates=c.candidates.filter(x=>x!==actorId);
+  if(c.castId===actorId)c.castId=null;
+  if(c.meta)delete c.meta[actorId];
+  commit();
+}
+function toggleCast(charId,actorId){
+  const c=char(charId);if(!c)return;
+  c.castId=c.castId===actorId?null:actorId;commit();
+}
+function deleteActor(actorId){
+  state.actors=state.actors.filter(a=>a.id!==actorId);
+  state.characters.forEach(c=>{c.candidates=c.candidates.filter(x=>x!==actorId);if(c.castId===actorId)c.castId=null;if(c.meta)delete c.meta[actorId];});
+  commit();
+}
+function metaFor(c,actorId){if(!c.meta)c.meta={};if(!c.meta[actorId])c.meta[actorId]={verdict:null,certainty:0};return c.meta[actorId];}
+function setVerdict(charId,actorId,v){const c=char(charId);if(!c)return;const m=metaFor(c,actorId);m.verdict=m.verdict===v?null:v;commit();}
+function setCertainty(charId,actorId,n){const c=char(charId);if(!c)return;const m=metaFor(c,actorId);m.certainty=m.certainty===n?0:n;commit();}
+function toggleLabel(actorId,labelId){
+  const a=actor(actorId);if(!a)return;
+  a.labels=a.labels||[];
+  if(a.labels.includes(labelId))a.labels=a.labels.filter(x=>x!==labelId);
+  else a.labels.push(labelId);
+  commit();
+}
+function commit(){save();render();}
+
+/* ---------- render ---------- */
+function dotsHtml(actorId){
+  const a=actor(actorId);if(!a||!a.labels||!a.labels.length)return '';
+  return '<span class="dots">'+a.labels.map(lid=>{const l=label(lid);return l?`<span class="dot" style="background:${l.color}"></span>`:'';}).join('')+'</span>';
+}
+
+function renderRoster(){
+  const list=document.getElementById('rosterList');
+  document.getElementById('rosterCount').textContent=state.actors.length;
+  if(!state.actors.length){list.innerHTML='<div class="empty-note">No one summoned yet.<br>Add a name above.</div>';return;}
+  list.innerHTML=state.actors.map(a=>{
+    const n=rolesFor(a.id).length;
+    return `<div class="actor" data-actor="${a.id}" role="button" tabindex="0" aria-label="${esc(a.name)}">
+      ${dotsHtml(a.id)}
+      <span class="nm">${esc(a.name)}</span>
+      ${n?`<span class="roles-badge">${n}</span>`:''}
+    </div>`;
+  }).join('');
+}
+
+function renderStage(){
+  const stage=document.getElementById('stage');
+  const groups=[];
+  state.characters.forEach(c=>{if(!groups.includes(c.group))groups.push(c.group);});
+  stage.innerHTML=groups.map(g=>{
+    const cards=state.characters.filter(c=>c.group===g).map(c=>{
+      const chips=c.candidates.map(aid=>{
+        const a=actor(aid);if(!a)return '';
+        const isCast=c.castId===aid;
+        const m=(c.meta&&c.meta[aid])||{};
+        const vcls=m.verdict?('v-'+m.verdict):'';
+        const pips=m.certainty?`<span class="pips" title="Certainty ${m.certainty} of 5">${[1,2,3,4,5].map(i=>`<span class="pip ${i<=m.certainty?'on':''}"></span>`).join('')}</span>`:'';
+        return `<span class="chip ${isCast?'cast':''} ${vcls}" data-chip="${aid}" data-from="${c.id}">
+          <button class="seal" data-seal="${c.id}|${aid}" title="${isCast?'Unbind':'Bind in blood'}">${SEAL_SVG}</button>
+          <span class="cnm">${esc(a.name)}</span>
+          ${pips}
+          <span class="cdots">${(a.labels||[]).map(lid=>{const l=label(lid);return l?`<span class="dot" style="background:${l.color}"></span>`:'';}).join('')}</span>
+        </span>`;
+      }).join('');
+      const castName=c.castId?actor(c.castId)?.name:null;
+      const meta=[];
+      if(castName)meta.push(`<span class="tag-mini" style="color:var(--blood-bright)">&#10022; ${esc(castName)}</span>`);
+      if(c.questions&&c.questions.length)meta.push(`<span class="tag-mini">? ${c.questions.length}</span>`);
+      if(c.notes&&c.notes.trim())meta.push(`<span class="tag-mini">notes</span>`);
+      return `<article class="char" data-drop="char" data-char-id="${c.id}" role="button" tabindex="0">
+        <div class="char-name">${esc(c.name)}</div>
+        <div class="char-desc">${esc(c.desc||'')}</div>
+        ${(()=>{const p=presence(c.name);return p?`<div class="presence"><div class="pbar"><div class="pbar-fill" style="width:${p.barW}%"></div></div><div class="pstat">${p.lines} lines &middot; ${p.pctLabel} of play</div></div>`:'';})()}
+        ${meta.length?`<div class="char-meta">${meta.join('')}</div>`:''}
+        <div class="candidates">${chips}</div>
+      </article>`;
+    }).join('');
+    return `<section class="group"><h2 class="group-title">${esc(g)}</h2><div class="char-grid">${cards}</div></section>`;
+  }).join('');
+}
+
+function renderProgress(){
+  const total=state.characters.length;
+  const castN=state.characters.filter(c=>c.castId).length;
+  const pct=total?Math.round(castN/total*100):0;
+  document.getElementById('barFill').style.width=pct+'%';
+  document.getElementById('bandPct').textContent=pct+'%';
+  document.getElementById('bandCount').textContent=castN+' / '+total+' roles cast';
+  let def=0,may=0,no=0;
+  state.characters.forEach(c=>{const m=c.meta||{};Object.keys(m).forEach(k=>{const v=m[k].verdict;if(v==='definitely')def++;else if(v==='maybe')may++;else if(v==='no')no++;});});
+  document.getElementById('tDef').textContent=def;
+  document.getElementById('tMay').textContent=may;
+  document.getElementById('tNo').textContent=no;
+}
+
+function render(){renderProgress();renderRoster();renderStage();if(openKind)renderDrawer();}
+
+/* ---------- drawer ---------- */
+let openKind=null,openId=null;
+function openActorDrawer(id){openKind='actor';openId=id;renderDrawer();showDrawer();}
+function openCharDrawer(id){openKind='char';openId=id;renderDrawer();showDrawer();}
+function showDrawer(){document.getElementById('drawer').classList.add('open');document.getElementById('scrim').classList.add('open');}
+function closeDrawer(){openKind=null;openId=null;document.getElementById('drawer').classList.remove('open');document.getElementById('scrim').classList.remove('open');}
+
+function renderDrawer(){
+  const d=document.getElementById('drawer');
+  if(openKind==='actor'){
+    const a=actor(openId);if(!a){closeDrawer();return;}
+    const roles=rolesFor(a.id);
+    d.innerHTML=`<button class="x" data-close>&times;</button>
+      <div class="drawer-eyebrow">The Summoned</div>
+      <h2>${esc(a.name)}</h2>
+      <div class="field">
+        <label class="field-label">Name</label>
+        <input type="text" data-actor-name value="${esc(a.name)}">
+      </div>
+      <div class="field">
+        <label class="field-label">Marks</label>
+        <div class="label-pool">${state.labels.map(l=>{
+          const on=(a.labels||[]).includes(l.id);
+          return `<span class="lbl ${on?'on':''}" data-toggle-label="${l.id}" style="${on?`background:${l.color}`:''}">
+            ${on?'':`<span class="swatch" style="background:${l.color}"></span>`}${esc(l.name)}</span>`;
+        }).join('')}</div>
+        <div class="newlabel">
+          <input type="text" data-newlabel placeholder="New mark" maxlength="22">
+          <button class="icon-btn" data-addlabel title="Add mark">+</button>
+        </div>
+        <div class="swatch-row" data-swatches>${SWATCHES.map((c,i)=>`<span class="sw ${i===0?'sel':''}" data-sw="${c}" style="background:${c}"></span>`).join('')}</div>
+      </div>
+      <div class="field">
+        <label class="field-label">Notes</label>
+        <textarea data-actor-notes placeholder="Range, presence, instincts, anything you want to remember.">${esc(a.notes||'')}</textarea>
+      </div>
+      <div class="field">
+        <label class="field-label">Considered for</label>
+        ${roles.length?`<div class="role-list">${roles.map(c=>{
+          const cast=c.castId===a.id;
+          return `<div class="role-row ${cast?'is-cast':''}"><span class="rg">${esc(c.name)}${cast?' &#10022;':''}</span>
+            <button class="btn" data-jumpchar="${c.id}" style="padding:4px 9px">Open</button></div>`;
+        }).join('')}</div>`:`<div class="mini">Not yet placed in any role. Drag this name onto a role, or add one below.</div>`}
+        <div class="add-q">
+          <select data-addrole>
+            <option value="">Add to a role...</option>
+            ${state.characters.filter(c=>!c.candidates.includes(a.id)).map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join('')}
+          </select>
+        </div>
+      </div>
+      <div class="danger">
+        <button class="btn del" data-delete-actor>Banish this name</button>
+      </div>`;
+  } else if(openKind==='char'){
+    const c=char(openId);if(!c){closeDrawer();return;}
+    d.innerHTML=`<button class="x" data-close>&times;</button>
+      <div class="drawer-eyebrow">${esc(c.group)}</div>
+      <h2>${esc(c.name)}</h2>
+      <div class="char-desc" style="margin-top:2px">${esc(c.desc||'')}</div>
+      ${(()=>{const p=presence(c.name);return p?`<div class="drawer-presence"><div class="pbar"><div class="pbar-fill" style="width:${p.barW}%"></div></div><div class="pstat-full">Approx ${p.lines} lines, about ${p.pctLabel} of the play. Counts per OpenSourceShakespeare and vary by edition.</div></div>`:'';})()}
+      <div class="field">
+        <label class="field-label">Candidates</label>
+        ${c.candidates.length?c.candidates.map(aid=>{
+          const a=actor(aid);if(!a)return '';
+          const cast=c.castId===aid;
+          const m=(c.meta&&c.meta[aid])||{};
+          return `<div class="cand-block">
+            <div class="cand-head">
+              <span class="cn">${esc(a.name)}${cast?' <span style="color:var(--blood-bright)">&#10022;</span>':''}</span>
+              <button class="btn" data-setcast="${aid}" style="padding:4px 9px">${cast?'Sealed':'Seal'}</button>
+              <button class="btn" data-removecand="${aid}" style="padding:4px 9px">Remove</button>
+            </div>
+            <div class="verdict-row">
+              <button class="vbtn ${m.verdict==='definitely'?'on-definitely':''}" data-verdict="${aid}|definitely">Definitely</button>
+              <button class="vbtn ${m.verdict==='maybe'?'on-maybe':''}" data-verdict="${aid}|maybe">Maybe</button>
+              <button class="vbtn ${m.verdict==='no'?'on-no':''}" data-verdict="${aid}|no">No</button>
+            </div>
+            <div class="cert-row">
+              <span class="cert-label">Certain</span>
+              <div class="cert-pips">${[1,2,3,4,5].map(i=>`<span class="cpip ${m.certainty>=i?'on':''}" data-cert="${aid}|${i}">${i}</span>`).join('')}</div>
+            </div>
+          </div>`;
+        }).join(''):`<div class="mini">No candidates yet. Drag a name here, or add one below.</div>`}
+        <div class="add-q">
+          <select data-addcand>
+            <option value="">Add a candidate...</option>
+            ${state.actors.filter(a=>!c.candidates.includes(a.id)).map(a=>`<option value="${a.id}">${esc(a.name)}</option>`).join('')}
+          </select>
+        </div>
+      </div>
+      <div class="field">
+        <label class="field-label">Notes on the role</label>
+        <textarea data-char-notes placeholder="Tone, age, what this role demands.">${esc(c.notes||'')}</textarea>
+      </div>
+      <div class="field">
+        <label class="field-label">Questions</label>
+        <div class="q-list">${(c.questions||[]).map((q,i)=>`<div class="q-item"><span class="qtext">${esc(q)}</span><button class="qx" data-delq="${i}" title="Remove">&times;</button></div>`).join('')}</div>
+        <div class="add-q">
+          <input type="text" data-newq placeholder="Who can carry the sleepwalk scene?">
+          <button class="icon-btn" data-addq title="Add question">+</button>
+        </div>
+      </div>`;
+  }
+}
+
+/* swatch selection state for new labels */
+let newLabelColor=SWATCHES[0];
+
+/* ---------- drawer events (delegated) ---------- */
+document.getElementById('drawer').addEventListener('click',e=>{
+  const t=e.target;
+  if(t.closest('[data-close]')){closeDrawer();return;}
+  const tl=t.closest('[data-toggle-label]');if(tl){toggleLabel(openId,tl.dataset.toggleLabel);return;}
+  if(t.closest('[data-addlabel]')){
+    const inp=document.querySelector('[data-newlabel]');const nm=inp.value.trim();
+    if(nm){state.labels.push({id:uid(),name:nm,color:newLabelColor});if(openKind==='actor'){const a=actor(openId);a.labels=a.labels||[];}commit();}
+    return;
+  }
+  const sw=t.closest('[data-sw]');if(sw){newLabelColor=sw.dataset.sw;document.querySelectorAll('[data-swatches] .sw').forEach(x=>x.classList.remove('sel'));sw.classList.add('sel');return;}
+  const jc=t.closest('[data-jumpchar]');if(jc){openCharDrawer(jc.dataset.jumpchar);return;}
+  if(t.closest('[data-delete-actor]')){if(confirm('Banish this name from the casting entirely?')){deleteActor(openId);closeDrawer();}return;}
+  const sc=t.closest('[data-setcast]');if(sc){toggleCast(openId,sc.dataset.setcast);return;}
+  const vd=t.closest('[data-verdict]');if(vd){const p=vd.dataset.verdict.split('|');setVerdict(openId,p[0],p[1]);return;}
+  const cp=t.closest('[data-cert]');if(cp){const p=cp.dataset.cert.split('|');setCertainty(openId,p[0],+p[1]);return;}
+  const rc=t.closest('[data-removecand]');if(rc){unassign(rc.dataset.removecand,openId);return;}
+  const dq=t.closest('[data-delq]');if(dq){const c=char(openId);c.questions.splice(+dq.dataset.delq,1);commit();return;}
+  if(t.closest('[data-addq]')){const inp=document.querySelector('[data-newq]');const v=inp.value.trim();if(v){const c=char(openId);c.questions=c.questions||[];c.questions.push(v);commit();}return;}
+});
+document.getElementById('drawer').addEventListener('input',e=>{
+  const t=e.target;
+  if(t.matches('[data-actor-name]')){actor(openId).name=t.value;save();renderRoster();renderStage();}
+  else if(t.matches('[data-actor-notes]')){actor(openId).notes=t.value;save();}
+  else if(t.matches('[data-char-notes]')){char(openId).notes=t.value;save();renderStage();}
+});
+document.getElementById('drawer').addEventListener('change',e=>{
+  const t=e.target;
+  if(t.matches('[data-addrole]')&&t.value){assignActor(openId,t.value,null);}
+  else if(t.matches('[data-addcand]')&&t.value){assignActor(t.value,openId,null);}
+});
+document.getElementById('drawer').addEventListener('keydown',e=>{
+  if(e.key==='Enter'){
+    if(e.target.matches('[data-newq]')){e.preventDefault();const v=e.target.value.trim();if(v){const c=char(openId);c.questions=c.questions||[];c.questions.push(v);commit();}}
+    if(e.target.matches('[data-newlabel]')){e.preventDefault();const nm=e.target.value.trim();if(nm){state.labels.push({id:uid(),name:nm,color:newLabelColor});commit();}}
+  }
+});
+document.getElementById('scrim').addEventListener('click',closeDrawer);
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeDrawer();});
+
+/* ---------- add name ---------- */
+function doAdd(){const inp=document.getElementById('nameInput');const a=addActor(inp.value);if(a){inp.value='';inp.focus();}}
+document.getElementById('addBtn').addEventListener('click',doAdd);
+document.getElementById('nameInput').addEventListener('keydown',e=>{if(e.key==='Enter')doAdd();});
+document.getElementById('addTopBtn').addEventListener('click',()=>{document.getElementById('nameInput').focus();window.scrollTo({top:0,behavior:'smooth'});});
+
+/* ---------- export / import / reset ---------- */
+document.getElementById('exportBtn').addEventListener('click',()=>{
+  const blob=new Blob([JSON.stringify(state,null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob);const a=document.createElement('a');
+  a.href=url;a.download='macbeth-casting.json';a.click();URL.revokeObjectURL(url);
+});
+document.getElementById('importInput').addEventListener('change',e=>{
+  const f=e.target.files[0];if(!f)return;
+  const r=new FileReader();
+  r.onload=()=>{try{const data=JSON.parse(r.result);if(data&&data.characters&&data.actors){state=normalize(data);commit();}else alert('That file does not look like a casting sheet.');}catch(err){alert('Could not read that file.');}};
+  r.readAsText(f);e.target.value='';
+});
+document.getElementById('resetBtn').addEventListener('click',()=>{
+  if(confirm('Clear all names and casting, and restore the empty Macbeth cast? This cannot be undone.')){state=defaultState();commit();}
+});
+
+/* ---------- click to open drawers (delegated, non-drag) ---------- */
+function bindOpen(){
+  document.getElementById('rosterList').addEventListener('click',e=>{if(suppressClick)return;const el=e.target.closest('[data-actor]');if(el)openActorDrawer(el.dataset.actor);});
+  document.getElementById('rosterList').addEventListener('keydown',e=>{const el=e.target.closest('[data-actor]');if(el&&(e.key==='Enter'||e.key===' ')){e.preventDefault();openActorDrawer(el.dataset.actor);}});
+  document.getElementById('stage').addEventListener('click',e=>{
+    if(suppressClick)return;
+    if(e.target.closest('[data-seal]')){const v=e.target.closest('[data-seal]').dataset.seal.split('|');toggleCast(v[0],v[1]);return;}
+    const chip=e.target.closest('[data-chip]');if(chip){openActorDrawer(chip.dataset.chip);return;}
+    const c=e.target.closest('[data-char-id]');if(c)openCharDrawer(c.dataset.charId);
+  });
+  document.getElementById('stage').addEventListener('keydown',e=>{const c=e.target.closest('[data-char-id]');if(c&&(e.key==='Enter'||e.key===' ')){e.preventDefault();openCharDrawer(c.dataset.charId);}});
+}
+
+/* ---------- pointer drag ---------- */
+let drag=null,suppressClick=false,lastDrop=null;
+function startDrag(e){
+  if(e.button!==undefined&&e.button!==0&&e.pointerType==='mouse')return;
+  const chip=e.target.closest('[data-chip]');
+  const act=e.target.closest('[data-actor]');
+  if(e.target.closest('[data-seal]'))return;
+  let payload=null,srcEl=null;
+  if(chip){payload={actorId:chip.dataset.chip,fromCharId:chip.dataset.from};srcEl=chip;}
+  else if(act){payload={actorId:act.dataset.actor,fromCharId:null};srcEl=act;}
+  if(!payload)return;
+  drag={...payload,startX:e.clientX,startY:e.clientY,active:false,ghost:null,srcEl};
+  window.addEventListener('pointermove',moveDrag);
+  window.addEventListener('pointerup',endDrag);
+}
+function moveDrag(e){
+  if(!drag)return;
+  const dx=e.clientX-drag.startX,dy=e.clientY-drag.startY;
+  if(!drag.active){
+    if(Math.hypot(dx,dy)<7)return;
+    drag.active=true;suppressClick=true;document.body.classList.add('dragging');
+    drag.srcEl.classList.add('dragging-src');
+    const g=document.createElement('div');g.className='ghost';
+    g.textContent=actor(drag.actorId)?.name||'';document.body.appendChild(g);drag.ghost=g;
+  }
+  drag.ghost.style.left=e.clientX+'px';drag.ghost.style.top=e.clientY+'px';
+  // edge autoscroll
+  const m=70;if(e.clientY<m)window.scrollBy(0,-14);else if(e.clientY>window.innerHeight-m)window.scrollBy(0,14);
+  highlight(e.clientX,e.clientY);
+}
+function highlight(x,y){
+  if(drag.ghost)drag.ghost.style.display='none';
+  const el=document.elementFromPoint(x,y);
+  if(drag.ghost)drag.ghost.style.display='';
+  const drop=el?el.closest('[data-drop]'):null;
+  if(drop!==lastDrop){
+    if(lastDrop&&lastDrop.dataset.drop==='char')lastDrop.classList.remove('drop-active');
+    if(drop&&drop.dataset.drop==='char')drop.classList.add('drop-active');
+    lastDrop=drop;
+  }
+}
+function endDrag(e){
+  window.removeEventListener('pointermove',moveDrag);
+  window.removeEventListener('pointerup',endDrag);
+  if(drag&&drag.active){
+    if(drag.ghost)drag.ghost.style.display='none';
+    const el=document.elementFromPoint(e.clientX,e.clientY);
+    const drop=el?el.closest('[data-drop]'):null;
+    if(drop){
+      if(drop.dataset.drop==='char'){
+        const toId=drop.dataset.charId;
+        if(toId!==drag.fromCharId)assignActor(drag.actorId,toId,drag.fromCharId);
+      } else if(drop.dataset.drop==='roster'){
+        if(drag.fromCharId)unassign(drag.actorId,drag.fromCharId);
+      }
+    }
+    if(drag.ghost)drag.ghost.remove();
+    if(lastDrop&&lastDrop.dataset.drop==='char')lastDrop.classList.remove('drop-active');
+    lastDrop=null;
+    document.body.classList.remove('dragging');
+    if(drag.srcEl)drag.srcEl.classList.remove('dragging-src');
+    setTimeout(()=>{suppressClick=false;},30);
+  } else {
+    suppressClick=false;
+  }
+  drag=null;
+}
+document.getElementById('rosterList').addEventListener('pointerdown',startDrag);
+document.getElementById('stage').addEventListener('pointerdown',startDrag);
+
+bindOpen();
+render();
+</script>
+</body>
+</html>
