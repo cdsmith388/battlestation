@@ -298,6 +298,7 @@ footer{position:relative;z-index:2;text-align:center;color:var(--ash);font-size:
 .leg{display:inline-flex;align-items:center;gap:7px;font-variant:small-caps;letter-spacing:0.04em}
 .leg-node{width:13px;height:13px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#e6c25e,#8a6e34)}
 .leg-line{width:22px;height:3px;background:var(--gold-dim);border-radius:2px}
+.leg-rival{width:22px;height:0;border-top:2px dashed var(--blood-bright)}
 .leg-conflict{width:12px;height:12px;border-radius:50%;background:#2a1620;border:2px solid var(--blood-bright)}
 .web-canvas-wrap{flex:1;position:relative;min-height:0}
 #webCanvas{width:100%;height:100%;display:block;touch-action:none;cursor:grab}
@@ -305,6 +306,14 @@ footer{position:relative;z-index:2;text-align:center;color:var(--ash);font-size:
   max-height:28%;overflow-y:auto;line-height:1.55}
 .web-info b{color:var(--gold);font-weight:normal}
 .web-info .warn{color:var(--blood-bright)}
+.web-info .hintdim{color:var(--ash)}
+.rrole{display:inline-flex;align-items:center;gap:6px;margin:6px 10px 0 0;padding:5px 8px;
+  background:#120a0e;border:1px solid var(--line-soft);border-radius:20px}
+.rrole .rname{font-variant:small-caps;letter-spacing:0.05em;color:var(--gold-dim);margin-right:2px}
+.mini-seal{font-family:Georgia,serif;font-size:12px;padding:3px 9px;border-radius:20px;cursor:pointer;
+  border:1px solid var(--line);background:#0c0608;color:var(--bone-dim);transition:all .14s}
+.mini-seal:hover{border-color:var(--gold-dim);color:var(--bone)}
+.mini-seal.on{background:radial-gradient(circle at 40% 30%,#d6303d,#8a0f1a);border-color:var(--blood-bright);color:#f3dada}
 .web-empty{position:absolute;inset:0;display:grid;place-items:center;text-align:center;
   color:var(--ash);font-style:italic;font-size:14px;padding:30px}
 
@@ -380,9 +389,10 @@ footer{position:relative;z-index:2;text-align:center;color:var(--ash);font-size:
   </div>
   <div class="web-legend">
     <span class="leg"><span class="leg-node"></span>Node size, share of the play</span>
-    <span class="leg"><span class="leg-line"></span>Thicker line, more shared scenes</span>
-    <span class="leg"><span class="leg-conflict"></span>Red ring, double cast in a shared scene</span>
-    <span class="leg">Drag to arrange. Tap a name to trace partners.</span>
+    <span class="leg"><span class="leg-line"></span>Gold line, scenes shared together</span>
+    <span class="leg"><span class="leg-rival"></span>Red dashed, up for the same role</span>
+    <span class="leg"><span class="leg-conflict"></span>Red ring, double cast in one scene</span>
+    <span class="leg">Drag to arrange. Tap a name or a line for detail.</span>
   </div>
   <div class="web-canvas-wrap"><canvas id="webCanvas"></canvas></div>
   <div class="web-info" id="webInfo">Tap an actor to trace their scene partners.</div>
@@ -901,47 +911,54 @@ document.getElementById('stage').addEventListener('pointerdown',startDrag);
 const canvas=document.getElementById('webCanvas');
 const ctx=canvas.getContext('2d');
 let dpr=1,canvasW=0,canvasH=0;
-let web={nodes:[],edges:[],adj:{},conflicts:new Set()},nodeMap={};
+let web={nodes:[],coEdges:[],rivalEdges:[],adj:{},rivalAdj:{},conflicts:new Set()},nodeMap={};
 let webOpen=false,webMode='candidates',webSel=null,webRAF=null;
 function nodeById(id){return nodeMap[id];}
+function charByName(nm){return state.characters.find(c=>c.name===nm);}
 
 function buildWeb(mode){
-  const actorScenes={},actorChars={},actorLines={};
+  const charActors={},actorChars={},actorLines={};
   state.characters.forEach(c=>{
-    const scenes=CHAR_SCENES[c.name]||[];
     const ids = mode==='cast' ? (c.castId?[c.castId]:[]) : c.candidates.slice();
-    ids.forEach(aid=>{
-      if(!actor(aid))return;
-      actorScenes[aid]=actorScenes[aid]||new Set();
-      actorChars[aid]=actorChars[aid]||[];
+    ids.forEach(aid=>{ if(!actor(aid))return;
+      (charActors[c.name]=charActors[c.name]||[]).push(aid);
+      (actorChars[aid]=actorChars[aid]||[]).push(c.name);
       actorLines[aid]=(actorLines[aid]||0)+(LINES[c.name]||0);
-      actorChars[aid].push(c.name);
-      scenes.forEach(s=>actorScenes[aid].add(s));
     });
   });
-  const ids=Object.keys(actorScenes);
-  const castChars={};
-  state.characters.forEach(c=>{if(c.castId){(castChars[c.castId]=castChars[c.castId]||[]).push(c.name);}});
-  const conflicts=new Set();
-  Object.keys(castChars).forEach(id=>{
-    const cs=castChars[id];
-    outer: for(let i=0;i<cs.length;i++)for(let j=i+1;j<cs.length;j++){
-      const s1=CHAR_SCENES[cs[i]]||[],s2=CHAR_SCENES[cs[j]]||[];
-      if(s1.some(s=>s2.includes(s))){conflicts.add(id);break outer;}
+  const actorIds=Object.keys(actorChars);
+  const actorScenes={};
+  actorIds.forEach(aid=>{const set=new Set();actorChars[aid].forEach(nm=>(CHAR_SCENES[nm]||[]).forEach(s=>set.add(s)));actorScenes[aid]=set;});
+
+  const coCount={};
+  SCENE_ORDER.forEach(s=>{
+    const present={};
+    SCENE_CAST[s].forEach(nm=>{(charActors[nm]||[]).forEach(aid=>{(present[aid]=present[aid]||new Set()).add(nm);});});
+    const pIds=Object.keys(present);
+    for(let i=0;i<pIds.length;i++)for(let j=i+1;j<pIds.length;j++){
+      const A=pIds[i],B=pIds[j],ca=present[A],cb=present[B];let diff=false;
+      ca.forEach(x=>cb.forEach(y=>{if(x!==y)diff=true;}));
+      if(diff){const k=A<B?A+'|'+B:B+'|'+A;(coCount[k]=coCount[k]||new Set()).add(s);}
     }
   });
-  const nodes=ids.map(id=>{
-    const tl=actorLines[id]||0;
-    return {id,name:actor(id).name,scenes:actorScenes[id],chars:actorChars[id],
-      r:Math.max(11,Math.min(34,9+Math.sqrt(tl)*1.15)),x:0,y:0,vx:0,vy:0,fixed:false};
-  });
-  const edges=[];const adj={};ids.forEach(id=>adj[id]=[]);
-  for(let i=0;i<ids.length;i++)for(let j=i+1;j<ids.length;j++){
-    const A=actorScenes[ids[i]],B=actorScenes[ids[j]];let w=0;
-    A.forEach(s=>{if(B.has(s))w++;});
-    if(w>0){edges.push({a:ids[i],b:ids[j],w});adj[ids[i]].push({other:ids[j],w});adj[ids[j]].push({other:ids[i],w});}
-  }
-  return {nodes,edges,adj,conflicts};
+  const coEdges=Object.keys(coCount).map(k=>{const p=k.split('|');const scenes=[...coCount[k]].sort((x,y)=>SCENE_ORDER.indexOf(x)-SCENE_ORDER.indexOf(y));return {a:p[0],b:p[1],w:scenes.length,scenes};});
+
+  const rivalMap={};
+  Object.keys(charActors).forEach(nm=>{const list=[...new Set(charActors[nm])];
+    for(let i=0;i<list.length;i++)for(let j=i+1;j<list.length;j++){const a=list[i],b=list[j],k=a<b?a+'|'+b:b+'|'+a;(rivalMap[k]=rivalMap[k]||[]).push(nm);}});
+  const rivalEdges=Object.keys(rivalMap).map(k=>{const p=k.split('|');return {a:p[0],b:p[1],roles:rivalMap[k]};});
+
+  const castChars={};state.characters.forEach(c=>{if(c.castId)(castChars[c.castId]=castChars[c.castId]||[]).push(c.name);});
+  const conflicts=new Set();
+  Object.keys(castChars).forEach(id=>{const cs=castChars[id];
+    outer: for(let i=0;i<cs.length;i++)for(let j=i+1;j<cs.length;j++){const s1=CHAR_SCENES[cs[i]]||[],s2=CHAR_SCENES[cs[j]]||[];if(s1.some(s=>s2.includes(s))){conflicts.add(id);break outer;}}});
+
+  const sealedSet=new Set();state.characters.forEach(c=>{if(c.castId)sealedSet.add(c.castId);});
+  const nodes=actorIds.map(aid=>{const tl=actorLines[aid]||0;return {id:aid,name:actor(aid).name,scenes:actorScenes[aid],chars:[...new Set(actorChars[aid])],sealed:sealedSet.has(aid),r:Math.max(12,Math.min(36,10+Math.sqrt(tl)*1.2)),x:0,y:0,vx:0,vy:0,fixed:false};});
+  const adj={},rivalAdj={};actorIds.forEach(a=>{adj[a]=[];rivalAdj[a]=[];});
+  coEdges.forEach(e=>{adj[e.a].push({other:e.b,w:e.w,scenes:e.scenes});adj[e.b].push({other:e.a,w:e.w,scenes:e.scenes});});
+  rivalEdges.forEach(e=>{rivalAdj[e.a].push({other:e.b,roles:e.roles});rivalAdj[e.b].push({other:e.a,roles:e.roles});});
+  return {nodes,coEdges,rivalEdges,adj,rivalAdj,conflicts};
 }
 
 function sizeCanvas(){
@@ -950,40 +967,84 @@ function sizeCanvas(){
   canvas.width=Math.round(canvasW*dpr);canvas.height=Math.round(canvasH*dpr);
   ctx.setTransform(dpr,0,0,dpr,0,0);
 }
+
+function sameEdge(sel,e){return (sel.a===e.a&&sel.b===e.b)||(sel.a===e.b&&sel.b===e.a);}
+function selIsNode(id){return webSel&&webSel.t==='node'&&webSel.id===id;}
+function nodeHighlighted(id){
+  if(!webSel)return true;
+  if(webSel.t==='node')return webSel.id===id||web.adj[webSel.id].some(x=>x.other===id)||web.rivalAdj[webSel.id].some(x=>x.other===id);
+  return webSel.a===id||webSel.b===id;
+}
+function edgeActive(e){
+  if(!webSel)return false;
+  if(webSel.t==='node')return e.a===webSel.id||e.b===webSel.id;
+  return sameEdge(webSel,e);
+}
+function edgeSelected(e,type){return webSel&&webSel.t===type&&sameEdge(webSel,e);}
+
 function webStep(){
   const w=canvasW,h=canvasH,cx=w/2,cy=h/2,nodes=web.nodes;
   for(let i=0;i<nodes.length;i++){const a=nodes[i];
     for(let j=i+1;j<nodes.length;j++){const b=nodes[j];
       let dx=a.x-b.x,dy=a.y-b.y,d2=dx*dx+dy*dy;if(d2<1){d2=1;dx=(Math.random()-0.5);dy=(Math.random()-0.5);}
-      const d=Math.sqrt(d2),rep=(a.r+b.r)*220/d2;
+      const d=Math.sqrt(d2),rep=(a.r+b.r)*430/d2;
       a.vx+=dx/d*rep;a.vy+=dy/d*rep;b.vx-=dx/d*rep;b.vy-=dy/d*rep;}}
-  web.edges.forEach(e=>{const a=nodeById(e.a),b=nodeById(e.b);
+  web.coEdges.forEach(e=>{const a=nodeById(e.a),b=nodeById(e.b);
     let dx=b.x-a.x,dy=b.y-a.y,d=Math.sqrt(dx*dx+dy*dy)||1;
-    const rest=Math.max(45,95-e.w*10),f=(d-rest)*0.035;
+    const rest=Math.max(78,140-e.w*8),f=(d-rest)*0.028;
     a.vx+=dx/d*f;a.vy+=dy/d*f;b.vx-=dx/d*f;b.vy-=dy/d*f;});
   nodes.forEach(n=>{if(n.fixed)return;
-    n.vx+=(cx-n.x)*0.004;n.vy+=(cy-n.y)*0.004;n.vx*=0.87;n.vy*=0.87;n.x+=n.vx;n.y+=n.vy;
-    n.x=Math.max(n.r+6,Math.min(w-n.r-6,n.x));n.y=Math.max(n.r+6,Math.min(h-n.r-6,n.y));});
+    n.vx+=(cx-n.x)*0.003;n.vy+=(cy-n.y)*0.003;n.vx*=0.88;n.vy*=0.88;n.x+=n.vx;n.y+=n.vy;
+    n.x=Math.max(n.r+8,Math.min(w-n.r-8,n.x));n.y=Math.max(n.r+8,Math.min(h-n.r-24,n.y));});
 }
+
+function roundRect(x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
+
 function webDraw(){
-  ctx.clearRect(0,0,canvasW,canvasH);
-  web.edges.forEach(e=>{const a=nodeById(e.a),b=nodeById(e.b);
-    const active=webSel&&(e.a===webSel||e.b===webSel),dim=webSel&&!active;
+  const bg=ctx.createRadialGradient(canvasW/2,canvasH*0.42,20,canvasW/2,canvasH*0.5,Math.max(canvasW,canvasH)*0.72);
+  bg.addColorStop(0,'#1b0d13');bg.addColorStop(0.55,'#120a0e');bg.addColorStop(1,'#090507');
+  ctx.fillStyle=bg;ctx.fillRect(0,0,canvasW,canvasH);
+
+  ctx.setLineDash([5,6]);
+  web.rivalEdges.forEach(e=>{const a=nodeById(e.a),b=nodeById(e.b);
+    const sel=edgeSelected(e,'rival'),active=edgeActive(e),dim=webSel&&!active&&!sel;
     ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);
-    ctx.lineWidth=Math.min(1+e.w*0.9,7);
-    ctx.strokeStyle=active?'rgba(201,162,75,0.9)':dim?'rgba(120,90,60,0.07)':'rgba(150,110,60,0.3)';
-    ctx.stroke();});
-  web.nodes.forEach(n=>{
-    const sel=webSel===n.id,neighbor=webSel&&web.adj[webSel].some(x=>x.other===n.id),dim=webSel&&!sel&&!neighbor;
-    ctx.globalAlpha=dim?0.28:1;
-    const grd=ctx.createRadialGradient(n.x-n.r*0.3,n.y-n.r*0.3,2,n.x,n.y,n.r);
-    grd.addColorStop(0,'#e6c25e');grd.addColorStop(1,'#7d5a1f');
-    ctx.beginPath();ctx.arc(n.x,n.y,n.r,0,Math.PI*2);ctx.fillStyle=grd;ctx.fill();
     ctx.lineWidth=sel?3:2;
-    ctx.strokeStyle=web.conflicts.has(n.id)?'#c8202f':(sel?'#f0e0b0':'#3a2a12');ctx.stroke();
-    ctx.fillStyle=dim?'rgba(233,223,205,0.5)':'#e9dfcd';
+    ctx.strokeStyle=sel?'rgba(232,70,84,0.95)':dim?'rgba(170,45,55,0.08)':'rgba(188,55,66,0.5)';
+    ctx.stroke();});
+  ctx.setLineDash([]);
+
+  web.coEdges.forEach(e=>{const a=nodeById(e.a),b=nodeById(e.b);
+    const sel=edgeSelected(e,'co'),active=edgeActive(e),dim=webSel&&!active&&!sel;
+    ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);
+    ctx.lineWidth=Math.min(1.4+e.w*0.95,8);
+    ctx.strokeStyle=sel?'rgba(240,214,150,0.95)':active?'rgba(210,170,85,0.85)':dim?'rgba(150,112,60,0.06)':'rgba(158,118,64,0.28)';
+    ctx.stroke();});
+
+  ctx.font='11px ui-monospace, monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+  web.coEdges.forEach(e=>{if(!(edgeActive(e)||edgeSelected(e,'co')))return;const a=nodeById(e.a),b=nodeById(e.b),mx=(a.x+b.x)/2,my=(a.y+b.y)/2;
+    ctx.fillStyle='rgba(9,5,7,0.9)';roundRect(mx-12,my-9,24,18,6);ctx.fill();
+    ctx.strokeStyle='rgba(201,162,75,0.5)';ctx.lineWidth=1;ctx.stroke();
+    ctx.fillStyle='#e6c25e';ctx.fillText(e.w,mx,my);});
+
+  web.nodes.forEach(n=>{
+    const hl=nodeHighlighted(n.id),sel=selIsNode(n.id);
+    ctx.globalAlpha=hl?1:0.22;
+    ctx.save();ctx.shadowColor=web.conflicts.has(n.id)?'rgba(200,32,47,0.6)':'rgba(201,162,75,0.55)';ctx.shadowBlur=hl?18:7;
+    const grd=ctx.createRadialGradient(n.x-n.r*0.35,n.y-n.r*0.4,2,n.x,n.y,n.r);
+    grd.addColorStop(0,'#f5dc8c');grd.addColorStop(0.55,'#c9a24b');grd.addColorStop(1,'#7d5a1f');
+    ctx.beginPath();ctx.arc(n.x,n.y,n.r,0,Math.PI*2);ctx.fillStyle=grd;ctx.fill();ctx.restore();
+    ctx.lineWidth=n.sealed?3:2;
+    ctx.strokeStyle=web.conflicts.has(n.id)?'#e0303c':(n.sealed?'#c8202f':(sel?'#f4e6bd':'#4a3517'));
+    ctx.beginPath();ctx.arc(n.x,n.y,n.r,0,Math.PI*2);ctx.stroke();
+    if(n.sealed){ctx.fillStyle='#e0303c';ctx.beginPath();ctx.arc(n.x+n.r*0.62,n.y-n.r*0.62,3.2,0,Math.PI*2);ctx.fill();}
+    if(sel){ctx.lineWidth=1;ctx.strokeStyle='rgba(244,230,189,0.55)';ctx.beginPath();ctx.arc(n.x,n.y,n.r+4,0,Math.PI*2);ctx.stroke();}
     ctx.font='12px Georgia, serif';ctx.textAlign='center';ctx.textBaseline='top';
-    ctx.fillText(n.name,n.x,n.y+n.r+3);ctx.globalAlpha=1;});
+    const tw=ctx.measureText(n.name).width,ly=n.y+n.r+5;
+    ctx.fillStyle='rgba(9,5,7,0.72)';roundRect(n.x-tw/2-6,ly-2,tw+12,17,6);ctx.fill();
+    ctx.fillStyle=hl?'#efe6d2':'rgba(239,230,210,0.55)';ctx.fillText(n.name,n.x,ly);
+    ctx.globalAlpha=1;
+  });
 }
 function webLoop(){if(!webOpen)return;webStep();webStep();webDraw();webRAF=requestAnimationFrame(webLoop);}
 
@@ -994,31 +1055,63 @@ function toggleEmpty(){
     e.textContent=webMode==='cast'?'No sealed casting yet. Seal actors into roles, or switch to the candidates view.':'No actors placed yet. Drag names onto roles to see who shares the stage.';
   } else {canvas.style.display='block';if(e)e.remove();}
 }
+function findCo(sel){return web.coEdges.find(e=>sameEdge(sel,e));}
+function findRival(sel){return web.rivalEdges.find(e=>sameEdge(sel,e));}
 function updateWebInfo(){
   const info=document.getElementById('webInfo');
   if(!web.nodes.length){info.textContent='';return;}
   if(!webSel){
     const conf=[...web.conflicts].map(id=>actor(id)&&actor(id).name).filter(Boolean);
-    let s=`<b>${web.nodes.length}</b> actors, <b>${web.edges.length}</b> shared-scene links. Showing ${webMode==='cast'?'sealed casting':'all candidates'}.`;
-    if(conf.length)s+=` <span class="warn">Double-cast in a shared scene: ${esc(conf.join(', '))}.</span>`;
+    const riv=web.rivalEdges.length;
+    let s=`<b>${web.nodes.length}</b> actors, <b>${web.coEdges.length}</b> shared-scene links`+(riv?`, <b>${riv}</b> same-role rivalr${riv===1?'y':'ies'}`:'')+`. Showing ${webMode==='cast'?'sealed casting':'all candidates'}.`;
+    if(conf.length)s+=` <span class="warn">Double cast in a shared scene: ${esc(conf.join(', '))}.</span>`;
+    s+=` <span class="hintdim">Tap a name, or tap a line between two names, for detail.</span>`;
     info.innerHTML=s;return;
   }
-  const n=nodeMap[webSel];
-  const parts=web.adj[webSel].slice().sort((a,b)=>b.w-a.w).map(x=>`${esc(actor(x.other).name)} <b>(${x.w})</b>`);
-  const sc=[...n.scenes].sort((a,b)=>SCENE_ORDER.indexOf(a)-SCENE_ORDER.indexOf(b)).join(', ');
-  let s=`<b>${esc(n.name)}</b> as ${esc(n.chars.join(', '))}. In ${n.scenes.size} scene${n.scenes.size===1?'':'s'}: ${sc}.<br>`;
-  s+=parts.length?`Shares scenes with: ${parts.join(', ')}.`:'Shares no scenes with anyone else placed.';
-  if(web.conflicts.has(webSel))s+=` <span class="warn">Sealed into two roles that appear together.</span>`;
-  info.innerHTML=s;
+  if(webSel.t==='node'){
+    const n=nodeMap[webSel.id];
+    const parts=web.adj[webSel.id].slice().sort((a,b)=>b.w-a.w).map(x=>`${esc(actor(x.other).name)} <b>(${x.w})</b>`);
+    const rivals=web.rivalAdj[webSel.id].map(x=>esc(actor(x.other).name));
+    const sc=[...n.scenes].sort((a,b)=>SCENE_ORDER.indexOf(a)-SCENE_ORDER.indexOf(b)).join(', ');
+    let s=`<b>${esc(n.name)}</b> as ${esc(n.chars.join(', '))}. In ${n.scenes.size} scene${n.scenes.size===1?'':'s'}: ${sc}.<br>`;
+    s+=parts.length?`Shares scenes with: ${parts.join(', ')}.`:'Shares no scenes with anyone else placed.';
+    if(rivals.length)s+=` <span class="warn">Up for the same role as: ${rivals.join(', ')}.</span>`;
+    if(web.conflicts.has(webSel.id))s+=` <span class="warn">Sealed into two roles that appear together.</span>`;
+    info.innerHTML=s;return;
+  }
+  if(webSel.t==='co'){
+    const e=findCo(webSel);if(!e){webSel=null;return updateWebInfo();}
+    info.innerHTML=`<b>${esc(actor(e.a).name)}</b> and <b>${esc(actor(e.b).name)}</b> share <b>${e.w}</b> scene${e.w===1?'':'s'}: ${e.scenes.join(', ')}.`;
+    return;
+  }
+  if(webSel.t==='rival'){
+    const e=findRival(webSel);if(!e){webSel=null;return updateWebInfo();}
+    const A=actor(e.a),B=actor(e.b);
+    let s=`<b>${esc(A.name)}</b> and <b>${esc(B.name)}</b> are both up for the same role. Tap a name to seal your choice.<br>`;
+    s+=e.roles.map(nm=>{const c=charByName(nm);if(!c)return '';const aSel=c.castId===e.a,bSel=c.castId===e.b;
+      return `<span class="rrole"><span class="rname">${esc(nm)}</span>`+
+        `<button class="mini-seal ${aSel?'on':''}" data-seal-role="${c.id}|${e.a}">${esc(A.name)}${aSel?' \u2713':''}</button>`+
+        `<button class="mini-seal ${bSel?'on':''}" data-seal-role="${c.id}|${e.b}">${esc(B.name)}${bSel?' \u2713':''}</button></span>`;
+    }).join('');
+    info.innerHTML=s;
+    return;
+  }
 }
 function rebuildWeb(initPos){
-  web=buildWeb(webMode);nodeMap={};web.nodes.forEach(n=>nodeMap[n.id]=n);
-  if(webSel&&!nodeMap[webSel])webSel=null;
+  const old=nodeMap;
+  web=buildWeb(webMode);nodeMap={};
+  web.nodes.forEach(n=>{nodeMap[n.id]=n;if(old[n.id]){n.x=old[n.id].x;n.y=old[n.id].y;n.vx=old[n.id].vx;n.vy=old[n.id].vy;}});
+  if(webSel){
+    if(webSel.t==='node'&&!nodeMap[webSel.id])webSel=null;
+    else if((webSel.t==='co'||webSel.t==='rival')&&(!nodeMap[webSel.a]||!nodeMap[webSel.b]))webSel=null;
+  }
   requestAnimationFrame(()=>{
     sizeCanvas();
-    if(initPos){const cx=canvasW/2,cy=canvasH/2,R=Math.min(canvasW,canvasH)*0.32;
-      web.nodes.forEach((n,i)=>{const ang=i/Math.max(web.nodes.length,1)*Math.PI*2;
-        n.x=cx+Math.cos(ang)*R+Math.random()*8;n.y=cy+Math.sin(ang)*R+Math.random()*8;});}
+    const cx=canvasW/2,cy=canvasH/2,R=Math.min(canvasW,canvasH)*0.34;
+    web.nodes.forEach((n,i)=>{
+      if(initPos||(n.x===0&&n.y===0)){const ang=i/Math.max(web.nodes.length,1)*Math.PI*2;
+        n.x=cx+Math.cos(ang)*R+Math.random()*10;n.y=cy+Math.sin(ang)*R+Math.random()*10;}
+    });
     toggleEmpty();updateWebInfo();
     if(!webRAF)webLoop();
   });
@@ -1039,25 +1132,37 @@ document.getElementById('webMode').addEventListener('click',()=>{
   webMode=webMode==='cast'?'candidates':'cast';webSel=null;
   document.getElementById('webMode').textContent=webMode==='cast'?'View: sealed':'View: candidates';
   rebuildWeb(true);});
+document.getElementById('webInfo').addEventListener('click',e=>{
+  const b=e.target.closest('[data-seal-role]');if(!b)return;
+  const p=b.dataset.sealRole.split('|');toggleCast(p[0],p[1]);rebuildWeb(false);updateWebInfo();});
 window.addEventListener('resize',()=>{if(webOpen)sizeCanvas();});
 
-let webDragNode=null,webDownPt=null,webMovedFlag=false;
 function canvasPos(e){const r=canvas.getBoundingClientRect();return {x:e.clientX-r.left,y:e.clientY-r.top};}
-function hitNode(p){for(let i=web.nodes.length-1;i>=0;i--){const n=web.nodes[i];
-  if((n.x-p.x)**2+(n.y-p.y)**2<=(n.r+4)**2)return n;}return null;}
+function hitNode(p){for(let i=web.nodes.length-1;i>=0;i--){const n=web.nodes[i];if((n.x-p.x)**2+(n.y-p.y)**2<=(n.r+4)**2)return n;}return null;}
+function distToSeg(p,a,b){const dx=b.x-a.x,dy=b.y-a.y,l2=dx*dx+dy*dy;if(l2===0)return Math.hypot(p.x-a.x,p.y-a.y);
+  let t=((p.x-a.x)*dx+(p.y-a.y)*dy)/l2;t=Math.max(0,Math.min(1,t));
+  return Math.hypot(p.x-(a.x+t*dx),p.y-(a.y+t*dy));}
+function hitEdge(p){let best=null,bestD=9;
+  const test=(e,type)=>{const a=nodeById(e.a),b=nodeById(e.b),d=distToSeg(p,a,b);if(d<bestD){bestD=d;best={t:type,a:e.a,b:e.b};}};
+  web.rivalEdges.forEach(e=>test(e,'rival'));web.coEdges.forEach(e=>test(e,'co'));return best;}
+
+let webDragNode=null,webDownPt=null,webMovedFlag=false;
 canvas.addEventListener('pointerdown',e=>{const p=canvasPos(e);const n=hitNode(p);
   webDownPt=p;webMovedFlag=false;
   if(n){webDragNode=n;n.fixed=true;canvas.setPointerCapture(e.pointerId);canvas.style.cursor='grabbing';}});
-canvas.addEventListener('pointermove',e=>{if(!webDownPt)return;const p=canvasPos(e);
+canvas.addEventListener('pointermove',e=>{const p=canvasPos(e);
+  if(!webDownPt){canvas.style.cursor=(hitNode(p)||hitEdge(p))?'pointer':'grab';return;}
   if(Math.hypot(p.x-webDownPt.x,p.y-webDownPt.y)>4)webMovedFlag=true;
   if(webDragNode){webDragNode.x=p.x;webDragNode.y=p.y;webDragNode.vx=0;webDragNode.vy=0;}});
 canvas.addEventListener('pointerup',e=>{const p=canvasPos(e);
   if(webDragNode){webDragNode.fixed=false;
-    if(!webMovedFlag){webSel=(webSel===webDragNode.id)?null:webDragNode.id;updateWebInfo();}
+    if(!webMovedFlag){webSel=selIsNode(webDragNode.id)?null:{t:'node',id:webDragNode.id};updateWebInfo();}
     webDragNode=null;canvas.style.cursor='grab';}
-  else if(webDownPt&&!webMovedFlag){const n=hitNode(p);webSel=n?n.id:null;updateWebInfo();}
+  else if(webDownPt&&!webMovedFlag){const n=hitNode(p);
+    if(n){webSel=selIsNode(n.id)?null:{t:'node',id:n.id};}
+    else{const ed=hitEdge(p);webSel=(ed&&webSel&&webSel.t===ed.t&&sameEdge(webSel,ed))?null:ed;}
+    updateWebInfo();}
   webDownPt=null;});
-
 bindOpen();
 render();
 </script>
