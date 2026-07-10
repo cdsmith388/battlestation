@@ -95,7 +95,18 @@
     letter-spacing:.2em;text-transform:uppercase;color:var(--dim);
     margin-bottom:10px;
   }
+  .toolbar{
+    display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+    padding:8px 18px;border-bottom:1px solid var(--line-soft);
+    background:var(--panel);position:sticky;top:0;z-index:8;
+  }
+  .toolbar .strip-label{
+    font-family:'Cinzel',serif;font-size:.72rem;font-weight:700;
+    letter-spacing:.18em;color:var(--dim);text-transform:uppercase;
+  }
+  .toolbar .hint{margin:0;flex:1;text-align:right;min-width:180px}
   .tools{display:flex;gap:6px}
+  .toolbar .tool-btn{flex:none;padding:6px 14px}
   .tool-btn{
     flex:1;background:var(--panel-2);border:1px solid var(--line);color:var(--dim);
     border-radius:4px;padding:7px 4px;font-size:.82rem;letter-spacing:.04em;
@@ -340,23 +351,22 @@
   </span>
 </div>
 
+<div class="toolbar">
+  <span class="strip-label">Tools</span>
+  <div class="tools">
+    <button class="tool-btn active" data-tool="move" id="toolMove">Move</button>
+    <button class="tool-btn" data-tool="arrow" id="toolArrow">Arrow</button>
+    <button class="tool-btn" data-tool="draw" id="toolDraw">Draw</button>
+    <button class="tool-btn" data-tool="note" id="toolNote">Note</button>
+    <button class="tool-btn" data-tool="erase" id="toolErase">Erase</button>
+  </div>
+  <button class="btn small" id="clearArrowsBtn">Clear marks</button>
+  <button class="btn small" id="clearStageBtn">Clear stage</button>
+  <span class="hint" id="toolHint">Drag actors around the stage. Tap a cast name's Place button to bring them on.</span>
+</div>
+
 <main>
   <aside class="sidebar">
-    <div class="side-section">
-      <h2>Tools</h2>
-      <div class="tools">
-        <button class="tool-btn active" data-tool="move" id="toolMove">Move</button>
-        <button class="tool-btn" data-tool="arrow" id="toolArrow">Arrow</button>
-        <button class="tool-btn" data-tool="draw" id="toolDraw">Draw</button>
-        <button class="tool-btn" data-tool="note" id="toolNote">Note</button>
-        <button class="tool-btn" data-tool="erase" id="toolErase">Erase</button>
-      </div>
-      <div class="hint" id="toolHint">Drag actors around the stage. Tap a cast name's Place button to bring them on.</div>
-      <div style="margin-top:10px;display:flex;gap:6px">
-        <button class="btn small" id="clearArrowsBtn">Clear marks</button>
-        <button class="btn small" id="clearStageBtn">Clear stage</button>
-      </div>
-    </div>
     <div class="side-section">
       <h2>Set Pieces</h2>
       <div style="display:flex;gap:6px">
@@ -401,7 +411,10 @@
         <input type="range" id="liSize" min="30" max="240" step="2">
         <label>Edge, sharp to soft <span id="liFocusVal"></span></label>
         <input type="range" id="liFocus" min="0" max="100" step="1">
+        <label>Brightness <span id="liBrightVal"></span></label>
+        <input type="range" id="liBright" min="0" max="100" step="1">
         <div class="li-btns">
+          <button class="btn small" id="liToggle">Turn off</button>
           <button class="btn small" id="liDelete">Remove</button>
           <button class="btn small" id="liClose">Done</button>
         </div>
@@ -1128,7 +1141,7 @@ var SCRIPT_DATA = {"1-1":{"title":"Scene 1. A desert place.","lines":["Thunder a
     state.lights.push({
       id:uid('L'), type:type, x:x, y:y,
       tx:x, ty:Math.min(600,y+190),
-      color:'#f5edd8', size:120, focus:35
+      color:'#f5edd8', size:120, focus:35, intensity:80, on:true
     });
     if(!state.lightsOn){ state.lightsOn=true; $('lightsToggle').classList.add('toggled'); }
     state.selectedLight=state.lights[state.lights.length-1].id;
@@ -1161,17 +1174,20 @@ var SCRIPT_DATA = {"1-1":{"title":"Scene 1. A desert place.","lines":["Thunder a
     var defs='<defs>';
     state.lights.forEach(function(L){
       var hard=Math.max(.12, .95-(L.focus/100)*.83);
-      defs+='<radialGradient id="lg_'+L.id+'"><stop offset="0" stop-color="'+L.color+'" stop-opacity=".5"/><stop offset="'+hard.toFixed(2)+'" stop-color="'+L.color+'" stop-opacity=".42"/><stop offset="1" stop-color="'+L.color+'" stop-opacity="0"/></radialGradient>';
+      var inten=(L.intensity==null?80:L.intensity)/100;
+      defs+='<radialGradient id="lg_'+L.id+'"><stop offset="0" stop-color="'+L.color+'" stop-opacity="'+(0.5*inten).toFixed(3)+'"/><stop offset="'+hard.toFixed(2)+'" stop-color="'+L.color+'" stop-opacity="'+(0.42*inten).toFixed(3)+'"/><stop offset="1" stop-color="'+L.color+'" stop-opacity="0"/></radialGradient>';
     });
     defs+='</defs>';
     html+=defs;
     state.lights.forEach(function(L){
+      if(L.on===false) return;
+      var inten=(L.intensity==null?80:L.intensity)/100;
       var r=L.size/2;
       var dx=L.tx-L.x, dy=L.ty-L.y;
       var len=Math.max(1,Math.sqrt(dx*dx+dy*dy));
       var px=-dy/len*r, py=dx/len*r;
       html+='<g pointer-events="none">';
-      html+='<polygon points="'+L.x+','+L.y+' '+(L.tx+px)+','+(L.ty+py)+' '+(L.tx-px)+','+(L.ty-py)+'" fill="'+L.color+'" opacity=".10"/>';
+      html+='<polygon points="'+L.x+','+L.y+' '+(L.tx+px)+','+(L.ty+py)+' '+(L.tx-px)+','+(L.ty-py)+'" fill="'+L.color+'" opacity="'+(0.11*inten).toFixed(3)+'"/>';
       html+='<circle cx="'+L.tx+'" cy="'+L.ty+'" r="'+r+'" fill="url(#lg_'+L.id+')"/>';
       html+='</g>';
     });
@@ -1179,16 +1195,18 @@ var SCRIPT_DATA = {"1-1":{"title":"Scene 1. A desert place.","lines":["Thunder a
     state.lights.forEach(function(L){
       var ang=Math.atan2(L.ty-L.y, L.tx-L.x)*180/Math.PI;
       var sel=state.selectedLight===L.id;
-      html+='<g class="light" data-light-id="'+L.id+'" transform="translate('+L.x+','+L.y+') rotate('+ang.toFixed(1)+')">';
+      var lit=L.on!==false;
+      var sc=lit?L.color:'#5a5264';
+      html+='<g class="light" data-light-id="'+L.id+'"'+(lit?'':' opacity=".6"')+' transform="translate('+L.x+','+L.y+') rotate('+ang.toFixed(1)+')">';
       if(sel) html+='<circle r="20" fill="none" stroke="var(--candle)" stroke-width="1.6" stroke-dasharray="4 4"/>';
       if(L.type==='can'){
-        html+='<circle r="9" fill="#141019" stroke="'+L.color+'" stroke-width="2.4"/>'+
-              '<rect x="7" y="-5" width="9" height="10" fill="#141019" stroke="'+L.color+'" stroke-width="2"/>';
+        html+='<circle r="9" fill="#141019" stroke="'+sc+'" stroke-width="2.4"/>'+
+              '<rect x="7" y="-5" width="9" height="10" fill="#141019" stroke="'+sc+'" stroke-width="2"/>';
       } else {
-        html+='<rect x="-15" y="-6" width="20" height="12" rx="3" fill="#141019" stroke="'+L.color+'" stroke-width="2.2"/>'+
-              '<rect x="5" y="-4" width="12" height="8" fill="#141019" stroke="'+L.color+'" stroke-width="2"/>';
+        html+='<rect x="-15" y="-6" width="20" height="12" rx="3" fill="#141019" stroke="'+sc+'" stroke-width="2.2"/>'+
+              '<rect x="5" y="-4" width="12" height="8" fill="#141019" stroke="'+sc+'" stroke-width="2"/>';
       }
-      html+='<title>'+(L.type==='can'?'Can':'Leko')+'</title></g>';
+      html+='<title>'+(L.type==='can'?'Can':'Leko')+(lit?'':' (off)')+'</title></g>';
       if(sel){
         html+='<g class="light-aim" data-light-id="'+L.id+'" transform="translate('+L.tx+','+L.ty+')">'+
           '<circle r="16" fill="rgba(0,0,0,0)"/>'+
@@ -1228,8 +1246,11 @@ var SCRIPT_DATA = {"1-1":{"title":"Scene 1. A desert place.","lines":["Thunder a
     });
     $('liSize').value=L.size;
     $('liFocus').value=L.focus;
+    $('liBright').value=(L.intensity==null?80:L.intensity);
     $('liSizeVal').textContent=Math.round(L.size);
     $('liFocusVal').textContent=L.focus;
+    $('liBrightVal').textContent=(L.intensity==null?80:L.intensity)+'%';
+    $('liToggle').textContent=(L.on===false)?'Turn on':'Turn off';
     $('lightInspector').classList.add('show');
   }
   function closeInspector(){
@@ -1245,6 +1266,18 @@ var SCRIPT_DATA = {"1-1":{"title":"Scene 1. A desert place.","lines":["Thunder a
     var L=findLight(state.selectedLight); if(!L) return;
     L.focus=parseFloat(this.value);
     $('liFocusVal').textContent=L.focus;
+    renderLights(); scheduleSave();
+  });
+  $('liBright').addEventListener('input', function(){
+    var L=findLight(state.selectedLight); if(!L) return;
+    L.intensity=parseFloat(this.value);
+    $('liBrightVal').textContent=Math.round(L.intensity)+'%';
+    renderLights(); scheduleSave();
+  });
+  $('liToggle').addEventListener('click', function(){
+    var L=findLight(state.selectedLight); if(!L) return;
+    L.on=(L.on===false);
+    this.textContent=(L.on===false)?'Turn on':'Turn off';
     renderLights(); scheduleSave();
   });
   $('liDelete').addEventListener('click', function(){
@@ -1660,8 +1693,9 @@ var SCRIPT_DATA = {"1-1":{"title":"Scene 1. A desert place.","lines":["Thunder a
   var HINTS={
     move:'Drag actors around the stage. Tap a cast name\'s Place button to bring them on.',
     arrow:'Press and drag on the stage to draw a movement arrow. Start on an actor to snap the tail to them.',
+    draw:'Press and drag to sketch a freehand path, a traffic pattern, a crossing route, anything. Erase taps it away.',
     note:'Tap anywhere on the stage to pin a sticky note: SFX cues, props, questions. In Move, tap a note to edit it, drag to reposition.',
-    erase:'Tap an actor to strike them from this moment, or tap an arrow to remove it.'
+    erase:'Tap anything to remove it: actors, arrows, drawings, notes, set pieces, or lights.'
   };
   document.querySelectorAll('.tool-btn').forEach(function(b){
     b.addEventListener('click', function(){
@@ -1674,9 +1708,10 @@ var SCRIPT_DATA = {"1-1":{"title":"Scene 1. A desert place.","lines":["Thunder a
   });
 
   $('clearArrowsBtn').addEventListener('click', function(){
-    var m=currentMoment(); if(!m || !m.arrows.length) return;
-    askConfirm('Remove all arrows in this moment?','Clear').then(function(ok){
-      if(ok){ m.arrows=[]; renderStage(); scheduleSave(); }
+    var m=currentMoment(); if(!m) return;
+    if(!m.arrows.length && !(m.draws||[]).length) return;
+    askConfirm('Remove all arrows and drawings in this moment?','Clear').then(function(ok){
+      if(ok){ m.arrows=[]; m.draws=[]; renderStage(); scheduleSave(); }
     });
   });
   $('clearStageBtn').addEventListener('click', function(){
@@ -1701,7 +1736,7 @@ var SCRIPT_DATA = {"1-1":{"title":"Scene 1. A desert place.","lines":["Thunder a
   /* ------------------------------------------------------------------ */
 
   $('exportBtn').addEventListener('click', function(){
-    var payload={version:2, exported:new Date().toISOString(), cast:state.cast, scenes:state.scenes};
+    var payload={version:3, exported:new Date().toISOString(), cast:state.cast, scenes:state.scenes, lights:state.lights};
     var blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
     var a=document.createElement('a');
     a.href=URL.createObjectURL(blob);
@@ -1720,6 +1755,8 @@ var SCRIPT_DATA = {"1-1":{"title":"Scene 1. A desert place.","lines":["Thunder a
         if(!data.scenes || !data.cast) throw new Error('bad file');
         state.cast=data.cast;
         state.scenes=data.scenes;
+        if(data.lights) state.lights=data.lights;
+        renderLights();
         enterScene();
       }catch(e){
         notify('That file could not be read as a blocking export.');
@@ -1751,6 +1788,7 @@ var SCRIPT_DATA = {"1-1":{"title":"Scene 1. A desert place.","lines":["Thunder a
         h.className='log-scene'; h.textContent=sceneName;
         body.appendChild(h);
         txt.push(''); txt.push(sceneName.toUpperCase());
+        var prevZones={};
         ms.forEach(function(m,idx){
           var mv=document.createElement('div');
           mv.className='log-moment';
@@ -1758,13 +1796,17 @@ var SCRIPT_DATA = {"1-1":{"title":"Scene 1. A desert place.","lines":["Thunder a
           body.appendChild(mv);
           txt.push('  '+(idx+1)+'. '+m.label);
           var parts=[], tparts=[];
+          var zonesNow={};
           state.cast.forEach(function(c){
             var p=m.positions[c.id];
             if(!p) return;
             var z=zoneFor(p.x,p.y);
-            parts.push('<b>'+esc(shortRole(c))+'</b> '+z);
-            tparts.push(shortRole(c)+': '+z);
+            zonesNow[c.id]=z;
+            var held = prevZones[c.id]===z;
+            parts.push('<span class="'+(held?'hold':'fresh')+'"><b>'+esc(shortRole(c))+'</b> '+z+(held?' holds':'')+'</span>');
+            tparts.push(shortRole(c)+': '+z+(held?' (holds)':''));
           });
+          prevZones=zonesNow;
           var pv=document.createElement('div');
           pv.className='log-pos';
           pv.innerHTML=parts.length ? parts.join(' &middot; ') : '<i>empty stage</i>';
@@ -1843,6 +1885,7 @@ var SCRIPT_DATA = {"1-1":{"title":"Scene 1. A desert place.","lines":["Thunder a
       localStorage.setItem(STORE_KEY, JSON.stringify({
         version:2, saved:new Date().toISOString(),
         cast:state.cast, scenes:state.scenes,
+        lights:state.lights, lightsOn:state.lightsOn,
         act:state.act, scene:state.scene
       }));
       var st=$('saveStatus');
@@ -1860,6 +1903,8 @@ var SCRIPT_DATA = {"1-1":{"title":"Scene 1. A desert place.","lines":["Thunder a
       if(!d.scenes || !d.cast) return false;
       state.cast=d.cast;
       state.scenes=d.scenes;
+      if(d.lights) state.lights=d.lights;
+      if(d.lightsOn) state.lightsOn=true;
       if(d.act>=1 && d.act<=5) state.act=d.act;
       if(d.scene>=1) state.scene=d.scene;
       return true;
@@ -1895,6 +1940,8 @@ var SCRIPT_DATA = {"1-1":{"title":"Scene 1. A desert place.","lines":["Thunder a
     : 'This embedded preview cannot store data. Open the downloaded file in a browser, or host it, and autosave will work. Export is your safety net here.';
   buildActSelect();
   buildSceneSelect();
+  $('lightsToggle').classList.toggle('toggled', state.lightsOn);
+  renderLights();
   enterScene();
 })();
 </script>
