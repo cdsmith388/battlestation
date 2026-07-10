@@ -230,6 +230,33 @@
   .arrow-hit{cursor:pointer}
   .sticky{cursor:grab}
   .save-status{font-size:.7rem;color:var(--dim);letter-spacing:.1em;text-transform:uppercase;align-self:center}
+  .prop{cursor:grab}
+  .light{cursor:grab}
+  .light-aim{cursor:move}
+  .draw-hit{cursor:pointer}
+  .light-inspector{
+    position:absolute;top:10px;right:14px;z-index:7;display:none;width:212px;
+    background:rgba(20,16,25,.96);border:1px solid var(--line);border-radius:6px;
+    padding:12px 14px;box-shadow:0 10px 34px rgba(0,0,0,.55);
+  }
+  .light-inspector.show{display:block}
+  .light-inspector h4{
+    font-family:'Cinzel',serif;font-size:.72rem;font-weight:700;letter-spacing:.16em;
+    text-transform:uppercase;color:var(--candle);margin-bottom:9px;
+  }
+  .li-swatches{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:8px}
+  .li-swatches button{width:20px;height:20px;border-radius:50%;border:2px solid rgba(255,255,255,.15);padding:0;cursor:pointer}
+  .li-swatches button.sel{border-color:#fff}
+  .light-inspector label{
+    display:block;font-size:.66rem;letter-spacing:.1em;text-transform:uppercase;
+    color:var(--dim);margin:7px 0 2px;
+  }
+  .light-inspector input[type=range]{width:100%;accent-color:var(--blood-bright)}
+  .li-btns{display:flex;gap:6px;margin-top:11px;justify-content:space-between}
+  .log-pos .hold{color:#565061}
+  .log-pos .fresh{color:var(--bone)}
+  .log-pos .fresh b{color:var(--blood-bright);font-weight:600}
+  .log-pos .hold b{color:#565061;font-weight:500}
 
   @media (max-width: 900px){
     main{flex-direction:column}
@@ -293,6 +320,7 @@
     <select id="sceneSel"></select>
     <button class="btn small" id="scriptToggle" title="Show or hide the scene's text">Script</button>
     <button class="btn small toggled" id="gridToggle" title="Show or hide the stage zone grid">Grid</button>
+    <button class="btn small" id="lightsToggle" title="Show or hide the lighting rig">Lights</button>
     <button class="btn small" id="logBtn" title="Review every logged position across the whole show">Log</button>
     <button class="btn small" id="exportBtn" title="Download all blocking as a JSON file">Export</button>
     <button class="btn small" id="importBtn" title="Load a previously exported JSON file">Import</button>
@@ -319,14 +347,42 @@
       <div class="tools">
         <button class="tool-btn active" data-tool="move" id="toolMove">Move</button>
         <button class="tool-btn" data-tool="arrow" id="toolArrow">Arrow</button>
+        <button class="tool-btn" data-tool="draw" id="toolDraw">Draw</button>
         <button class="tool-btn" data-tool="note" id="toolNote">Note</button>
         <button class="tool-btn" data-tool="erase" id="toolErase">Erase</button>
       </div>
       <div class="hint" id="toolHint">Drag actors around the stage. Tap a cast name's Place button to bring them on.</div>
       <div style="margin-top:10px;display:flex;gap:6px">
-        <button class="btn small" id="clearArrowsBtn">Clear arrows</button>
+        <button class="btn small" id="clearArrowsBtn">Clear marks</button>
         <button class="btn small" id="clearStageBtn">Clear stage</button>
       </div>
+    </div>
+    <div class="side-section">
+      <h2>Set Pieces</h2>
+      <div style="display:flex;gap:6px">
+        <select id="propSel" style="flex:1">
+          <option value="cauldron">Cauldron</option>
+          <option value="throne">Throne</option>
+          <option value="table">Table</option>
+          <option value="chair">Chair</option>
+          <option value="bench">Bench</option>
+          <option value="bed">Bed</option>
+          <option value="coffin">Coffin</option>
+          <option value="tree">Tree</option>
+          <option value="candelabra">Candelabra</option>
+          <option value="chest">Chest</option>
+        </select>
+        <button class="btn small" id="addPropBtn">Add</button>
+      </div>
+      <div class="hint">Drops center stage. Drag to place, tap to rotate, Erase to strike.</div>
+    </div>
+    <div class="side-section">
+      <h2>Lights</h2>
+      <div style="display:flex;gap:6px">
+        <button class="btn small" id="addCanBtn">+ Can</button>
+        <button class="btn small" id="addLekoBtn">+ Leko</button>
+      </div>
+      <div class="hint">Drag the fixture along the pipes, drag its crosshair to aim the barrel, tap it to set gel, beam size, and edge.</div>
     </div>
     <div class="side-section" style="flex:1">
       <h2>Cast <button class="btn small" id="addCastBtn" style="float:right;margin-top:-4px">+ Add</button></h2>
@@ -338,6 +394,18 @@
   <div class="stage-wrap">
     <div class="stage-holder">
       <div class="zone-readout" id="zoneReadout"></div>
+      <div class="light-inspector" id="lightInspector">
+        <h4 id="liTitle">Light</h4>
+        <div class="li-swatches" id="liSwatches"></div>
+        <label>Beam size <span id="liSizeVal"></span></label>
+        <input type="range" id="liSize" min="30" max="240" step="2">
+        <label>Edge, sharp to soft <span id="liFocusVal"></span></label>
+        <input type="range" id="liFocus" min="0" max="100" step="1">
+        <div class="li-btns">
+          <button class="btn small" id="liDelete">Remove</button>
+          <button class="btn small" id="liClose">Done</button>
+        </div>
+      </div>
       <svg id="stage" viewBox="0 0 1000 800" xmlns="http://www.w3.org/2000/svg">
         <defs>
           <marker id="arrowhead" markerWidth="9" markerHeight="7" refX="8" refY="3.5" orient="auto">
@@ -496,7 +564,9 @@
         <text class="map-label" x="948" y="348" font-size="11" text-anchor="middle" opacity=".7" transform="rotate(90 948 348)">STAGE RIGHT</text>
         </g>
         <!-- dynamic layers -->
+        <g id="lightLayer"></g>
         <g id="arrowLayer"></g>
+        <g id="propLayer"></g>
         <g id="stickyLayer"></g>
         <g id="tempLayer"></g>
         <g id="tokenLayer"></g>
@@ -665,7 +735,10 @@ var SCRIPT_DATA = {"1-1":{"title":"Scene 1. A desert place.","lines":["Thunder a
     momentId:null,
     cast:seedCast(),
     scenes:{},          /* key "act-scene" -> array of moments */
-    selectedToken:null
+    selectedToken:null,
+    lights:[],          /* the light plot is global across the show */
+    lightsOn:false,
+    selectedLight:null
   };
   var idCounter = 100;
   function uid(p){ idCounter++; return p+idCounter+'_'+Math.floor(Math.random()*10000); }
@@ -684,6 +757,8 @@ var SCRIPT_DATA = {"1-1":{"title":"Scene 1. A desert place.","lines":["Thunder a
   var $ = function(id){ return document.getElementById(id); };
   var svg = $('stage');
   var arrowLayer = $('arrowLayer');
+  var lightLayer = $('lightLayer');
+  var propLayer = $('propLayer');
   var stickyLayer = $('stickyLayer');
   var tokenLayer = $('tokenLayer');
   var tempLayer = $('tempLayer');
@@ -798,6 +873,8 @@ var SCRIPT_DATA = {"1-1":{"title":"Scene 1. A desert place.","lines":["Thunder a
       positions: copyFrom ? JSON.parse(JSON.stringify(copyFrom.positions)) : {},
       arrows: copyFrom ? JSON.parse(JSON.stringify(copyFrom.arrows)) : [],
       stickies: (copyFrom && copyFrom.stickies) ? JSON.parse(JSON.stringify(copyFrom.stickies)) : [],
+      draws: (copyFrom && copyFrom.draws) ? JSON.parse(JSON.stringify(copyFrom.draws)) : [],
+      props: (copyFrom && copyFrom.props) ? JSON.parse(JSON.stringify(copyFrom.props)) : [],
       notes: copyFrom ? copyFrom.notes : ''
     };
     ms.push(m);
@@ -1000,6 +1077,186 @@ var SCRIPT_DATA = {"1-1":{"title":"Scene 1. A desert place.","lines":["Thunder a
     });
   }
 
+
+  /* ------------------------------------------------------------------ */
+  /*  set pieces                                                         */
+  /* ------------------------------------------------------------------ */
+
+  var PROPS = {
+    cauldron:{name:'Cauldron', svg:'<circle r="16" fill="#171221" stroke="#8d94a8" stroke-width="2.5"/><circle r="10" fill="none" stroke="#8d94a8" stroke-width="1.5" stroke-dasharray="3 3"/><circle cx="-3" cy="-2" r="1.6" fill="#8d94a8"/><circle cx="4" cy="3" r="1.3" fill="#8d94a8"/><circle cx="2" cy="-5" r="1" fill="#8d94a8"/>'},
+    throne:{name:'Throne', svg:'<rect x="-13" y="-11" width="26" height="24" fill="#171221" stroke="#8d94a8" stroke-width="2"/><rect x="-15" y="-17" width="30" height="6" fill="#8d94a8"/><path d="M-9,-17 L-9,-21 M0,-17 L0,-22 M9,-17 L9,-21" stroke="#8d94a8" stroke-width="2"/>'},
+    table:{name:'Table', svg:'<rect x="-23" y="-13" width="46" height="26" rx="2" fill="#171221" stroke="#8d94a8" stroke-width="2"/>'},
+    chair:{name:'Chair', svg:'<rect x="-8" y="-7" width="16" height="16" fill="#171221" stroke="#8d94a8" stroke-width="2"/><rect x="-9" y="-11" width="18" height="4" fill="#8d94a8"/>'},
+    bench:{name:'Bench', svg:'<rect x="-21" y="-6" width="42" height="12" fill="#171221" stroke="#8d94a8" stroke-width="2"/>'},
+    bed:{name:'Bed', svg:'<rect x="-15" y="-21" width="30" height="42" rx="2" fill="#171221" stroke="#8d94a8" stroke-width="2"/><line x1="-15" y1="-11" x2="15" y2="-11" stroke="#8d94a8" stroke-width="1.6"/>'},
+    coffin:{name:'Coffin', svg:'<polygon points="-7,-21 7,-21 12,-8 6,21 -6,21 -12,-8" fill="#171221" stroke="#8d94a8" stroke-width="2"/>'},
+    tree:{name:'Tree', svg:'<circle r="14" fill="#171221" stroke="#8d94a8" stroke-width="2" stroke-dasharray="4 3"/><circle cx="-8" cy="-7" r="7" fill="none" stroke="#8d94a8" stroke-width="1.4" stroke-dasharray="3 3"/><circle cx="9" cy="-4" r="6" fill="none" stroke="#8d94a8" stroke-width="1.4" stroke-dasharray="3 3"/><circle r="2.5" fill="#8d94a8"/>'},
+    candelabra:{name:'Candelabra', svg:'<circle r="5" fill="#171221" stroke="#c9a35a" stroke-width="2"/><circle cx="0" cy="-9" r="2" fill="#c9a35a"/><circle cx="-8" cy="-4" r="2" fill="#c9a35a"/><circle cx="8" cy="-4" r="2" fill="#c9a35a"/>'},
+    chest:{name:'Chest', svg:'<rect x="-14" y="-9" width="28" height="18" rx="2" fill="#171221" stroke="#8d94a8" stroke-width="2"/><line x1="-14" y1="0" x2="14" y2="0" stroke="#8d94a8" stroke-width="1.6"/>'}
+  };
+
+  $('addPropBtn').addEventListener('click', function(){
+    var m=currentMoment();
+    if(!m){ notify('Add a moment first, then set the stage.'); return; }
+    if(!m.props) m.props=[];
+    var type=$('propSel').value;
+    var count=m.props.length;
+    m.props.push({id:uid('p'), type:type, x:470+(count%4)*36, y:300+Math.floor(count/4)*36, rot:0});
+    renderStage(); scheduleSave();
+  });
+
+  /* ------------------------------------------------------------------ */
+  /*  lighting rig                                                       */
+  /* ------------------------------------------------------------------ */
+
+  var GELS=[
+    ['Open white','#f5edd8'],['Warm','#ffd9a0'],['Amber','#f0a437'],['Gold','#c9a35a'],
+    ['Blood','#d3323f'],['Red','#c02020'],['Magenta','#b0567d'],['Lavender','#b7a3e0'],
+    ['Blue','#5f8fce'],['Deep blue','#2c4f9e'],['Ice','#cfe4f2'],['Green','#5aa47e']
+  ];
+  var PIPES=[110,250,390,530];
+
+  function findLight(id){
+    for(var i=0;i<state.lights.length;i++) if(state.lights[i].id===id) return state.lights[i];
+    return null;
+  }
+
+  function addLight(type){
+    var n=state.lights.length;
+    var y=PIPES[n%PIPES.length];
+    var x=160+((n*90)%660);
+    state.lights.push({
+      id:uid('L'), type:type, x:x, y:y,
+      tx:x, ty:Math.min(600,y+190),
+      color:'#f5edd8', size:120, focus:35
+    });
+    if(!state.lightsOn){ state.lightsOn=true; $('lightsToggle').classList.add('toggled'); }
+    state.selectedLight=state.lights[state.lights.length-1].id;
+    renderLights(); openInspector(); scheduleSave();
+  }
+  $('addCanBtn').addEventListener('click', function(){ addLight('can'); });
+  $('addLekoBtn').addEventListener('click', function(){ addLight('leko'); });
+
+  $('lightsToggle').addEventListener('click', function(){
+    state.lightsOn=!state.lightsOn;
+    this.classList.toggle('toggled', state.lightsOn);
+    if(!state.lightsOn){ state.selectedLight=null; closeInspector(); }
+    renderLights(); scheduleSave();
+  });
+
+  function renderLights(){
+    lightLayer.innerHTML='';
+    if(!state.lightsOn) return;
+    var html='';
+    /* the pipes */
+    html+='<g pointer-events="none" opacity=".5">';
+    PIPES.forEach(function(py){
+      html+='<line x1="118" y1="'+py+'" x2="882" y2="'+py+'" stroke="#46557a" stroke-width="2"/>';
+      html+='<line x1="118" y1="'+(py-4)+'" x2="118" y2="'+(py+4)+'" stroke="#46557a" stroke-width="2"/>';
+      html+='<line x1="882" y1="'+(py-4)+'" x2="882" y2="'+(py+4)+'" stroke="#46557a" stroke-width="2"/>';
+    });
+    html+='<text class="map-label" x="128" y="102" font-size="9" fill="#46557a">LIGHTING PIPES</text>';
+    html+='</g>';
+    /* beams and pools */
+    var defs='<defs>';
+    state.lights.forEach(function(L){
+      var hard=Math.max(.12, .95-(L.focus/100)*.83);
+      defs+='<radialGradient id="lg_'+L.id+'"><stop offset="0" stop-color="'+L.color+'" stop-opacity=".5"/><stop offset="'+hard.toFixed(2)+'" stop-color="'+L.color+'" stop-opacity=".42"/><stop offset="1" stop-color="'+L.color+'" stop-opacity="0"/></radialGradient>';
+    });
+    defs+='</defs>';
+    html+=defs;
+    state.lights.forEach(function(L){
+      var r=L.size/2;
+      var dx=L.tx-L.x, dy=L.ty-L.y;
+      var len=Math.max(1,Math.sqrt(dx*dx+dy*dy));
+      var px=-dy/len*r, py=dx/len*r;
+      html+='<g pointer-events="none">';
+      html+='<polygon points="'+L.x+','+L.y+' '+(L.tx+px)+','+(L.ty+py)+' '+(L.tx-px)+','+(L.ty-py)+'" fill="'+L.color+'" opacity=".10"/>';
+      html+='<circle cx="'+L.tx+'" cy="'+L.ty+'" r="'+r+'" fill="url(#lg_'+L.id+')"/>';
+      html+='</g>';
+    });
+    /* fixtures */
+    state.lights.forEach(function(L){
+      var ang=Math.atan2(L.ty-L.y, L.tx-L.x)*180/Math.PI;
+      var sel=state.selectedLight===L.id;
+      html+='<g class="light" data-light-id="'+L.id+'" transform="translate('+L.x+','+L.y+') rotate('+ang.toFixed(1)+')">';
+      if(sel) html+='<circle r="20" fill="none" stroke="var(--candle)" stroke-width="1.6" stroke-dasharray="4 4"/>';
+      if(L.type==='can'){
+        html+='<circle r="9" fill="#141019" stroke="'+L.color+'" stroke-width="2.4"/>'+
+              '<rect x="7" y="-5" width="9" height="10" fill="#141019" stroke="'+L.color+'" stroke-width="2"/>';
+      } else {
+        html+='<rect x="-15" y="-6" width="20" height="12" rx="3" fill="#141019" stroke="'+L.color+'" stroke-width="2.2"/>'+
+              '<rect x="5" y="-4" width="12" height="8" fill="#141019" stroke="'+L.color+'" stroke-width="2"/>';
+      }
+      html+='<title>'+(L.type==='can'?'Can':'Leko')+'</title></g>';
+      if(sel){
+        html+='<g class="light-aim" data-light-id="'+L.id+'" transform="translate('+L.tx+','+L.ty+')">'+
+          '<circle r="16" fill="rgba(0,0,0,0)"/>'+
+          '<circle r="8" fill="none" stroke="var(--candle)" stroke-width="1.8"/>'+
+          '<line x1="-13" y1="0" x2="13" y2="0" stroke="var(--candle)" stroke-width="1.6"/>'+
+          '<line x1="0" y1="-13" x2="0" y2="13" stroke="var(--candle)" stroke-width="1.6"/>'+
+          '<title>Drag to aim the barrel</title></g>';
+      }
+    });
+    lightLayer.innerHTML=html;
+  }
+
+  /* ---- inspector ---- */
+  function lightNumber(L){
+    var n=0;
+    for(var i=0;i<state.lights.length;i++){
+      if(state.lights[i].type===L.type) n++;
+      if(state.lights[i].id===L.id) break;
+    }
+    return n;
+  }
+  function openInspector(){
+    var L=findLight(state.selectedLight);
+    if(!L){ closeInspector(); return; }
+    $('liTitle').textContent=(L.type==='can'?'Can ':'Leko ')+lightNumber(L);
+    var sw=$('liSwatches'); sw.innerHTML='';
+    GELS.forEach(function(gel){
+      var b=document.createElement('button');
+      b.style.background=gel[1];
+      b.title=gel[0];
+      if(L.color===gel[1]) b.className='sel';
+      b.addEventListener('click', function(){
+        L.color=gel[1];
+        openInspector(); renderLights(); scheduleSave();
+      });
+      sw.appendChild(b);
+    });
+    $('liSize').value=L.size;
+    $('liFocus').value=L.focus;
+    $('liSizeVal').textContent=Math.round(L.size);
+    $('liFocusVal').textContent=L.focus;
+    $('lightInspector').classList.add('show');
+  }
+  function closeInspector(){
+    $('lightInspector').classList.remove('show');
+  }
+  $('liSize').addEventListener('input', function(){
+    var L=findLight(state.selectedLight); if(!L) return;
+    L.size=parseFloat(this.value);
+    $('liSizeVal').textContent=Math.round(L.size);
+    renderLights(); scheduleSave();
+  });
+  $('liFocus').addEventListener('input', function(){
+    var L=findLight(state.selectedLight); if(!L) return;
+    L.focus=parseFloat(this.value);
+    $('liFocusVal').textContent=L.focus;
+    renderLights(); scheduleSave();
+  });
+  $('liDelete').addEventListener('click', function(){
+    state.lights=state.lights.filter(function(L){return L.id!==state.selectedLight;});
+    state.selectedLight=null;
+    closeInspector(); renderLights(); scheduleSave();
+  });
+  $('liClose').addEventListener('click', function(){
+    state.selectedLight=null;
+    closeInspector(); renderLights();
+  });
+
   /* ------------------------------------------------------------------ */
   /*  stage rendering                                                    */
   /* ------------------------------------------------------------------ */
@@ -1013,6 +1270,7 @@ var SCRIPT_DATA = {"1-1":{"title":"Scene 1. A desert place.","lines":["Thunder a
 
   function renderStage(){
     arrowLayer.innerHTML='';
+    propLayer.innerHTML='';
     stickyLayer.innerHTML='';
     tokenLayer.innerHTML='';
     tempLayer.innerHTML='';
@@ -1030,6 +1288,29 @@ var SCRIPT_DATA = {"1-1":{"title":"Scene 1. A desert place.","lines":["Thunder a
         'marker-end':'url(#arrowhead)','stroke-linecap':'round',
         'pointer-events':'none'});
       arrowLayer.appendChild(ln);
+    });
+
+    if(!m.draws) m.draws=[];
+    m.draws.forEach(function(d){
+      var pts=d.pts.map(function(q){return q[0]+','+q[1];}).join(' ');
+      var hit=el('polyline',{points:pts,fill:'none',stroke:'rgba(0,0,0,0)',
+        'stroke-width':20,'class':'draw-hit'});
+      hit.dataset.drawId=d.id;
+      arrowLayer.appendChild(hit);
+      arrowLayer.appendChild(el('polyline',{points:pts,fill:'none',
+        stroke:'#d9d0c3','stroke-width':2.5,opacity:.8,
+        'stroke-linecap':'round','stroke-linejoin':'round','pointer-events':'none'}));
+    });
+
+    if(!m.props) m.props=[];
+    m.props.forEach(function(pr){
+      var def=PROPS[pr.type]||PROPS.chest;
+      var g=el('g',{'class':'prop',transform:'translate('+pr.x+','+pr.y+') rotate('+(pr.rot||0)+')'});
+      g.dataset.propId=pr.id;
+      g.innerHTML=def.svg+
+        '<text y="34" text-anchor="middle" transform="rotate('+(-(pr.rot||0))+')" font-family="Cinzel, serif" font-size="9" letter-spacing="2" fill="var(--dim)" pointer-events="none">'+def.name.toUpperCase()+'</text>'+
+        '<title>'+def.name+' &middot; drag to move, tap to rotate</title>';
+      propLayer.appendChild(g);
     });
 
     if(!m.stickies) m.stickies=[];
@@ -1096,25 +1377,65 @@ var SCRIPT_DATA = {"1-1":{"title":"Scene 1. A desert place.","lines":["Thunder a
   var drag=null;
   var tempArrow=null;
   var dragSticky=null;
+  var dragProp=null;
+  var dragLight=null;
+  var dragAim=null;
+  var drawing=null;
 
   svg.addEventListener('pointerdown', function(evt){
-    var m=currentMoment(); if(!m) return;
+    var m=currentMoment();
     var p=svgPoint(evt);
-    var tokenG=evt.target.closest ? evt.target.closest('g.token') : null;
-    var stickyG=evt.target.closest ? evt.target.closest('g.sticky') : null;
+    var closest=function(sel){ return evt.target.closest ? evt.target.closest(sel) : null; };
+    var tokenG=closest('g.token');
+    var stickyG=closest('g.sticky');
+    var propG=closest('g.prop');
+    var lightG=closest('g.light');
+    var aimG=closest('g.light-aim');
+
+    /* lights are global: handle them before requiring a moment */
+    if(aimG && state.tool!=='erase'){
+      var AL=findLight(aimG.dataset.lightId);
+      if(AL){
+        dragAim={light:AL, dx:AL.tx-p.x, dy:AL.ty-p.y};
+        svg.setPointerCapture(evt.pointerId);
+      }
+      return;
+    }
+    if(lightG){
+      var LL=findLight(lightG.dataset.lightId);
+      if(!LL) return;
+      if(state.tool==='erase'){
+        state.lights=state.lights.filter(function(x){return x.id!==LL.id;});
+        if(state.selectedLight===LL.id){ state.selectedLight=null; closeInspector(); }
+        renderLights(); scheduleSave();
+        return;
+      }
+      dragLight={light:LL, dx:LL.x-p.x, dy:LL.y-p.y, moved:false};
+      svg.setPointerCapture(evt.pointerId);
+      return;
+    }
+
+    if(!m) return;
 
     if(state.tool==='erase'){
       if(tokenG){
         delete m.positions[tokenG.dataset.castId];
         state.selectedToken=null;
-        renderStage(); renderCast();
+        renderStage(); renderCast(); scheduleSave();
       } else if(stickyG){
         m.stickies=(m.stickies||[]).filter(function(n){return n.id!==stickyG.dataset.stickyId;});
+        renderStage(); scheduleSave();
+      } else if(propG){
+        m.props=(m.props||[]).filter(function(x){return x.id!==propG.dataset.propId;});
         renderStage(); scheduleSave();
       } else if(evt.target.classList.contains('arrow-hit')){
         var id=evt.target.dataset.arrowId;
         m.arrows=m.arrows.filter(function(a){return a.id!==id;});
-        renderStage();
+        renderStage(); scheduleSave();
+      } else if(evt.target.classList.contains('draw-hit')){
+        var did=evt.target.dataset.drawId;
+        m.draws=(m.draws||[]).filter(function(d){return d.id!==did;});
+        renderStage(); scheduleSave();
       }
       return;
     }
@@ -1126,6 +1447,13 @@ var SCRIPT_DATA = {"1-1":{"title":"Scene 1. A desert place.","lines":["Thunder a
         m.stickies.push({id:uid('n'), x:p.x, y:p.y, text:t.trim()});
         renderStage(); scheduleSave();
       });
+      return;
+    }
+
+    if(state.tool==='draw'){
+      if(!m.draws) m.draws=[];
+      drawing={pts:[[Math.round(p.x),Math.round(p.y)]]};
+      svg.setPointerCapture(evt.pointerId);
       return;
     }
 
@@ -1150,6 +1478,16 @@ var SCRIPT_DATA = {"1-1":{"title":"Scene 1. A desert place.","lines":["Thunder a
       return;
     }
 
+    if(propG){
+      var pid=propG.dataset.propId, pn=null;
+      (m.props||[]).forEach(function(x){ if(x.id===pid) pn=x; });
+      if(pn){
+        dragProp={prop:pn, dx:pn.x-p.x, dy:pn.y-p.y, moved:false};
+        svg.setPointerCapture(evt.pointerId);
+      }
+      return;
+    }
+
     if(tokenG){
       var cid=tokenG.dataset.castId;
       var pos2=m.positions[cid];
@@ -1161,13 +1499,44 @@ var SCRIPT_DATA = {"1-1":{"title":"Scene 1. A desert place.","lines":["Thunder a
       renderStage();
     } else {
       if(state.selectedToken){ state.selectedToken=null; renderStage(); }
+      if(state.selectedLight){ state.selectedLight=null; closeInspector(); renderLights(); }
       showZone(null);
     }
   });
 
   svg.addEventListener('pointermove', function(evt){
-    var m=currentMoment(); if(!m) return;
     var p=svgPoint(evt);
+    if(dragAim){
+      dragAim.light.tx=p.x+dragAim.dx;
+      dragAim.light.ty=p.y+dragAim.dy;
+      var bx=$('zoneReadout');
+      bx.textContent='Focus : '+zoneFor(dragAim.light.tx,dragAim.light.ty);
+      bx.style.display='block';
+      renderLights();
+      return;
+    }
+    if(dragLight){
+      dragLight.light.x=p.x+dragLight.dx;
+      dragLight.light.y=p.y+dragLight.dy;
+      dragLight.moved=true;
+      renderLights();
+      return;
+    }
+    var m=currentMoment(); if(!m) return;
+    if(drawing){
+      var last=drawing.pts[drawing.pts.length-1];
+      var ddx=p.x-last[0], ddy=p.y-last[1];
+      if(ddx*ddx+ddy*ddy>16){
+        drawing.pts.push([Math.round(p.x),Math.round(p.y)]);
+        tempLayer.innerHTML='';
+        tempLayer.appendChild(el('polyline',{
+          points:drawing.pts.map(function(q){return q[0]+','+q[1];}).join(' '),
+          fill:'none',stroke:'#d9d0c3','stroke-width':2.5,opacity:.8,
+          'stroke-linecap':'round','stroke-linejoin':'round','pointer-events':'none'
+        }));
+      }
+      return;
+    }
     if(dragSticky){
       var sn=dragSticky.note;
       sn.x=p.x+dragSticky.dx; sn.y=p.y+dragSticky.dy;
@@ -1175,6 +1544,16 @@ var SCRIPT_DATA = {"1-1":{"title":"Scene 1. A desert place.","lines":["Thunder a
       var box=$('zoneReadout');
       box.textContent='Note : '+zoneFor(sn.x,sn.y);
       box.style.display='block';
+      renderStage();
+      return;
+    }
+    if(dragProp){
+      var pn=dragProp.prop;
+      pn.x=p.x+dragProp.dx; pn.y=p.y+dragProp.dy;
+      dragProp.moved=true;
+      var box2=$('zoneReadout');
+      box2.textContent=(PROPS[pn.type]?PROPS[pn.type].name:'Prop')+' : '+zoneFor(pn.x,pn.y);
+      box2.style.display='block';
       renderStage();
       return;
     }
@@ -1195,6 +1574,40 @@ var SCRIPT_DATA = {"1-1":{"title":"Scene 1. A desert place.","lines":["Thunder a
 
   function endPointer(evt){
     var m=currentMoment();
+    if(dragAim){
+      dragAim=null;
+      $('zoneReadout').style.display='none';
+      renderLights(); scheduleSave();
+      return;
+    }
+    if(dragLight){
+      var dl=dragLight; dragLight=null;
+      if(!dl.moved){
+        state.selectedLight=dl.light.id;
+        renderLights(); openInspector();
+      } else {
+        renderLights(); scheduleSave();
+      }
+      return;
+    }
+    if(drawing){
+      var dw=drawing; drawing=null;
+      tempLayer.innerHTML='';
+      if(m && dw.pts.length>2){
+        m.draws.push({id:uid('d'), pts:dw.pts});
+      }
+      renderStage(); scheduleSave();
+      return;
+    }
+    if(dragProp){
+      var dp=dragProp; dragProp=null;
+      $('zoneReadout').style.display='none';
+      if(!dp.moved){
+        dp.prop.rot=((dp.prop.rot||0)+45)%360;
+      }
+      renderStage(); scheduleSave();
+      return;
+    }
     if(dragSticky){
       var ds=dragSticky; dragSticky=null;
       $('zoneReadout').style.display='none';
