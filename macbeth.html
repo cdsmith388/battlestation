@@ -62,6 +62,8 @@
   .btn.blood:hover{background:var(--blood-bright);border-color:var(--blood-bright)}
   .btn.small{padding:3px 9px;font-size:.8rem}
   .btn.toggled{border-color:var(--candle);color:var(--candle)}
+  .btn:disabled{opacity:.35;cursor:default}
+  .btn:disabled:hover{border-color:var(--line)}
 
   /* ---------- moment strip ---------- */
   .moment-strip{
@@ -395,9 +397,11 @@
     </div>
     <div class="side-section">
       <h2>Lights</h2>
-      <div style="display:flex;gap:6px">
-        <button class="btn small" id="addCanBtn">+ Can</button>
-        <button class="btn small" id="addLekoBtn">+ Leko</button>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">
+        <button class="btn small add-light" data-fixture="leko" style="flex:1 1 44%">Leko</button>
+        <button class="btn small add-light" data-fixture="parL" style="flex:1 1 44%">Lg PAR</button>
+        <button class="btn small add-light" data-fixture="parS" style="flex:1 1 44%">Sm PAR</button>
+        <button class="btn small add-light" data-fixture="canS" style="flex:1 1 44%">Sm Can</button>
       </div>
       <div style="margin-top:6px;display:flex;gap:6px">
         <button class="btn small" id="setCueBtn" style="flex:1">Set cue</button>
@@ -1232,26 +1236,63 @@ var SCRIPT_DATA = {"1-1":{"title":"Scene 1. A desert place.","lines":["Thunder a
   ];
   var PIPES=[110,250,390,530];
 
+  /* the real 11th Hour inventory */
+  var FIXTURES={
+    leko:{name:'Leko',      stock:4,  size:90,  focus:18},
+    parL:{name:'Large PAR', stock:10, size:150, focus:70},
+    parS:{name:'Small PAR', stock:2,  size:100, focus:65},
+    canS:{name:'Small Can', stock:5,  size:70,  focus:50}
+  };
+  function typeName(t){
+    if(FIXTURES[t]) return FIXTURES[t].name;
+    return t==='can' ? 'Small Can' : 'Leko';
+  }
+  function normalizeLights(){
+    state.lights.forEach(function(L){ if(L.type==='can') L.type='canS'; });
+  }
+  function stockLeft(t){
+    var used=0;
+    state.lights.forEach(function(L){ if(L.type===t) used++; });
+    return (FIXTURES[t]?FIXTURES[t].stock:0)-used;
+  }
+  function updateLightStock(){
+    document.querySelectorAll('.add-light').forEach(function(b){
+      var t=b.dataset.fixture;
+      var left=stockLeft(t);
+      b.textContent=FIXTURES[t].name+' · '+left;
+      b.disabled=left<=0;
+      b.title=left>0
+        ? 'Hang a '+FIXTURES[t].name+', '+left+' left in stock'
+        : 'All '+FIXTURES[t].stock+' hung. Remove one to free it up.';
+    });
+  }
+
   function findLight(id){
     for(var i=0;i<state.lights.length;i++) if(state.lights[i].id===id) return state.lights[i];
     return null;
   }
 
   function addLight(type){
+    if(stockLeft(type)<=0){
+      notify('All '+FIXTURES[type].stock+' of your '+FIXTURES[type].name.toLowerCase()+'s are already hung. Remove one to free it up.');
+      return;
+    }
     var n=state.lights.length;
     var y=PIPES[n%PIPES.length];
     var x=160+((n*90)%660);
     state.lights.push({
       id:uid('L'), type:type, x:x, y:y,
       tx:x, ty:Math.min(600,y+190),
-      color:'#f5edd8', size:120, focus:35, intensity:80, on:true
+      color:'#f5edd8', size:FIXTURES[type].size, focus:FIXTURES[type].focus,
+      intensity:80, on:true
     });
     if(!state.lightsOn){ state.lightsOn=true; $('lightsToggle').classList.add('toggled'); }
     state.selectedLight=state.lights[state.lights.length-1].id;
-    renderLights(); openInspector(); scheduleSave();
+    renderLights(); openInspector(); updateLightStock(); scheduleSave();
   }
-  $('addCanBtn').addEventListener('click', function(){ addLight('can'); });
-  $('addLekoBtn').addEventListener('click', function(){ addLight('leko'); });
+  document.querySelectorAll('.add-light').forEach(function(b){
+    b.addEventListener('click', function(){ addLight(b.dataset.fixture); });
+  });
 
   $('lightsToggle').addEventListener('click', function(){
     state.lightsOn=!state.lightsOn;
@@ -1302,14 +1343,22 @@ var SCRIPT_DATA = {"1-1":{"title":"Scene 1. A desert place.","lines":["Thunder a
       var sc=lit?L.color:'#5a5264';
       html+='<g class="light" data-light-id="'+L.id+'"'+(lit?'':' opacity=".6"')+' transform="translate('+L.x+','+L.y+') rotate('+ang.toFixed(1)+')">';
       if(sel) html+='<circle r="20" fill="none" stroke="var(--candle)" stroke-width="1.6" stroke-dasharray="4 4"/>';
-      if(L.type==='can'){
-        html+='<circle r="9" fill="#141019" stroke="'+sc+'" stroke-width="2.4"/>'+
-              '<rect x="7" y="-5" width="9" height="10" fill="#141019" stroke="'+sc+'" stroke-width="2"/>';
-      } else {
+      if(L.type==='leko'){
         html+='<rect x="-15" y="-6" width="20" height="12" rx="3" fill="#141019" stroke="'+sc+'" stroke-width="2.2"/>'+
               '<rect x="5" y="-4" width="12" height="8" fill="#141019" stroke="'+sc+'" stroke-width="2"/>';
+      } else if(L.type==='parL'){
+        html+='<circle r="11" fill="#141019" stroke="'+sc+'" stroke-width="2.6"/>'+
+              '<circle r="5" fill="none" stroke="'+sc+'" stroke-width="1.4"/>'+
+              '<rect x="9" y="-6" width="9" height="12" fill="#141019" stroke="'+sc+'" stroke-width="2"/>';
+      } else if(L.type==='parS'){
+        html+='<circle r="7.5" fill="#141019" stroke="'+sc+'" stroke-width="2.2"/>'+
+              '<circle r="3" fill="none" stroke="'+sc+'" stroke-width="1.2"/>'+
+              '<rect x="6" y="-4.5" width="8" height="9" fill="#141019" stroke="'+sc+'" stroke-width="1.8"/>';
+      } else {
+        html+='<circle r="6" fill="#141019" stroke="'+sc+'" stroke-width="2"/>'+
+              '<rect x="4.5" y="-4" width="7" height="8" fill="#141019" stroke="'+sc+'" stroke-width="1.6"/>';
       }
-      html+='<title>'+(L.type==='can'?'Can':'Leko')+(lit?'':' (off)')+'</title></g>';
+      html+='<title>'+typeName(L.type)+(lit?'':' (off)')+'</title></g>';
       if(sel){
         html+='<g class="light-aim" data-light-id="'+L.id+'" transform="translate('+L.tx+','+L.ty+')">'+
           '<circle r="16" fill="rgba(0,0,0,0)"/>'+
@@ -1334,7 +1383,7 @@ var SCRIPT_DATA = {"1-1":{"title":"Scene 1. A desert place.","lines":["Thunder a
   function openInspector(){
     var L=findLight(state.selectedLight);
     if(!L){ closeInspector(); return; }
-    $('liTitle').textContent=(L.type==='can'?'Can ':'Leko ')+lightNumber(L);
+    $('liTitle').textContent=typeName(L.type)+' '+lightNumber(L);
     var sw=$('liSwatches'); sw.innerHTML='';
     GELS.forEach(function(gel){
       var b=document.createElement('button');
@@ -1386,7 +1435,7 @@ var SCRIPT_DATA = {"1-1":{"title":"Scene 1. A desert place.","lines":["Thunder a
   $('liDelete').addEventListener('click', function(){
     state.lights=state.lights.filter(function(L){return L.id!==state.selectedLight;});
     state.selectedLight=null;
-    closeInspector(); renderLights(); scheduleSave();
+    closeInspector(); renderLights(); updateLightStock(); scheduleSave();
   });
   $('liClose').addEventListener('click', function(){
     state.selectedLight=null;
@@ -1543,7 +1592,7 @@ var SCRIPT_DATA = {"1-1":{"title":"Scene 1. A desert place.","lines":["Thunder a
       if(state.tool==='erase'){
         state.lights=state.lights.filter(function(x){return x.id!==LL.id;});
         if(state.selectedLight===LL.id){ state.selectedLight=null; closeInspector(); }
-        renderLights(); scheduleSave();
+        renderLights(); updateLightStock(); scheduleSave();
         return;
       }
       dragLight={light:LL, dx:LL.x-p.x, dy:LL.y-p.y, moved:false};
@@ -1860,8 +1909,9 @@ var SCRIPT_DATA = {"1-1":{"title":"Scene 1. A desert place.","lines":["Thunder a
         state.scenes=data.scenes;
         if(data.lights) state.lights=data.lights;
         if(data.customProps) state.customProps=data.customProps;
+        normalizeLights();
         rebuildPropSel();
-        renderLights();
+        renderLights(); updateLightStock();
         enterScene();
       }catch(e){
         notify('That file could not be read as a blocking export.');
@@ -1974,6 +2024,7 @@ var SCRIPT_DATA = {"1-1":{"title":"Scene 1. A desert place.","lines":["Thunder a
       else state.lights.push(JSON.parse(JSON.stringify(cl)));
     });
     renderLights();
+    updateLightStock();
     if(state.selectedLight) openInspector();
   }
 
@@ -2021,7 +2072,7 @@ var SCRIPT_DATA = {"1-1":{"title":"Scene 1. A desert place.","lines":["Thunder a
   function cueFixtureNames(lights){
     var counts={}, names={};
     lights.forEach(function(L){
-      var t=(L.type==='can')?'Can':'Leko';
+      var t=typeName(L.type);
       counts[t]=(counts[t]||0)+1;
       names[L.id]=t+' '+counts[t];
     });
@@ -2234,7 +2285,7 @@ var SCRIPT_DATA = {"1-1":{"title":"Scene 1. A desert place.","lines":["Thunder a
       if(!d.scenes || !d.cast) return false;
       state.cast=d.cast;
       state.scenes=d.scenes;
-      if(d.lights) state.lights=d.lights;
+      if(d.lights){ state.lights=d.lights; }
       if(d.customProps) state.customProps=d.customProps;
       if(d.lightsOn) state.lightsOn=true;
       if(d.act>=1 && d.act<=5) state.act=d.act;
@@ -2273,9 +2324,11 @@ var SCRIPT_DATA = {"1-1":{"title":"Scene 1. A desert place.","lines":["Thunder a
     : 'This embedded preview cannot store data. Open the downloaded file in a browser, or host it, and autosave will work. Export is your safety net here.';
   buildActSelect();
   buildSceneSelect();
+  normalizeLights();
   $('lightsToggle').classList.toggle('toggled', state.lightsOn);
   rebuildPropSel();
   renderLights();
+  updateLightStock();
   enterScene();
 })();
 </script>
