@@ -208,7 +208,7 @@
   /* ---------- modal ---------- */
   .modal-overlay{
     position:fixed;inset:0;background:rgba(8,6,10,.75);
-    display:none;align-items:center;justify-content:center;z-index:50;padding:20px;
+    display:none;align-items:center;justify-content:center;z-index:80;padding:20px;
   }
   .modal-overlay.show{display:flex}
   .modal{
@@ -225,11 +225,11 @@
     display:block;font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;
     color:var(--dim);margin-bottom:4px;
   }
-  .modal input{
+  .modal input,.modal select{
     width:100%;background:var(--ink);border:1px solid var(--line);border-radius:4px;
     padding:8px 10px;font-size:.95rem;
   }
-  .modal input:focus{outline:none;border-color:var(--candle)}
+  .modal input:focus,.modal select:focus{outline:none;border-color:var(--candle)}
   .modal .modal-btns{display:flex;justify-content:flex-end;gap:8px;margin-top:16px}
 
   text.map-label{
@@ -300,6 +300,12 @@
     font-family:'Cinzel',serif;font-size:.9rem;font-weight:700;letter-spacing:.14em;
     text-transform:uppercase;color:var(--bone);flex:1;
   }
+  .log-tabs{display:flex;gap:4px}
+  .log-tabs button{
+    background:none;border:1px solid var(--line);color:var(--dim);
+    border-radius:4px;padding:3px 10px;font-size:.78rem;cursor:pointer;
+  }
+  .log-tabs button.on{border-color:var(--blood-bright);color:#fff;background:#2a1518}
   .log-body{overflow-y:auto;padding:12px 20px 24px;font-size:.93rem;line-height:1.55}
   .log-scene{
     font-family:'Cinzel',serif;font-size:.76rem;font-weight:700;letter-spacing:.18em;
@@ -384,6 +390,7 @@
         </select>
         <button class="btn small" id="addPropBtn">Add</button>
       </div>
+      <div style="margin-top:6px"><button class="btn small" id="customPropBtn" style="width:100%">Design a custom piece</button></div>
       <div class="hint">Drops center stage. Drag to place, tap to rotate, Erase to strike.</div>
     </div>
     <div class="side-section">
@@ -392,7 +399,16 @@
         <button class="btn small" id="addCanBtn">+ Can</button>
         <button class="btn small" id="addLekoBtn">+ Leko</button>
       </div>
-      <div class="hint">Drag the fixture along the pipes, drag its crosshair to aim the barrel, tap it to set gel, beam size, and edge.</div>
+      <div style="margin-top:6px;display:flex;gap:6px">
+        <button class="btn small" id="setCueBtn" style="flex:1">Set cue</button>
+        <button class="btn small" id="clearCueBtn" style="flex:1">Clear cue</button>
+      </div>
+      <div class="hint">Drag the fixture along the pipes, drag its crosshair to aim, tap it for gel, beam, edge, and brightness. Set cue stamps the whole rig onto this moment; looks then recall as you step through the show.</div>
+    </div>
+    <div class="side-section">
+      <h2>Sound</h2>
+      <button class="btn small" id="addSfxBtn" style="width:100%">Log SFX at this moment</button>
+      <div class="hint">Cues collect in the Sound tab of the Log, tied to their moment. Click one there to edit it.</div>
     </div>
     <div class="side-section" style="flex:1">
       <h2>Cast <button class="btn small" id="addCastBtn" style="float:right;margin-top:-4px">+ Add</button></h2>
@@ -608,7 +624,12 @@
 <div class="log-overlay" id="logOverlay">
   <div class="log-box">
     <div class="log-head">
-      <h3>Blocking Log</h3>
+      <h3>Show Log</h3>
+      <div class="log-tabs">
+        <button class="on" data-tab="blocking">Blocking</button>
+        <button data-tab="lights">Light Plot</button>
+        <button data-tab="sound">Sound</button>
+      </div>
       <button class="btn small" id="logCopyBtn">Copy as text</button>
       <button class="btn small" id="logCloseBtn">Close</button>
     </div>
@@ -751,7 +772,8 @@ var SCRIPT_DATA = {"1-1":{"title":"Scene 1. A desert place.","lines":["Thunder a
     selectedToken:null,
     lights:[],          /* the light plot is global across the show */
     lightsOn:false,
-    selectedLight:null
+    selectedLight:null,
+    customProps:[]      /* user-designed set piece shapes */
   };
   var idCounter = 100;
   function uid(p){ idCounter++; return p+idCounter+'_'+Math.floor(Math.random()*10000); }
@@ -792,8 +814,20 @@ var SCRIPT_DATA = {"1-1":{"title":"Scene 1. A desert place.","lines":["Thunder a
       (opts.fields||[]).forEach(function(f){
         var d=document.createElement('div'); d.className='field';
         var l=document.createElement('label'); l.textContent=f.label;
-        var inp=document.createElement('input');
-        inp.type='text'; inp.value=f.value||''; inp.dataset.key=f.key;
+        var inp;
+        if(f.options){
+          inp=document.createElement('select');
+          f.options.forEach(function(o){
+            var op=document.createElement('option');
+            op.value=o[0]; op.textContent=o[1];
+            inp.appendChild(op);
+          });
+          if(f.value) inp.value=f.value;
+        } else {
+          inp=document.createElement('input');
+          inp.type='text'; inp.value=f.value||'';
+        }
+        inp.dataset.key=f.key;
         d.appendChild(l); d.appendChild(inp); wrap.appendChild(d);
       });
       $('modalOverlay').classList.add('show');
@@ -808,7 +842,7 @@ var SCRIPT_DATA = {"1-1":{"title":"Scene 1. A desert place.","lines":["Thunder a
   }
   $('modalOk').addEventListener('click', function(){
     var vals={};
-    $('modalFields').querySelectorAll('input').forEach(function(i){ vals[i.dataset.key]=i.value; });
+    $('modalFields').querySelectorAll('input, select').forEach(function(i){ vals[i.dataset.key]=i.value; });
     closeDialog(vals);
   });
   $('modalCancel').addEventListener('click', function(){ closeDialog(null); });
@@ -935,7 +969,8 @@ var SCRIPT_DATA = {"1-1":{"title":"Scene 1. A desert place.","lines":["Thunder a
     ms.forEach(function(m){
       var b=document.createElement('button');
       b.className='chip'+(m.id===state.momentId?' active':'');
-      b.textContent=m.label;
+      var suffix=(m.lightCue?' \u2726':'')+((m.sfx&&m.sfx.length)?' \u266A':'');
+      b.textContent=m.label+suffix;
       b.title=m.label;
       b.addEventListener('click', function(){
         state.momentId=m.id; state.selectedToken=null; renderAll();
@@ -1107,6 +1142,74 @@ var SCRIPT_DATA = {"1-1":{"title":"Scene 1. A desert place.","lines":["Thunder a
     candelabra:{name:'Candelabra', svg:'<circle r="5" fill="#171221" stroke="#c9a35a" stroke-width="2"/><circle cx="0" cy="-9" r="2" fill="#c9a35a"/><circle cx="-8" cy="-4" r="2" fill="#c9a35a"/><circle cx="8" cy="-4" r="2" fill="#c9a35a"/>'},
     chest:{name:'Chest', svg:'<rect x="-14" y="-9" width="28" height="18" rx="2" fill="#171221" stroke="#8d94a8" stroke-width="2"/><line x1="-14" y1="0" x2="14" y2="0" stroke="#8d94a8" stroke-width="1.6"/>'}
   };
+
+  function customDef(cp){
+    var w=cp.w, h=cp.h;
+    var F=' fill="#171221" stroke="#8d94a8" stroke-width="2"';
+    var s;
+    if(cp.shape==='circle'){
+      s='<circle r="'+(w/2)+'"'+F+'/>'; h=w;
+    } else if(cp.shape==='oval'){
+      s='<ellipse rx="'+(w/2)+'" ry="'+(h/2)+'"'+F+'/>';
+    } else if(cp.shape==='hexagon'){
+      s='<polygon points="0,'+(-h/2)+' '+(w/2)+','+(-h/4)+' '+(w/2)+','+(h/4)+' 0,'+(h/2)+' '+(-w/2)+','+(h/4)+' '+(-w/2)+','+(-h/4)+'"'+F+'/>';
+    } else if(cp.shape==='triangle'){
+      s='<polygon points="0,'+(-h/2)+' '+(w/2)+','+(h/2)+' '+(-w/2)+','+(h/2)+'"'+F+'/>';
+    } else if(cp.shape==='platform'){
+      s='<polygon points="'+(-w/2)+','+(-h/2)+' '+(w/2)+','+(-h/2)+' '+(w/3)+','+(h/2)+' '+(-w/3)+','+(h/2)+'"'+F+'/>';
+    } else {
+      s='<rect x="'+(-w/2)+'" y="'+(-h/2)+'" width="'+w+'" height="'+h+'" rx="2"'+F+'/>';
+    }
+    return {name:cp.name, svg:s, ly:h/2+14};
+  }
+  function propDef(type){
+    if(PROPS[type]) return PROPS[type];
+    for(var i=0;i<state.customProps.length;i++){
+      if(state.customProps[i].key===type) return customDef(state.customProps[i]);
+    }
+    return PROPS.chest;
+  }
+  function rebuildPropSel(){
+    var sel=$('propSel');
+    var keep=sel.value;
+    sel.innerHTML='';
+    for(var k in PROPS){
+      var o=document.createElement('option');
+      o.value=k; o.textContent=PROPS[k].name;
+      sel.appendChild(o);
+    }
+    state.customProps.forEach(function(cp){
+      var o=document.createElement('option');
+      o.value=cp.key; o.textContent=cp.name+' *';
+      sel.appendChild(o);
+    });
+    if(keep) sel.value=keep;
+    if(!sel.value) sel.selectedIndex=0;
+  }
+
+  $('customPropBtn').addEventListener('click', function(){
+    openDialog({
+      title:'Design a set piece',
+      fields:[
+        {key:'name', label:'Name', value:''},
+        {key:'shape', label:'Shape', value:'rect', options:[
+          ['rect','Rectangle'],['circle','Circle'],['oval','Oval'],
+          ['hexagon','Hexagon'],['triangle','Triangle'],['platform','Platform, half hex']
+        ]},
+        {key:'w', label:'Width in map units, one grid cell is 158', value:'60'},
+        {key:'h', label:'Depth in map units, one grid cell is 109', value:'40'}
+      ],
+      okText:'Add to list'
+    }).then(function(r){
+      if(!r || !r.name.trim()) return;
+      var w=Math.max(10, Math.min(400, parseFloat(r.w)||60));
+      var h=Math.max(10, Math.min(400, parseFloat(r.h)||40));
+      state.customProps.push({key:uid('cp'), name:r.name.trim(), shape:r.shape, w:w, h:h});
+      rebuildPropSel();
+      $('propSel').value=state.customProps[state.customProps.length-1].key;
+      scheduleSave();
+    });
+  });
 
   $('addPropBtn').addEventListener('click', function(){
     var m=currentMoment();
@@ -1337,11 +1440,11 @@ var SCRIPT_DATA = {"1-1":{"title":"Scene 1. A desert place.","lines":["Thunder a
 
     if(!m.props) m.props=[];
     m.props.forEach(function(pr){
-      var def=PROPS[pr.type]||PROPS.chest;
+      var def=propDef(pr.type);
       var g=el('g',{'class':'prop',transform:'translate('+pr.x+','+pr.y+') rotate('+(pr.rot||0)+')'});
       g.dataset.propId=pr.id;
       g.innerHTML=def.svg+
-        '<text y="34" text-anchor="middle" transform="rotate('+(-(pr.rot||0))+')" font-family="Cinzel, serif" font-size="9" letter-spacing="2" fill="var(--dim)" pointer-events="none">'+def.name.toUpperCase()+'</text>'+
+        '<text y="'+(def.ly||34)+'" text-anchor="middle" transform="rotate('+(-(pr.rot||0))+')" font-family="Cinzel, serif" font-size="9" letter-spacing="2" fill="var(--dim)" pointer-events="none">'+def.name.toUpperCase()+'</text>'+
         '<title>'+def.name+' &middot; drag to move, tap to rotate</title>';
       propLayer.appendChild(g);
     });
@@ -1585,7 +1688,7 @@ var SCRIPT_DATA = {"1-1":{"title":"Scene 1. A desert place.","lines":["Thunder a
       pn.x=p.x+dragProp.dx; pn.y=p.y+dragProp.dy;
       dragProp.moved=true;
       var box2=$('zoneReadout');
-      box2.textContent=(PROPS[pn.type]?PROPS[pn.type].name:'Prop')+' : '+zoneFor(pn.x,pn.y);
+      box2.textContent=propDef(pn.type).name+' : '+zoneFor(pn.x,pn.y);
       box2.style.display='block';
       renderStage();
       return;
@@ -1736,7 +1839,7 @@ var SCRIPT_DATA = {"1-1":{"title":"Scene 1. A desert place.","lines":["Thunder a
   /* ------------------------------------------------------------------ */
 
   $('exportBtn').addEventListener('click', function(){
-    var payload={version:3, exported:new Date().toISOString(), cast:state.cast, scenes:state.scenes, lights:state.lights};
+    var payload={version:3, exported:new Date().toISOString(), cast:state.cast, scenes:state.scenes, lights:state.lights, customProps:state.customProps};
     var blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
     var a=document.createElement('a');
     a.href=URL.createObjectURL(blob);
@@ -1756,6 +1859,8 @@ var SCRIPT_DATA = {"1-1":{"title":"Scene 1. A desert place.","lines":["Thunder a
         state.cast=data.cast;
         state.scenes=data.scenes;
         if(data.lights) state.lights=data.lights;
+        if(data.customProps) state.customProps=data.customProps;
+        rebuildPropSel();
         renderLights();
         enterScene();
       }catch(e){
@@ -1834,9 +1939,234 @@ var SCRIPT_DATA = {"1-1":{"title":"Scene 1. A desert place.","lines":["Thunder a
     return txt.join('\n').trim();
   }
 
+
+  /* ------------------------------------------------------------------ */
+  /*  light cues + sound plot                                            */
+  /* ------------------------------------------------------------------ */
+
+  var lastAppliedMomentId=null;
+
+  function findCueFor(momentId){
+    var last=null;
+    for(var a=1;a<=5;a++){
+      var nS=SCENES_PER_ACT[a]||0;
+      for(var s=1;s<=nS;s++){
+        var ms=state.scenes[a+'-'+s];
+        if(!ms) continue;
+        for(var i=0;i<ms.length;i++){
+          if(ms[i].lightCue && ms[i].lightCue.lights) last=ms[i].lightCue;
+          if(ms[i].id===momentId) return last;
+        }
+      }
+    }
+    return last;
+  }
+
+  function applyLightCueIfMomentChanged(){
+    if(state.momentId===lastAppliedMomentId) return;
+    lastAppliedMomentId=state.momentId;
+    if(!state.momentId) return;
+    var cue=findCueFor(state.momentId);
+    if(!cue) return;
+    cue.lights.forEach(function(cl){
+      var L=findLight(cl.id);
+      if(L){ for(var k in cl) L[k]=cl[k]; }
+      else state.lights.push(JSON.parse(JSON.stringify(cl)));
+    });
+    renderLights();
+    if(state.selectedLight) openInspector();
+  }
+
+  function flashBtn(btn,msg){
+    var old=btn.textContent;
+    btn.textContent=msg;
+    setTimeout(function(){ btn.textContent=old; },1200);
+  }
+
+  $('setCueBtn').addEventListener('click', function(){
+    var m=currentMoment();
+    if(!m){ notify('Add a moment first, then stamp a light cue onto it.'); return; }
+    m.lightCue={ lights: JSON.parse(JSON.stringify(state.lights)) };
+    lastAppliedMomentId=state.momentId;
+    renderMoments(); scheduleSave();
+    flashBtn(this,'Cue set \u2726');
+  });
+  $('clearCueBtn').addEventListener('click', function(){
+    var m=currentMoment();
+    if(!m || !m.lightCue) return;
+    delete m.lightCue;
+    renderMoments(); scheduleSave();
+    flashBtn(this,'Cleared');
+  });
+
+  $('addSfxBtn').addEventListener('click', function(){
+    var m=currentMoment();
+    if(!m){ notify('Add a moment first, then log SFX against it.'); return; }
+    var btn=this;
+    askText('Log an SFX cue', 'Thunder crash, bell toll, heartbeat under...', '').then(function(t){
+      if(t===null || !t.trim()) return;
+      if(!m.sfx) m.sfx=[];
+      m.sfx.push({id:uid('fx'), text:t.trim()});
+      renderMoments(); scheduleSave();
+      flashBtn(btn,'Logged \u266A');
+    });
+  });
+
+  function gelName(c){
+    for(var i=0;i<GELS.length;i++){
+      if(GELS[i][1].toLowerCase()===String(c).toLowerCase()) return GELS[i][0];
+    }
+    return c;
+  }
+  function cueFixtureNames(lights){
+    var counts={}, names={};
+    lights.forEach(function(L){
+      var t=(L.type==='can')?'Can':'Leko';
+      counts[t]=(counts[t]||0)+1;
+      names[L.id]=t+' '+counts[t];
+    });
+    return names;
+  }
+  function cueDesc(L){
+    return 'hang '+zoneFor(L.x,L.y)
+      +' \u00B7 focus '+zoneFor(L.tx,L.ty)
+      +' \u00B7 '+gelName(L.color)
+      +' \u00B7 beam '+Math.round(L.size)
+      +' \u00B7 edge '+Math.round(L.focus)
+      +' \u00B7 '+Math.round(L.intensity==null?80:L.intensity)+'%'
+      +(L.on===false?' \u00B7 OFF':'');
+  }
+
+  function buildLightLog(){
+    var body=$('logBody'); body.innerHTML='';
+    var txt=[], any=false, prevMap=null;
+    for(var a=1;a<=5;a++){
+      var nS=SCENES_PER_ACT[a]||0;
+      for(var s=1;s<=nS;s++){
+        var ms=state.scenes[a+'-'+s];
+        if(!ms || !ms.length) continue;
+        var headerDone=false;
+        var sceneName='Act '+ROMAN[a-1]+', Scene '+s;
+        ms.forEach(function(m,idx){
+          if(!m.lightCue || !m.lightCue.lights) return;
+          any=true;
+          if(!headerDone){
+            var h=document.createElement('div');
+            h.className='log-scene'; h.textContent=sceneName;
+            body.appendChild(h);
+            txt.push(''); txt.push(sceneName.toUpperCase());
+            headerDone=true;
+          }
+          var mv=document.createElement('div');
+          mv.className='log-moment';
+          mv.innerHTML='<span class="mlabel">'+(idx+1)+'. '+esc(m.label)+' \u2726</span>';
+          body.appendChild(mv);
+          txt.push('  '+(idx+1)+'. '+m.label);
+          if(!m.lightCue.lights.length){
+            var bo=document.createElement('div');
+            bo.className='log-pos';
+            bo.innerHTML='<span class="fresh">blackout, no fixtures in cue</span>';
+            body.appendChild(bo);
+            txt.push('     blackout');
+          }
+          var names=cueFixtureNames(m.lightCue.lights);
+          var newMap={};
+          m.lightCue.lights.forEach(function(L){
+            var d=cueDesc(L);
+            newMap[L.id]=d;
+            var held = prevMap && prevMap[L.id]===d;
+            var pv=document.createElement('div');
+            pv.className='log-pos';
+            pv.innerHTML='<span class="'+(held?'hold':'fresh')+'"><b>'+esc(names[L.id])+'</b> '+esc(d)+(held?' holds':'')+'</span>';
+            body.appendChild(pv);
+            txt.push('     '+names[L.id]+': '+d+(held?' (holds)':''));
+          });
+          prevMap=newMap;
+        });
+      }
+    }
+    if(!any){
+      body.innerHTML='<div class="log-empty">No light cues yet. Build a look with the Lights panel, then press Set cue to stamp it onto the current moment. Each cue holds until the next one.</div>';
+    }
+    return txt.join('\n').trim();
+  }
+
+  function buildSoundLog(){
+    var body=$('logBody'); body.innerHTML='';
+    var txt=[], any=false;
+    for(var a=1;a<=5;a++){
+      var nS=SCENES_PER_ACT[a]||0;
+      for(var s=1;s<=nS;s++){
+        var ms=state.scenes[a+'-'+s];
+        if(!ms || !ms.length) continue;
+        var headerDone=false;
+        var sceneName='Act '+ROMAN[a-1]+', Scene '+s;
+        ms.forEach(function(m,idx){
+          if(!m.sfx || !m.sfx.length) return;
+          any=true;
+          if(!headerDone){
+            var h=document.createElement('div');
+            h.className='log-scene'; h.textContent=sceneName;
+            body.appendChild(h);
+            txt.push(''); txt.push(sceneName.toUpperCase());
+            headerDone=true;
+          }
+          var mv=document.createElement('div');
+          mv.className='log-moment';
+          mv.innerHTML='<span class="mlabel">'+(idx+1)+'. '+esc(m.label)+'</span>';
+          body.appendChild(mv);
+          txt.push('  '+(idx+1)+'. '+m.label);
+          m.sfx.forEach(function(fx){
+            var pv=document.createElement('div');
+            pv.className='log-pos';
+            var sp=document.createElement('span');
+            sp.className='fresh';
+            sp.textContent='\u266A '+fx.text;
+            sp.style.cursor='pointer';
+            sp.title='Click to edit. Clear the text to delete.';
+            sp.addEventListener('click', function(){
+              askText('Edit SFX cue', 'Clear the text to delete it', fx.text).then(function(t){
+                if(t===null) return;
+                if(!t.trim()){
+                  m.sfx=m.sfx.filter(function(z){return z.id!==fx.id;});
+                } else {
+                  fx.text=t.trim();
+                }
+                renderMoments(); scheduleSave(); refreshLog();
+              });
+            });
+            pv.appendChild(sp);
+            body.appendChild(pv);
+            txt.push('     SFX: '+fx.text);
+          });
+        });
+      }
+    }
+    if(!any){
+      body.innerHTML='<div class="log-empty">No SFX logged yet. Use Log SFX in the Sound panel to pin cues to the current moment.</div>';
+    }
+    return txt.join('\n').trim();
+  }
+
+  var logTab='blocking';
+  function refreshLog(){
+    if(logTab==='lights') logText=buildLightLog();
+    else if(logTab==='sound') logText=buildSoundLog();
+    else logText=buildLog();
+  }
+  document.querySelectorAll('.log-tabs button').forEach(function(b){
+    b.addEventListener('click', function(){
+      logTab=this.dataset.tab;
+      document.querySelectorAll('.log-tabs button').forEach(function(x){
+        x.classList.toggle('on', x===b);
+      });
+      refreshLog();
+    });
+  });
+
   var logText='';
   $('logBtn').addEventListener('click', function(){
-    logText=buildLog();
+    refreshLog();
     $('logOverlay').classList.add('show');
   });
   $('logCloseBtn').addEventListener('click', function(){
@@ -1886,6 +2216,7 @@ var SCRIPT_DATA = {"1-1":{"title":"Scene 1. A desert place.","lines":["Thunder a
         version:2, saved:new Date().toISOString(),
         cast:state.cast, scenes:state.scenes,
         lights:state.lights, lightsOn:state.lightsOn,
+        customProps:state.customProps,
         act:state.act, scene:state.scene
       }));
       var st=$('saveStatus');
@@ -1904,6 +2235,7 @@ var SCRIPT_DATA = {"1-1":{"title":"Scene 1. A desert place.","lines":["Thunder a
       state.cast=d.cast;
       state.scenes=d.scenes;
       if(d.lights) state.lights=d.lights;
+      if(d.customProps) state.customProps=d.customProps;
       if(d.lightsOn) state.lightsOn=true;
       if(d.act>=1 && d.act<=5) state.act=d.act;
       if(d.scene>=1) state.scene=d.scene;
@@ -1924,6 +2256,7 @@ var SCRIPT_DATA = {"1-1":{"title":"Scene 1. A desert place.","lines":["Thunder a
 
   function renderAll(){
     showZone(null);
+    applyLightCueIfMomentChanged();
     renderMoments();
     renderCast();
     renderStage();
@@ -1941,6 +2274,7 @@ var SCRIPT_DATA = {"1-1":{"title":"Scene 1. A desert place.","lines":["Thunder a
   buildActSelect();
   buildSceneSelect();
   $('lightsToggle').classList.toggle('toggled', state.lightsOn);
+  rebuildPropSel();
   renderLights();
   enterScene();
 })();
