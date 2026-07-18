@@ -1,0 +1,926 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Palisade Service Bay</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0f1319;
+    --bg2:#141a22;
+    --panel:#1a212b;
+    --panel2:#212a36;
+    --line:#2b3644;
+    --line2:#3a4757;
+    --ink:#e7e6df;
+    --muted:#8b96a4;
+    --faint:#5d6875;
+    --amber:#f2a93b;
+    --amber-dim:#8a6320;
+    --cyan:#43cfc6;
+    --cyan-dim:#1f5f5b;
+    --green:#4fbf6b;
+    --red:#e0574f;
+    --red-dim:#6e2b28;
+    --shadow:0 18px 50px rgba(0,0,0,.5);
+    --mono:'JetBrains Mono',ui-monospace,monospace;
+    --disp:'Chakra Petch',system-ui,sans-serif;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{
+    background:
+      radial-gradient(1200px 700px at 78% -10%, rgba(67,207,198,.07), transparent 60%),
+      radial-gradient(900px 600px at 5% 108%, rgba(242,169,59,.06), transparent 55%),
+      var(--bg);
+    color:var(--ink);
+    font-family:var(--disp);
+    -webkit-font-smoothing:antialiased;
+    min-height:100vh;
+    letter-spacing:.2px;
+  }
+  ::selection{background:var(--amber);color:#1a140a}
+  a{color:var(--cyan)}
+  .wrap{max-width:1180px;margin:0 auto;padding:22px 20px 80px}
+
+  /* ---- Top bar ---- */
+  .topbar{
+    display:flex;flex-wrap:wrap;gap:16px;align-items:stretch;
+    border:1px solid var(--line);border-radius:16px;
+    background:linear-gradient(180deg,var(--panel),var(--bg2));
+    padding:18px 20px;box-shadow:var(--shadow);position:relative;overflow:hidden;
+  }
+  .topbar::before{
+    content:"";position:absolute;inset:0;pointer-events:none;
+    background:repeating-linear-gradient(180deg,rgba(255,255,255,.015) 0 2px,transparent 2px 4px);
+  }
+  .id-block{flex:1 1 260px;min-width:240px;position:relative;z-index:1}
+  .eyebrow{
+    font-size:11px;letter-spacing:3px;text-transform:uppercase;color:var(--cyan);
+    font-weight:600;margin:0 0 6px;
+  }
+  .vname{font-size:clamp(24px,4vw,34px);font-weight:700;margin:0;line-height:1.02}
+  .vsub{margin:6px 0 0;color:var(--muted);font-family:var(--mono);font-size:12.5px}
+  .vin-row{margin-top:10px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .vin-row label{font-size:10.5px;letter-spacing:2px;text-transform:uppercase;color:var(--faint)}
+  .vin-input{
+    background:var(--bg);border:1px solid var(--line);color:var(--ink);
+    font-family:var(--mono);font-size:12px;padding:5px 9px;border-radius:8px;width:200px;
+  }
+
+  .odo{
+    flex:0 0 auto;min-width:210px;position:relative;z-index:1;
+    border:1px solid var(--line2);border-radius:14px;padding:14px 18px;
+    background:radial-gradient(120% 140% at 50% 0%, rgba(242,169,59,.12), transparent 60%),var(--bg);
+    display:flex;flex-direction:column;justify-content:center;
+  }
+  .odo-label{font-size:10.5px;letter-spacing:3px;text-transform:uppercase;color:var(--amber);font-weight:600}
+  .odo-val{display:flex;align-items:baseline;gap:8px;margin-top:4px}
+  .odo-num{
+    font-family:var(--mono);font-weight:700;font-size:clamp(28px,5vw,40px);
+    color:var(--ink);letter-spacing:1px;line-height:1;
+  }
+  .odo-unit{font-family:var(--mono);color:var(--muted);font-size:12px}
+  .odo-edit{margin-top:8px;display:flex;gap:6px}
+  .odo-edit input{
+    background:var(--bg2);border:1px solid var(--line);color:var(--ink);
+    font-family:var(--mono);font-size:13px;padding:6px 8px;border-radius:8px;width:110px;
+  }
+  .odo-stamp{margin-top:6px;font-family:var(--mono);font-size:10.5px;color:var(--faint)}
+
+  .health{
+    flex:0 0 auto;min-width:200px;position:relative;z-index:1;display:flex;gap:8px;align-items:center;
+  }
+  .hstat{
+    flex:1;border:1px solid var(--line);border-radius:12px;padding:10px 8px;text-align:center;
+    background:var(--bg);min-width:60px;
+  }
+  .hstat .n{font-family:var(--mono);font-weight:700;font-size:22px;line-height:1}
+  .hstat .l{font-size:9.5px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-top:5px}
+  .hstat.ok .n{color:var(--green)} .hstat.soon .n{color:var(--amber)} .hstat.over .n{color:var(--red)}
+
+  /* ---- buttons ---- */
+  .btn{
+    font-family:var(--disp);font-weight:600;font-size:12.5px;letter-spacing:.6px;
+    border:1px solid var(--line2);background:var(--panel2);color:var(--ink);
+    padding:8px 14px;border-radius:9px;cursor:pointer;transition:.15s;
+  }
+  .btn:hover{border-color:var(--cyan);color:#fff}
+  .btn:focus-visible,.tab:focus-visible,.node:focus-visible,.sys-card:focus-visible,input:focus-visible,select:focus-visible{
+    outline:2px solid var(--cyan);outline-offset:2px}
+  .btn.amber{background:var(--amber);color:#1a140a;border-color:var(--amber)}
+  .btn.amber:hover{filter:brightness(1.08);color:#1a140a}
+  .btn.ghost{background:transparent}
+  .btn.sm{padding:6px 10px;font-size:11.5px}
+
+  /* ---- tabs / toolbar ---- */
+  .toolbar{
+    display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:22px 0 16px;
+  }
+  .tabs{display:flex;gap:4px;background:var(--panel);border:1px solid var(--line);border-radius:11px;padding:4px}
+  .tab{
+    font-family:var(--disp);font-weight:600;font-size:12.5px;letter-spacing:.6px;
+    background:transparent;border:none;color:var(--muted);padding:8px 15px;border-radius:8px;cursor:pointer;
+  }
+  .tab[aria-selected="true"]{background:var(--panel2);color:var(--ink);box-shadow:inset 0 0 0 1px var(--line2)}
+  .spacer{flex:1}
+
+  /* ---- schematic ---- */
+  .stage{
+    border:1px solid var(--line);border-radius:16px;background:
+      linear-gradient(180deg,var(--bg2),var(--bg));
+    position:relative;overflow:hidden;box-shadow:var(--shadow);
+  }
+  .stage-grid{
+    position:absolute;inset:0;pointer-events:none;opacity:.5;
+    background-image:linear-gradient(var(--line) 1px,transparent 1px),linear-gradient(90deg,var(--line) 1px,transparent 1px);
+    background-size:38px 38px;
+    mask-image:radial-gradient(120% 90% at 50% 40%,#000 40%,transparent 85%);
+  }
+  .stage svg{display:block;width:100%;height:auto}
+  .car-fill{fill:url(#bodyGrad);stroke:var(--cyan);stroke-width:2.2;stroke-linejoin:round}
+  .glass{fill:url(#glassGrad);stroke:var(--cyan);stroke-width:1.3;stroke-linejoin:round}
+  .glass2{fill:url(#glassGrad);stroke:var(--cyan);stroke-width:1.2;stroke-linejoin:round;opacity:.9}
+  .shadow{fill:rgba(0,0,0,.45)}
+  .spoiler{fill:rgba(67,207,198,.06);stroke:var(--cyan);stroke-width:1.6;stroke-linejoin:round}
+  .roofline{fill:none;stroke:var(--line2);stroke-width:5;stroke-linecap:round}
+  .chrome{fill:none;stroke:#a6ece6;stroke-width:1.4;opacity:.55;stroke-linejoin:round}
+  .pillar{fill:rgba(67,207,198,.05);stroke:var(--cyan);stroke-width:1.1}
+  .grille-face{fill:#0b1016;stroke:var(--cyan);stroke-width:1.5;stroke-linejoin:round}
+  .grille-line{stroke:var(--muted);stroke-width:1.2;opacity:.7}
+  .lamp{fill:rgba(67,207,198,.45);stroke:var(--cyan);stroke-width:1.2;stroke-linejoin:round}
+  .lamp-dim{fill:rgba(139,150,164,.22);stroke:var(--line2);stroke-width:1.2;stroke-linejoin:round}
+  .detail{fill:none;stroke:var(--line2);stroke-width:1.3}
+  .crease{fill:none;stroke:var(--cyan);stroke-width:1;opacity:.32}
+  .rocker{fill:#10161d;stroke:var(--line);stroke-width:1.2}
+  .arch{fill:none;stroke:var(--line2);stroke-width:5;stroke-linejoin:round;opacity:.9}
+  .wheel{fill:#0c1218;stroke:var(--line2);stroke-width:2.5}
+  .rim{fill:#12181f;stroke:var(--muted);stroke-width:2}
+  .spoke{fill:none;stroke:var(--muted);stroke-width:1.7;stroke-linecap:round;opacity:.8}
+  .hub{fill:var(--line2);stroke:var(--muted);stroke-width:1.5}
+  .mirror{fill:#0b1016;stroke:var(--line2);stroke-width:1.4}
+  .roofrail{fill:var(--line2)}
+  .railleg{fill:var(--line2)}
+  .tirein{fill:#0f151c;stroke:var(--line);stroke-width:1}
+  .rimface{fill:none;stroke:var(--line2);stroke-width:1.2;opacity:.7}
+  .lug{fill:var(--muted)}
+  .drl{fill:rgba(67,207,198,.5);stroke:var(--cyan);stroke-width:1;stroke-linejoin:round}
+  .shut{fill:none;stroke:var(--line2);stroke-width:1.1;opacity:.85}
+  .handle{fill:none;stroke:var(--muted);stroke-width:1.4}
+  .cladding{fill:#080b10;fill-rule:evenodd;stroke:var(--line);stroke-width:1.1;stroke-linejoin:round}
+  .chrome2{fill:none;stroke:#c2f4ef;stroke-width:2.2;opacity:.65;stroke-linecap:round;stroke-linejoin:round}
+  .ground{stroke:var(--amber-dim);stroke-width:1.5;stroke-dasharray:2 8;opacity:.7}
+  .badge-txt{fill:var(--faint);font-family:var(--mono);font-size:11px;letter-spacing:1px}
+
+  .node{cursor:pointer}
+  .node .halo{fill:none;stroke-width:2;opacity:.9}
+  .node .dot{stroke:#0c1015;stroke-width:1.5}
+  .node .lead{stroke-width:1.4;opacity:.55}
+  .node.ok .halo{stroke:var(--cyan)} .node.ok .dot{fill:var(--cyan)} .node.ok .lead{stroke:var(--cyan)}
+  .node.soon .halo{stroke:var(--amber)} .node.soon .dot{fill:var(--amber)} .node.soon .lead{stroke:var(--amber)}
+  .node.over .halo{stroke:var(--red)} .node.over .dot{fill:var(--red)} .node.over .lead{stroke:var(--red)}
+  .node.none .halo{stroke:var(--faint)} .node.none .dot{fill:var(--faint)} .node.none .lead{stroke:var(--faint)}
+  .node.sel .halo{stroke-width:3}
+  .node.soon .pulse,.node.over .pulse{animation:pulse 1.8s ease-out infinite}
+  @keyframes pulse{0%{r:9;opacity:.6}100%{r:24;opacity:0}}
+  .node:hover .dot{filter:brightness(1.25)}
+
+  .legend{
+    display:flex;gap:16px;flex-wrap:wrap;padding:12px 16px;border-top:1px solid var(--line);
+    font-size:11.5px;color:var(--muted);font-family:var(--mono);
+  }
+  .legend span{display:inline-flex;align-items:center;gap:6px}
+  .dotk{width:9px;height:9px;border-radius:50%;display:inline-block}
+  .dotk.ok{background:var(--cyan)} .dotk.soon{background:var(--amber)} .dotk.over{background:var(--red)} .dotk.none{background:var(--faint)}
+
+  /* ---- systems grid ---- */
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(255px,1fr));gap:12px}
+  .sys-card{
+    text-align:left;border:1px solid var(--line);border-radius:13px;background:var(--panel);
+    padding:14px 15px;cursor:pointer;transition:.15s;position:relative;overflow:hidden;font-family:var(--disp);
+  }
+  .sys-card:hover{border-color:var(--line2);transform:translateY(-2px)}
+  .sys-card .rail{position:absolute;left:0;top:0;bottom:0;width:4px}
+  .sys-card.ok .rail{background:var(--cyan)} .sys-card.soon .rail{background:var(--amber)}
+  .sys-card.over .rail{background:var(--red)} .sys-card.none .rail{background:var(--faint)}
+  .sys-top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+  .sys-name{font-weight:600;font-size:14.5px;color:var(--ink);line-height:1.15}
+  .sys-cat{font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--faint);margin-top:3px}
+  .pill{font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:.5px;padding:3px 8px;border-radius:20px;white-space:nowrap;text-transform:uppercase}
+  .pill.ok{background:var(--cyan-dim);color:#bff3ef} .pill.soon{background:var(--amber-dim);color:#ffe1a8}
+  .pill.over{background:var(--red-dim);color:#ffcac6} .pill.none{background:#2a333f;color:var(--muted)}
+  .bar{height:6px;border-radius:4px;background:var(--bg);margin:12px 0 8px;overflow:hidden;border:1px solid var(--line)}
+  .bar i{display:block;height:100%;border-radius:4px}
+  .bar i.ok{background:var(--cyan)} .bar i.soon{background:var(--amber)} .bar i.over{background:var(--red)}
+  .sys-meta{display:flex;justify-content:space-between;font-family:var(--mono);font-size:11px;color:var(--muted)}
+  .sys-meta b{color:var(--ink);font-weight:500}
+
+  /* ---- specs ---- */
+  .card{border:1px solid var(--line);border-radius:16px;background:var(--panel);padding:20px 22px;box-shadow:var(--shadow)}
+  .card h2{margin:0 0 4px;font-size:16px;letter-spacing:1px;text-transform:uppercase}
+  .card .lead-txt{color:var(--muted);font-size:12.5px;margin:0 0 18px;font-family:var(--mono)}
+  .spec-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:10px}
+  .spec{border:1px solid var(--line);border-radius:11px;background:var(--bg2);padding:11px 13px}
+  .spec label{display:block;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--faint);margin-bottom:6px}
+  .spec input{width:100%;background:transparent;border:none;color:var(--ink);font-family:var(--mono);font-size:14px;padding:0}
+  .spec input:focus{outline:none}
+  .spec.edit{border-color:var(--line2)}
+
+  /* ---- history ---- */
+  .log{display:flex;flex-direction:column;gap:2px}
+  .log-row{
+    display:grid;grid-template-columns:96px 1fr 90px 90px auto;gap:12px;align-items:center;
+    padding:11px 12px;border:1px solid var(--line);border-radius:10px;background:var(--bg2);font-family:var(--mono);font-size:12.5px;
+  }
+  .log-row .d{color:var(--muted)} .log-row .n{color:var(--ink);font-family:var(--disp);font-weight:600;font-size:13.5px}
+  .log-row .m{color:var(--cyan)} .log-row .c{color:var(--amber)}
+  .log-empty{color:var(--faint);font-family:var(--mono);font-size:13px;padding:20px;text-align:center;border:1px dashed var(--line);border-radius:12px}
+  .del{background:transparent;border:1px solid var(--line);color:var(--faint);border-radius:7px;padding:4px 8px;cursor:pointer;font-size:11px}
+  .del:hover{border-color:var(--red);color:var(--red)}
+
+  /* ---- drawer ---- */
+  .scrim{position:fixed;inset:0;background:rgba(6,9,13,.66);backdrop-filter:blur(2px);opacity:0;pointer-events:none;transition:.2s;z-index:40}
+  .scrim.on{opacity:1;pointer-events:auto}
+  .drawer{
+    position:fixed;top:0;right:0;height:100%;width:min(440px,100%);z-index:50;
+    background:linear-gradient(180deg,var(--panel),var(--bg2));border-left:1px solid var(--line2);
+    transform:translateX(100%);transition:transform .24s cubic-bezier(.2,.8,.2,1);
+    display:flex;flex-direction:column;box-shadow:-20px 0 60px rgba(0,0,0,.5);
+  }
+  .drawer.on{transform:translateX(0)}
+  .dr-head{padding:20px 22px 16px;border-bottom:1px solid var(--line)}
+  .dr-cat{font-size:10px;letter-spacing:2.5px;text-transform:uppercase;color:var(--cyan);font-weight:600}
+  .dr-title{font-size:22px;font-weight:700;margin:6px 0 0}
+  .dr-close{position:absolute;top:16px;right:16px;background:var(--panel2);border:1px solid var(--line2);color:var(--ink);width:34px;height:34px;border-radius:9px;cursor:pointer;font-size:16px}
+  .dr-close:hover{border-color:var(--red);color:var(--red)}
+  .dr-body{padding:18px 22px;overflow:auto;flex:1}
+  .dr-status{display:flex;align-items:center;gap:10px;margin-bottom:16px}
+  .dr-status .pill{font-size:11px;padding:5px 11px}
+  .dr-status .rem{font-family:var(--mono);font-size:12.5px;color:var(--muted)}
+  .dr-section{margin:18px 0 0}
+  .dr-section h4{font-size:10.5px;letter-spacing:2px;text-transform:uppercase;color:var(--faint);margin:0 0 9px;font-weight:600}
+  .field-row{display:flex;gap:10px}
+  .field{flex:1;margin-bottom:10px}
+  .field label{display:block;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--faint);margin-bottom:5px}
+  .field input{width:100%;background:var(--bg);border:1px solid var(--line);color:var(--ink);font-family:var(--mono);font-size:13.5px;padding:8px 10px;border-radius:9px}
+  .interval-box{background:var(--bg2);border:1px solid var(--line);border-radius:11px;padding:13px 14px;margin-top:4px}
+  .interval-box .val{font-family:var(--mono);font-size:13px;color:var(--ink)}
+  .dr-note{font-size:12px;color:var(--muted);line-height:1.5;font-family:var(--disp)}
+  .mini-log{margin-top:8px;display:flex;flex-direction:column;gap:6px}
+  .mini-log .r{display:flex;justify-content:space-between;font-family:var(--mono);font-size:11.5px;color:var(--muted);padding:7px 10px;border:1px solid var(--line);border-radius:8px;background:var(--bg2)}
+  .mini-log .r b{color:var(--ink);font-weight:500}
+  .dr-foot{padding:16px 22px;border-top:1px solid var(--line);display:flex;gap:10px}
+  .dr-foot .btn{flex:1;text-align:center}
+
+  .foot{margin-top:34px;text-align:center;color:var(--faint);font-family:var(--mono);font-size:11px;line-height:1.7}
+  .hidden{display:none !important}
+
+  @media (max-width:620px){
+    .log-row{grid-template-columns:1fr auto;gap:6px}
+    .log-row .m,.log-row .c{display:none}
+    .odo,.health{width:100%}
+  }
+  @media (prefers-reduced-motion:reduce){
+    *{animation:none !important;transition:none !important}
+  }
+  @media print{
+    body{background:#fff;color:#000}
+    .toolbar,.drawer,.scrim,.dr-close,.legend,.node .pulse{display:none !important}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- TOP BAR -->
+  <header class="topbar">
+    <div class="id-block">
+      <p class="eyebrow">Service Bay Diagnostic</p>
+      <h1 class="vname">2021 Hyundai Palisade</h1>
+      <p class="vsub">3.8L V6 GDI &middot; 8-speed automatic &middot; Chris's daily driver</p>
+      <div class="vin-row">
+        <label for="vin">VIN</label>
+        <input id="vin" class="vin-input" placeholder="Enter VIN" autocomplete="off">
+      </div>
+    </div>
+
+    <div class="odo">
+      <span class="odo-label">Odometer</span>
+      <div class="odo-val">
+        <span class="odo-num" id="odoNum">0</span>
+        <span class="odo-unit">mi</span>
+      </div>
+      <div class="odo-edit">
+        <input id="odoInput" type="number" inputmode="numeric" placeholder="Update mi">
+        <button class="btn amber sm" id="odoSave">Set</button>
+      </div>
+      <span class="odo-stamp" id="odoStamp"></span>
+    </div>
+
+    <div class="health" id="health"></div>
+  </header>
+
+  <!-- TOOLBAR -->
+  <div class="toolbar">
+    <div class="tabs" role="tablist" aria-label="Views">
+      <button class="tab" role="tab" aria-selected="true" data-view="scan">Scan</button>
+      <button class="tab" role="tab" aria-selected="false" data-view="systems">Systems</button>
+      <button class="tab" role="tab" aria-selected="false" data-view="specs">Specs</button>
+      <button class="tab" role="tab" aria-selected="false" data-view="history">History</button>
+    </div>
+    <div class="spacer"></div>
+    <button class="btn ghost sm" id="exportBtn">Export data</button>
+    <button class="btn ghost sm" id="importBtn">Import</button>
+    <input type="file" id="importFile" accept="application/json" class="hidden">
+    <button class="btn ghost sm" id="printBtn">Print</button>
+  </div>
+
+  <!-- SCAN VIEW -->
+  <section id="view-scan">
+    <div class="stage">
+      <div class="stage-grid"></div>
+      <svg viewBox="0 0 1000 460" role="img" aria-label="Side schematic of a Hyundai Palisade with maintenance nodes">
+        <defs>
+          <linearGradient id="bodyGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="rgba(67,207,198,.09)"/>
+            <stop offset=".5" stop-color="rgba(67,207,198,.03)"/>
+            <stop offset="1" stop-color="rgba(10,15,20,.55)"/>
+          </linearGradient>
+          <linearGradient id="glassGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="rgba(67,207,198,.20)"/>
+            <stop offset="1" stop-color="rgba(67,207,198,.07)"/>
+          </linearGradient>
+        </defs>
+
+        <line class="ground" x1="40" y1="402" x2="960" y2="402"/>
+        <ellipse class="shadow" cx="500" cy="402" rx="425" ry="8"/>
+
+        <!-- BODY: vertical nose, flat hood, raked windshield, flat roof w/ rear spoiler lip, near-vertical tailgate -->
+        <path class="car-fill" d="M77 366
+          L75 300 L76 252 Q76 244 86 243
+          L120 241 Q200 236 243 234
+          Q256 233 263 224
+          L322 138 Q328 128 344 127
+          L742 121 Q768 121 782 128
+          L868 160 Q880 165 882 178
+          L890 348 Q891 362 902 363
+          L920 362 Q926 363 926 369 L913 372
+          L77 372 Z"/>
+
+        <!-- rear spoiler lip -->
+        <path class="spoiler" d="M868 160 L893 152 Q900 151 898 158 L884 172 Z"/>
+
+        <!-- hood cowl line -->
+        <path class="shut" d="M86 243 Q190 238 243 234 Q256 233 263 224"/>
+
+        <!-- windshield -->
+        <path class="glass2" d="M268 226 L324 143 Q329 135 341 134 L352 134 L318 224 Z"/>
+
+        <!-- roof rails -->
+        <path class="roofline" d="M368 124 Q555 116 762 121"/>
+        <path class="railleg" d="M382 126 l4 6 h-9 z"/>
+        <path class="railleg" d="M744 124 l4 6 h-9 z"/>
+
+        <!-- side DLO: straight high beltline, quarter-glass kick-up, chrome surround -->
+        <path class="glass" d="M330 216 Q340 172 356 146 L768 140 Q796 146 818 162 L836 196 L764 205 L732 216 Z"/>
+        <path class="chrome" d="M330 216 Q340 172 356 146 L768 140 Q796 146 818 162 L836 196 L764 205 L732 216 Z"/>
+        <path class="chrome2" d="M732 216 L764 205 L836 196"/>
+        <!-- pillars -->
+        <path class="pillar" d="M518 216 L520 143 L534 143 L534 216 Z"/>
+        <path class="pillar" d="M700 216 L700 141 L714 141 L722 168 L732 216 Z"/>
+        <line class="shut" x1="356" y1="146" x2="366" y2="216"/>
+
+        <!-- headlamp block at nose top corner + stacked DRL -->
+        <path class="lamp" d="M76 252 L112 249 L112 268 L77 270 Z"/>
+        <path class="drl" d="M77 276 L85 275 L85 290 L78 291 Z"/>
+        <path class="drl" d="M77 296 L85 295 L85 310 L78 311 Z"/>
+
+        <!-- feature lines -->
+        <path class="crease" d="M112 262 Q470 250 866 262"/>
+        <path class="crease" d="M100 318 Q480 312 878 326"/>
+
+        <!-- vertical tail lamp + tailgate seam -->
+        <path class="lamp" d="M876 210 Q885 209 885 218 L888 330 Q888 338 880 337 Z"/>
+        <path class="shut" d="M858 190 Q864 270 866 360"/>
+
+        <!-- doors / handles / fuel door / mirror -->
+        <path class="shut" d="M348 222 Q346 295 347 368"/>
+        <path class="shut" d="M518 218 Q517 295 518 368"/>
+        <path class="shut" d="M700 218 Q700 292 701 362"/>
+        <rect class="handle" x="428" y="228" width="30" height="7" rx="3.5"/>
+        <rect class="handle" x="596" y="227" width="30" height="7" rx="3.5"/>
+        <rect class="detail" x="782" y="288" width="24" height="28" rx="5"/>
+        <path class="mirror" d="M346 208 Q330 201 325 211 Q329 224 346 220 Z"/>
+
+        <!-- lower cladding: slim continuous band, arches punched out -->
+        <path class="cladding" d="M77 372 L77 344 L136 344 L146 330 Q158 262 239 260 Q320 262 332 330 L336 352 L637 352 L641 330 Q653 262 734 260 Q815 262 827 330 L836 352 L913 352 L913 372 Z
+          M239 402 A63 63 0 0 1 176.6 339 A63 63 0 0 1 301.4 339 A63 63 0 0 1 239 402 Z
+          M734 402 A63 63 0 0 1 671.6 339 A63 63 0 0 1 796.4 339 A63 63 0 0 1 734 402 Z"/>
+
+        <circle class="wheel" cx="239" cy="339" r="63"/>
+        <circle class="tirein" cx="239" cy="339" r="51"/>
+        <circle class="rim" cx="239" cy="339" r="43"/>
+        <path class="spoke" d="M254.0 339.0 Q267.0 340.4 279.5 345.1"/>
+        <path class="spoke" d="M252.9 344.7 Q264.3 351.0 274.1 360.2"/>
+        <path class="spoke" d="M249.6 349.6 Q257.8 359.8 263.3 372.0"/>
+        <path class="spoke" d="M244.7 352.9 Q248.4 365.4 248.9 378.8"/>
+        <path class="spoke" d="M239.0 354.0 Q237.6 367.0 232.9 379.5"/>
+        <path class="spoke" d="M233.3 352.9 Q227.0 364.3 217.8 374.1"/>
+        <path class="spoke" d="M228.4 349.6 Q218.2 357.8 206.0 363.3"/>
+        <path class="spoke" d="M225.1 344.7 Q212.6 348.4 199.2 348.9"/>
+        <path class="spoke" d="M224.0 339.0 Q211.0 337.6 198.5 332.9"/>
+        <path class="spoke" d="M225.1 333.3 Q213.7 327.0 203.9 317.8"/>
+        <path class="spoke" d="M228.4 328.4 Q220.2 318.2 214.7 306.0"/>
+        <path class="spoke" d="M233.3 325.1 Q229.6 312.6 229.1 299.2"/>
+        <path class="spoke" d="M239.0 324.0 Q240.4 311.0 245.1 298.5"/>
+        <path class="spoke" d="M244.7 325.1 Q251.0 313.7 260.2 303.9"/>
+        <path class="spoke" d="M249.6 328.4 Q259.8 320.2 272.0 314.7"/>
+        <path class="spoke" d="M252.9 333.3 Q265.4 329.6 278.8 329.1"/>
+        <circle class="rimface" cx="239" cy="339" r="28"/>
+        <circle class="hub" cx="239" cy="339" r="8"/>
+        <circle class="wheel" cx="734" cy="339" r="63"/>
+        <circle class="tirein" cx="734" cy="339" r="51"/>
+        <circle class="rim" cx="734" cy="339" r="43"/>
+        <path class="spoke" d="M749.0 339.0 Q762.0 340.4 774.5 345.1"/>
+        <path class="spoke" d="M747.9 344.7 Q759.3 351.0 769.1 360.2"/>
+        <path class="spoke" d="M744.6 349.6 Q752.8 359.8 758.3 372.0"/>
+        <path class="spoke" d="M739.7 352.9 Q743.4 365.4 743.9 378.8"/>
+        <path class="spoke" d="M734.0 354.0 Q732.6 367.0 727.9 379.5"/>
+        <path class="spoke" d="M728.3 352.9 Q722.0 364.3 712.8 374.1"/>
+        <path class="spoke" d="M723.4 349.6 Q713.2 357.8 701.0 363.3"/>
+        <path class="spoke" d="M720.1 344.7 Q707.6 348.4 694.2 348.9"/>
+        <path class="spoke" d="M719.0 339.0 Q706.0 337.6 693.5 332.9"/>
+        <path class="spoke" d="M720.1 333.3 Q708.7 327.0 698.9 317.8"/>
+        <path class="spoke" d="M723.4 328.4 Q715.2 318.2 709.7 306.0"/>
+        <path class="spoke" d="M728.3 325.1 Q724.6 312.6 724.1 299.2"/>
+        <path class="spoke" d="M734.0 324.0 Q735.4 311.0 740.1 298.5"/>
+        <path class="spoke" d="M739.7 325.1 Q746.0 313.7 755.2 303.9"/>
+        <path class="spoke" d="M744.6 328.4 Q754.8 320.2 767.0 314.7"/>
+        <path class="spoke" d="M747.9 333.3 Q760.4 329.6 773.8 329.1"/>
+        <circle class="rimface" cx="734" cy="339" r="28"/>
+        <circle class="hub" cx="734" cy="339" r="8"/>
+
+        <text class="badge-txt" x="150" y="110">&larr; FRONT</text>
+        <g id="nodeLayer"></g>
+      </svg>
+      <div class="legend">
+        <span><i class="dotk ok"></i> On schedule</span>
+        <span><i class="dotk soon"></i> Due soon</span>
+        <span><i class="dotk over"></i> Overdue</span>
+        <span><i class="dotk none"></i> No baseline logged</span>
+        <span style="color:var(--faint)">Tap any node to log or edit</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- SYSTEMS VIEW -->
+  <section id="view-systems" class="hidden">
+    <div class="grid" id="sysGrid"></div>
+  </section>
+
+  <!-- SPECS VIEW -->
+  <section id="view-specs" class="hidden">
+    <div class="card">
+      <h2>Vehicle specs</h2>
+      <p class="lead-txt">Reference numbers for parts and fluids. Every field is editable, so correct anything for your exact trim.</p>
+      <div class="spec-grid" id="specGrid"></div>
+    </div>
+  </section>
+
+  <!-- HISTORY VIEW -->
+  <section id="view-history" class="hidden">
+    <div class="card">
+      <h2>Service history</h2>
+      <p class="lead-txt">Every logged service, newest first. Logging a service from a node also lands here.</p>
+      <div class="log" id="logList"></div>
+    </div>
+  </section>
+
+  <p class="foot">
+    Data is saved in this browser only. Use Export to back it up or move it to another device.<br>
+    Default intervals reflect Hyundai's normal service schedule for the 2021 Palisade. Adjust for severe use in each node.
+  </p>
+</div>
+
+<!-- DRAWER -->
+<div class="scrim" id="scrim"></div>
+<aside class="drawer" id="drawer" role="dialog" aria-modal="true" aria-labelledby="drTitle">
+  <div class="dr-head">
+    <button class="dr-close" id="drClose" aria-label="Close">&times;</button>
+    <span class="dr-cat" id="drCat"></span>
+    <h3 class="dr-title" id="drTitle"></h3>
+  </div>
+  <div class="dr-body" id="drBody"></div>
+</aside>
+
+<script>
+"use strict";
+
+/* ---------- defaults ---------- */
+const STORE_KEY = "palisade_service_v1";
+const MI = "mi", MO = "mo";
+
+const DEFAULT_ITEMS = [
+  {id:"oil",      name:"Engine Oil & Filter", cat:"Engine",    node:{x:214,y:326}, mi:7500,  mo:12,  note:"Normal service. Under severe use (short trips, towing, dust, extreme heat) cut this to about 3,750 mi / 6 mo."},
+  {id:"rotate",   name:"Tire Rotation",       cat:"Tires",     node:{x:490,y:364}, mi:7500,  mo:12,  note:"Rotate to even out tread wear. Easy to pair with every oil change."},
+  {id:"cabin",    name:"Cabin Air Filter",    cat:"Interior",  node:{x:390,y:238}, mi:15000, mo:12,  note:"Behind the glove box. Do it more often with pollen, dust, or pets."},
+  {id:"airfilter",name:"Engine Air Filter",   cat:"Engine",    node:{x:168,y:300}, mi:30000, mo:36,  note:"Replace sooner if you drive a lot of dirt or gravel roads."},
+  {id:"brakepads",name:"Brake Pads",          cat:"Brakes",    node:{x:239,y:378}, mi:40000, mo:null,note:"Inspect at every rotation. Real replacement point ranges roughly 30k to 70k mi depending on driving. Treat this as an estimate and adjust from inspections."},
+  {id:"brakefluid",name:"Brake Fluid",        cat:"Brakes",    node:{x:258,y:296}, mi:30000, mo:24,  note:"Flush on time even if it looks fine. Moisture absorption is the real reason, not mileage."},
+  {id:"coolant",  name:"Engine Coolant",      cat:"Cooling",   node:{x:92,y:300}, mi:60000, mo:60,  note:"First change at 60k mi / 60 mo, then every 30k mi / 24 mo after that. Uses Hyundai long-life coolant."},
+  {id:"trans",    name:"Transmission Fluid",  cat:"Drivetrain",node:{x:300,y:340}, mi:60000, mo:72,  note:"8-speed automatic. Officially inspect, replace under severe use. Many owners service near 60k mi to be safe."},
+  {id:"plugs",    name:"Spark Plugs",         cat:"Engine",    node:{x:196,y:278}, mi:100000,mo:null,note:"Iridium plugs. Long interval, but worth doing on time for smooth starts and economy."},
+  {id:"belt",     name:"Drive Belt",          cat:"Engine",    node:{x:112,y:322}, mi:60000, mo:null,note:"Serpentine belt. Inspect around 60k mi for cracks or glazing and replace as needed."},
+  {id:"battery",  name:"12V Battery",         cat:"Electrical",node:{x:140,y:278}, mi:null,  mo:48,  note:"Test around 30k mi. Plan replacement every 3 to 5 years, sooner in extreme heat."},
+  {id:"wipers",   name:"Wiper Blades",        cat:"Exterior",  node:{x:288,y:232}, mi:null,  mo:12,  note:"Swap yearly, or sooner if they streak or chatter."},
+  {id:"tires",    name:"Tires (tread)",       cat:"Tires",     node:{x:734,y:378}, mi:55000, mo:72,  note:"Typical tread life 50k to 60k mi. Replace on tread depth or age, whichever comes first."},
+  {id:"tpms",     name:"Tire Pressure Check", cat:"Tires",     node:{x:690,y:392}, mi:null,  mo:1,   note:"Quick monthly check. Cold pressure target is on the driver door jamb sticker."}
+];
+
+const DEFAULT_SPECS = [
+  {k:"Engine",            v:"3.8L Lambda II V6 GDI"},
+  {k:"Horsepower",        v:"291 hp"},
+  {k:"Transmission",      v:"8-speed automatic"},
+  {k:"Oil type",          v:"0W-20 synthetic"},
+  {k:"Oil capacity",      v:"6.3 qt (with filter)"},
+  {k:"Coolant",           v:"Hyundai long-life"},
+  {k:"Fuel tank",         v:"18.8 gal"},
+  {k:"Front tire size",   v:"245/60 R18"},
+  {k:"Tire pressure",     v:"35 psi (see door jamb)"},
+  {k:"Wheel torque",      v:"79 to 94 lb-ft"},
+  {k:"Battery",           v:"AGM / group H6"},
+  {k:"License plate",     v:""}
+];
+
+/* ---------- state ---------- */
+let state = load();
+
+function seedState(){
+  return {
+    v:1,
+    vehicle:{vin:"", odometer:0, odoUpdated:null},
+    items:DEFAULT_ITEMS.map(d=>({id:d.id, mi:d.mi, mo:d.mo, note:d.note, lastMiles:null, lastDate:null})),
+    specs:DEFAULT_SPECS.map(s=>({k:s.k, v:s.v})),
+    history:[]
+  };
+}
+function load(){
+  try{
+    const raw = localStorage.getItem(STORE_KEY);
+    if(!raw) return seedState();
+    const s = JSON.parse(raw);
+    // merge any newly added default items
+    const have = new Set(s.items.map(i=>i.id));
+    DEFAULT_ITEMS.forEach(d=>{ if(!have.has(d.id)) s.items.push({id:d.id,mi:d.mi,mo:d.mo,note:d.note,lastMiles:null,lastDate:null}); });
+    return s;
+  }catch(e){ return seedState(); }
+}
+function save(){
+  try{ localStorage.setItem(STORE_KEY, JSON.stringify(state)); }
+  catch(e){ /* storage may be blocked in some previews; app still runs in memory */ }
+}
+function meta(id){ return DEFAULT_ITEMS.find(d=>d.id===id); }
+function item(id){ return state.items.find(i=>i.id===id); }
+
+/* ---------- status math ---------- */
+function monthsBetween(fromISO, to){
+  if(!fromISO) return null;
+  const a = new Date(fromISO), b = to;
+  return (b.getFullYear()-a.getFullYear())*12 + (b.getMonth()-a.getMonth()) + (b.getDate()-a.getDate())/30.44;
+}
+function computeStatus(it){
+  const now = new Date();
+  const odo = state.vehicle.odometer || 0;
+  let fracs = [];
+  let details = {};
+
+  if(it.mi && it.lastMiles!=null){
+    const used = odo - it.lastMiles;
+    const remain = it.mi - used;
+    fracs.push(used/it.mi);
+    details.miRemain = remain;
+    details.miNext = it.lastMiles + it.mi;
+  }
+  if(it.mo && it.lastDate){
+    const used = monthsBetween(it.lastDate, now);
+    const remain = it.mo - used;
+    fracs.push(used/it.mo);
+    details.moRemain = remain;
+  }
+
+  if(fracs.length===0){
+    return {status:"none", frac:0, ...details};
+  }
+  const frac = Math.max(...fracs);
+  let status = "ok";
+  if(frac >= 1) status = "over";
+  else if(frac >= 0.85) status = "soon";
+  return {status, frac:Math.min(frac,1.15), ...details};
+}
+function statusLabel(s){
+  return {ok:"On schedule", soon:"Due soon", over:"Overdue", none:"No baseline"}[s];
+}
+function fmt(n){ return (Math.round(n)).toLocaleString("en-US"); }
+
+/* ---------- rendering ---------- */
+const nodeLayer = document.getElementById("nodeLayer");
+const sysGrid   = document.getElementById("sysGrid");
+const specGrid  = document.getElementById("specGrid");
+const logList   = document.getElementById("logList");
+const healthEl  = document.getElementById("health");
+
+function renderAll(){
+  renderTop();
+  renderNodes();
+  renderSystems();
+  renderSpecs();
+  renderHistory();
+}
+
+function renderTop(){
+  document.getElementById("odoNum").textContent = fmt(state.vehicle.odometer||0);
+  document.getElementById("vin").value = state.vehicle.vin||"";
+  const stamp = state.vehicle.odoUpdated
+    ? "Updated " + new Date(state.vehicle.odoUpdated).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"})
+    : "Set your current mileage to start";
+  document.getElementById("odoStamp").textContent = stamp;
+
+  let ok=0,soon=0,over=0;
+  state.items.forEach(it=>{
+    const s=computeStatus(it).status;
+    if(s==="ok")ok++; else if(s==="soon")soon++; else if(s==="over")over++;
+  });
+  healthEl.innerHTML =
+    `<div class="hstat ok"><div class="n">${ok}</div><div class="l">On track</div></div>
+     <div class="hstat soon"><div class="n">${soon}</div><div class="l">Due soon</div></div>
+     <div class="hstat over"><div class="n">${over}</div><div class="l">Overdue</div></div>`;
+}
+
+function renderNodes(){
+  nodeLayer.innerHTML = "";
+  state.items.forEach(it=>{
+    const m = meta(it.id);
+    const st = computeStatus(it).status;
+    const g = document.createElementNS("http://www.w3.org/2000/svg","g");
+    g.setAttribute("class",`node ${st} ${it.id===selectedId?"sel":""}`);
+    g.setAttribute("tabindex","0");
+    g.setAttribute("role","button");
+    g.setAttribute("aria-label",`${m.name}: ${statusLabel(st)}`);
+    g.dataset.id = it.id;
+    const x=m.node.x, y=m.node.y;
+    g.innerHTML =
+      `<circle class="pulse" cx="${x}" cy="${y}" r="9" fill="none" stroke="currentColor"></circle>
+       <circle class="halo" cx="${x}" cy="${y}" r="13"></circle>
+       <circle class="dot" cx="${x}" cy="${y}" r="6"></circle>`;
+    g.addEventListener("click",()=>openDrawer(it.id));
+    g.addEventListener("keydown",e=>{ if(e.key==="Enter"||e.key===" "){e.preventDefault();openDrawer(it.id);} });
+    nodeLayer.appendChild(g);
+  });
+}
+
+function renderSystems(){
+  sysGrid.innerHTML = "";
+  state.items.forEach(it=>{
+    const m = meta(it.id);
+    const c = computeStatus(it);
+    const st = c.status;
+    let metaLine = "No service logged yet";
+    if(st!=="none"){
+      const parts=[];
+      if(c.miRemain!=null) parts.push(c.miRemain>=0 ? `${fmt(c.miRemain)} mi left` : `${fmt(-c.miRemain)} mi over`);
+      if(c.moRemain!=null) parts.push(c.moRemain>=0 ? `${Math.round(c.moRemain)} mo left` : `${Math.round(-c.moRemain)} mo over`);
+      metaLine = parts.join("  &middot;  ");
+    }
+    const pct = Math.min(100, Math.round((c.frac||0)*100));
+    const barcls = st==="none" ? "ok" : st;
+    const card = document.createElement("button");
+    card.className = `sys-card ${st}`;
+    card.dataset.id = it.id;
+    card.innerHTML =
+      `<span class="rail"></span>
+       <div class="sys-top">
+         <div><div class="sys-name">${m.name}</div><div class="sys-cat">${m.cat}</div></div>
+         <span class="pill ${st}">${statusLabel(st)}</span>
+       </div>
+       <div class="bar"><i class="${barcls}" style="width:${st==="none"?0:pct}%"></i></div>
+       <div class="sys-meta"><span>${metaLine}</span><b>${intervalText(it)}</b></div>`;
+    card.addEventListener("click",()=>openDrawer(it.id));
+    sysGrid.appendChild(card);
+  });
+}
+function intervalText(it){
+  const p=[];
+  if(it.mi) p.push(`${fmt(it.mi)} mi`);
+  if(it.mo) p.push(`${it.mo} mo`);
+  return p.join(" / ") || "as needed";
+}
+
+function renderSpecs(){
+  specGrid.innerHTML = "";
+  state.specs.forEach((s,idx)=>{
+    const d = document.createElement("div");
+    d.className = "spec";
+    d.innerHTML = `<label>${s.k}</label><input value="${(s.v||"").replace(/"/g,'&quot;')}" data-idx="${idx}" placeholder="Add value">`;
+    const inp = d.querySelector("input");
+    inp.addEventListener("change",()=>{ state.specs[idx].v = inp.value; save(); });
+    specGrid.appendChild(d);
+  });
+}
+
+function renderHistory(){
+  const rows = [...state.history].sort((a,b)=> (b.date||"").localeCompare(a.date||""));
+  if(rows.length===0){
+    logList.innerHTML = `<div class="log-empty">No services logged yet. Open a node and press "Log service" to start the record.</div>`;
+    return;
+  }
+  logList.innerHTML = "";
+  rows.forEach(r=>{
+    const m = meta(r.itemId);
+    const row = document.createElement("div");
+    row.className = "log-row";
+    row.innerHTML =
+      `<span class="d">${r.date? new Date(r.date).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"}) : "-"}</span>
+       <span class="n">${m? m.name : r.itemId}</span>
+       <span class="m">${r.miles!=null? fmt(r.miles)+" mi":""}</span>
+       <span class="c">${r.cost? "$"+r.cost : ""}</span>
+       <button class="del" data-id="${r.id}">Remove</button>`;
+    row.querySelector(".del").addEventListener("click",()=>{
+      state.history = state.history.filter(h=>h.id!==r.id);
+      save(); renderAll();
+    });
+    logList.appendChild(row);
+  });
+}
+
+/* ---------- drawer ---------- */
+const scrim=document.getElementById("scrim");
+const drawer=document.getElementById("drawer");
+const drBody=document.getElementById("drBody");
+let selectedId=null;
+
+function openDrawer(id){
+  selectedId=id;
+  const it=item(id), m=meta(id);
+  const c=computeStatus(it);
+  const st=c.status;
+
+  document.getElementById("drCat").textContent=m.cat;
+  document.getElementById("drTitle").textContent=m.name;
+
+  let remainTxt="Log a first service to start tracking.";
+  if(st!=="none"){
+    const parts=[];
+    if(c.miRemain!=null) parts.push(c.miRemain>=0?`${fmt(c.miRemain)} mi remaining`:`${fmt(-c.miRemain)} mi overdue`);
+    if(c.moRemain!=null) parts.push(c.moRemain>=0?`${Math.round(c.moRemain)} mo remaining`:`${Math.round(-c.moRemain)} mo overdue`);
+    remainTxt=parts.join("  &middot;  ");
+  }
+
+  const today=new Date().toISOString().slice(0,10);
+  const miHist=state.history.filter(h=>h.itemId===id).sort((a,b)=>(b.date||"").localeCompare(a.date||"")).slice(0,4);
+
+  drBody.innerHTML=`
+    <div class="dr-status">
+      <span class="pill ${st}">${statusLabel(st)}</span>
+      <span class="rem">${remainTxt}</span>
+    </div>
+
+    <div class="dr-section">
+      <h4>Interval</h4>
+      <div class="interval-box">
+        <div class="field-row">
+          <div class="field"><label>Every (miles)</label><input id="fMi" type="number" inputmode="numeric" value="${it.mi??""}" placeholder="none"></div>
+          <div class="field"><label>Every (months)</label><input id="fMo" type="number" inputmode="numeric" value="${it.mo??""}" placeholder="none"></div>
+        </div>
+        <div class="dr-note">${m.note}</div>
+      </div>
+    </div>
+
+    <div class="dr-section">
+      <h4>Last done</h4>
+      <div class="field-row">
+        <div class="field"><label>Date</label><input id="fLastDate" type="date" value="${it.lastDate||""}"></div>
+        <div class="field"><label>At odometer</label><input id="fLastMiles" type="number" inputmode="numeric" value="${it.lastMiles??""}" placeholder="mi"></div>
+      </div>
+      ${st!=="none" && c.miNext!=null ? `<div class="dr-note">Next due at about <b style="color:var(--ink)">${fmt(c.miNext)} mi</b>.</div>`:""}
+    </div>
+
+    <div class="dr-section">
+      <h4>Log a new service</h4>
+      <div class="field-row">
+        <div class="field"><label>Date</label><input id="lgDate" type="date" value="${today}"></div>
+        <div class="field"><label>Odometer</label><input id="lgMiles" type="number" inputmode="numeric" value="${state.vehicle.odometer||""}" placeholder="mi"></div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>Cost (optional)</label><input id="lgCost" type="number" inputmode="numeric" placeholder="$"></div>
+        <div class="field"><label>Note (optional)</label><input id="lgNote" type="text" placeholder="shop, part #, etc."></div>
+      </div>
+      <button class="btn amber" id="lgSave" style="width:100%">Log service &amp; reset clock</button>
+    </div>
+
+    ${miHist.length? `<div class="dr-section"><h4>Recent for this item</h4><div class="mini-log">${
+      miHist.map(h=>`<div class="r"><span>${h.date? new Date(h.date).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"}):"-"}</span><b>${h.miles!=null?fmt(h.miles)+" mi":""}${h.cost?"  &middot;  $"+h.cost:""}</b></div>`).join("")
+    }</div></div>`:""}
+  `;
+
+  // interval edits
+  drBody.querySelector("#fMi").addEventListener("change",e=>{ it.mi = e.target.value===""?null:Math.max(0,+e.target.value); save(); refreshLive(); });
+  drBody.querySelector("#fMo").addEventListener("change",e=>{ it.mo = e.target.value===""?null:Math.max(0,+e.target.value); save(); refreshLive(); });
+  drBody.querySelector("#fLastDate").addEventListener("change",e=>{ it.lastDate = e.target.value||null; save(); refreshLive(); });
+  drBody.querySelector("#fLastMiles").addEventListener("change",e=>{ it.lastMiles = e.target.value===""?null:+e.target.value; save(); refreshLive(); });
+
+  drBody.querySelector("#lgSave").addEventListener("click",()=>{
+    const date=drBody.querySelector("#lgDate").value||today;
+    const miles=drBody.querySelector("#lgMiles").value;
+    const cost=drBody.querySelector("#lgCost").value;
+    const note=drBody.querySelector("#lgNote").value.trim();
+    const mv = miles===""?null:+miles;
+    state.history.push({id:"h"+Date.now()+Math.random().toString(36).slice(2,6), itemId:id, date, miles:mv, cost:cost?+cost:null, note});
+    it.lastDate=date;
+    if(mv!=null){ it.lastMiles=mv; if(mv>(state.vehicle.odometer||0)){ state.vehicle.odometer=mv; state.vehicle.odoUpdated=new Date().toISOString(); } }
+    save();
+    renderAll();
+    openDrawer(id); // refresh drawer contents
+    flash("Logged " + m.name);
+  });
+
+  scrim.classList.add("on");
+  drawer.classList.add("on");
+  renderNodes();
+}
+function refreshLive(){ renderTop(); renderNodes(); renderSystems(); }
+function closeDrawer(){ scrim.classList.remove("on"); drawer.classList.remove("on"); selectedId=null; renderNodes(); }
+document.getElementById("drClose").addEventListener("click",closeDrawer);
+scrim.addEventListener("click",closeDrawer);
+document.addEventListener("keydown",e=>{ if(e.key==="Escape") closeDrawer(); });
+
+/* ---------- tabs ---------- */
+document.querySelectorAll(".tab").forEach(t=>{
+  t.addEventListener("click",()=>{
+    document.querySelectorAll(".tab").forEach(x=>x.setAttribute("aria-selected","false"));
+    t.setAttribute("aria-selected","true");
+    const v=t.dataset.view;
+    ["scan","systems","specs","history"].forEach(name=>{
+      document.getElementById("view-"+name).classList.toggle("hidden", name!==v);
+    });
+  });
+});
+
+/* ---------- odometer + vin ---------- */
+document.getElementById("odoSave").addEventListener("click",()=>{
+  const val=document.getElementById("odoInput").value;
+  if(val==="") return;
+  state.vehicle.odometer=Math.max(0,+val);
+  state.vehicle.odoUpdated=new Date().toISOString();
+  document.getElementById("odoInput").value="";
+  save(); renderAll();
+  flash("Odometer set to "+fmt(state.vehicle.odometer)+" mi");
+});
+document.getElementById("odoInput").addEventListener("keydown",e=>{ if(e.key==="Enter") document.getElementById("odoSave").click(); });
+document.getElementById("vin").addEventListener("change",e=>{ state.vehicle.vin=e.target.value.trim(); save(); });
+
+/* ---------- export / import / print ---------- */
+document.getElementById("exportBtn").addEventListener("click",()=>{
+  const blob=new Blob([JSON.stringify(state,null,2)],{type:"application/json"});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement("a");
+  a.href=url; a.download="palisade-service-"+new Date().toISOString().slice(0,10)+".json";
+  a.click(); URL.revokeObjectURL(url);
+});
+document.getElementById("importBtn").addEventListener("click",()=>document.getElementById("importFile").click());
+document.getElementById("importFile").addEventListener("change",e=>{
+  const file=e.target.files[0]; if(!file) return;
+  const r=new FileReader();
+  r.onload=()=>{
+    try{
+      const data=JSON.parse(r.result);
+      if(!data.items||!data.vehicle) throw new Error("bad file");
+      state=data; save(); renderAll(); flash("Data imported");
+    }catch(err){ flash("Could not read that file"); }
+  };
+  r.readAsText(file);
+  e.target.value="";
+});
+document.getElementById("printBtn").addEventListener("click",()=>window.print());
+
+/* ---------- toast ---------- */
+let toastTimer=null;
+function flash(msg){
+  let t=document.getElementById("toast");
+  if(!t){
+    t=document.createElement("div"); t.id="toast";
+    t.style.cssText="position:fixed;left:50%;bottom:26px;transform:translateX(-50%);background:var(--panel2);border:1px solid var(--line2);color:var(--ink);padding:11px 18px;border-radius:11px;font-family:var(--mono);font-size:12.5px;z-index:80;box-shadow:var(--shadow);opacity:0;transition:.2s";
+    document.body.appendChild(t);
+  }
+  t.textContent=msg; t.style.opacity="1";
+  clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>{ t.style.opacity="0"; },1900);
+}
+
+/* ---------- go ---------- */
+renderAll();
+</script>
+</body>
+</html>
