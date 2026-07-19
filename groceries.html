@@ -194,6 +194,48 @@ label.flab{font-family:var(--mono);font-size:.62rem;letter-spacing:.1em;text-tra
 #modal{background:var(--paper);border-radius:16px 16px 0 0;width:100%;max-width:480px;padding:20px 20px 28px;max-height:82vh;overflow-y:auto}
 #modal h3{font-family:var(--mono);font-size:.8rem;letter-spacing:.1em;text-transform:uppercase;margin-bottom:12px}
 
+/* item icons */
+.icn{display:inline-flex;align-items:center;justify-content:center;background:var(--paper2);border:1px solid var(--line);border-radius:9px;width:38px;height:38px;min-width:38px;font-size:1.25rem;line-height:1}
+.icn.sm{width:26px;height:26px;min-width:26px;font-size:.95rem;border-radius:7px;vertical-align:-7px;margin-right:7px}
+.icn.xs{width:22px;height:22px;min-width:22px;font-size:.8rem;border-radius:6px;vertical-align:-5px;margin-right:6px;background:transparent;border-color:transparent}
+
+/* ---------- virtual kitchen ---------- */
+.viewtoggle{display:flex;gap:6px;margin-bottom:12px}
+.viewtoggle button{flex:1;font-family:var(--mono);font-size:.7rem;letter-spacing:.06em;padding:8px 0;border:1px solid var(--line);background:var(--card);border-radius:8px;color:var(--ink2);cursor:pointer}
+.viewtoggle button.on{background:var(--ink);color:var(--card);border-color:var(--ink)}
+
+.kitchen{display:flex;flex-direction:column;gap:12px}
+.appliance{border:1.5px solid var(--line);border-radius:14px;background:var(--card);overflow:hidden;box-shadow:0 2px 0 rgba(46,43,38,.04)}
+.appliance.fridgebox{border-radius:16px;border-width:2px}
+.appliance.fridgebox .zone[data-loc="Freezer"]{border-bottom:2px solid var(--line);background:linear-gradient(180deg,#F0F3F4,#EAEFF1)}
+.appliance.fridgebox .zone[data-loc="Fridge"]{background:linear-gradient(180deg,#FBFCFA,#F4F6F1)}
+.zone{padding:0 0 8px;transition:background .15s,box-shadow .15s;min-height:78px;position:relative}
+.zone.hover{box-shadow:inset 0 0 0 2px var(--teal);background:var(--teal-soft)!important}
+.zhead{display:flex;align-items:baseline;gap:7px;padding:9px 13px 3px;font-family:var(--mono);font-size:.64rem;letter-spacing:.12em;text-transform:uppercase;color:var(--ink2)}
+.zhead .zcount{margin-left:auto;color:var(--ink3);letter-spacing:0}
+.zbody{display:flex;flex-wrap:wrap;gap:2px;padding:2px 8px 4px;align-items:flex-end}
+.zone[data-loc="Pantry"] .zbody{background-image:linear-gradient(to top,var(--line) 1px,transparent 1px);background-size:100% 86px;background-position:0 100%}
+.zone[data-loc="Counter"]{background:linear-gradient(180deg,#F6F1E6,#F1EADB)}
+.zone[data-loc="Garage"]{background:repeating-linear-gradient(45deg,var(--card),var(--card) 14px,#F3EFE6 14px,#F3EFE6 15px)}
+.zempty{font-size:.72rem;color:var(--ink3);font-style:italic;padding:6px 8px 10px}
+
+.tile{width:66px;display:flex;flex-direction:column;align-items:center;gap:3px;padding:7px 1px 6px;border-radius:10px;cursor:grab;user-select:none;-webkit-user-select:none;position:relative}
+.tile:active{cursor:grabbing}
+.tile .tico{font-size:1.5rem;line-height:1;background:var(--card);border:1px solid var(--line);width:46px;height:46px;border-radius:13px;display:flex;align-items:center;justify-content:center;position:relative;box-shadow:0 1px 0 rgba(46,43,38,.06)}
+.tile .tbadge{position:absolute;top:-4px;right:-4px;width:12px;height:12px;border-radius:50%;border:2px solid var(--card)}
+.tile .tbadge.today{background:var(--rust)}
+.tile .tbadge.soon{background:var(--amber)}
+.tile .tbadge.week{background:#D8C89A}
+.tile .tname{font-family:var(--mono);font-size:.54rem;color:var(--ink2);text-align:center;max-width:64px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tile .tpips{display:flex;gap:2px}
+.tile .tpips i{width:5px;height:5px;border-radius:50%;background:var(--paper2);border:1px solid var(--line)}
+.tile .tpips i.f{background:var(--teal);border-color:var(--teal)}
+.tile .tpips i.f.low{background:var(--amber);border-color:var(--amber)}
+.tile.lifted{opacity:.25}
+
+#ghost{position:fixed;z-index:100;pointer-events:none;display:none;transform:translate(-50%,-60%) scale(1.18);filter:drop-shadow(0 6px 10px rgba(46,43,38,.25))}
+#ghost .tico{font-size:1.5rem;background:var(--card);border:1px solid var(--line);width:46px;height:46px;border-radius:13px;display:flex;align-items:center;justify-content:center}
+
 .empty{color:var(--ink3);font-size:.85rem;padding:14px 4px;text-align:center;font-style:italic}
 .hint{font-size:.75rem;color:var(--ink3);margin-top:6px;line-height:1.4}
 .why-link{font-family:var(--mono);font-size:.62rem;color:var(--teal);cursor:pointer;text-decoration:underline dotted;background:none;border:none;padding:0}
@@ -223,6 +265,7 @@ label.flab{font-family:var(--mono);font-size:.62rem;letter-spacing:.1em;text-tra
 </div>
 
 <div id="toast"></div>
+<div id="ghost"><div class="tico"></div></div>
 <div id="modal-wrap"><div id="modal"></div></div>
 
 <script>
@@ -298,6 +341,31 @@ const BOOK={
  'Dog training pads':    {cat:'Pet',per:'50-100 ct',p:{Walmart:14.97,Kroger:16.99,ALDI:12.99,Costco:19.99},v:0},
 };
 
+/* ---------- item icons ---------- */
+const ICONS={
+ 'Sunbeam bread':'🍞','Frosted Flakes':'🥣','Kodiak pancake mix':'🥞','Honey Nut Cheerios':'🍯',
+ 'Frosted Mini-Wheats':'🌾','Raisin Bran':'🥣','Frozen waffles':'🧇','Protein waffles':'🧇',
+ 'Blueberry muffins':'🫐','Honey buns':'🍩',
+ 'Bananas':'🍌','Apples':'🍎','Grapes':'🍇','Celery':'🥬',
+ 'Chicken breast':'🍗','Eggs':'🥚',
+ "Milo's Zero Sugar tea":'🫖','Silk Protein choc milk':'🍫','Silk choc almond milk':'🥛',
+ 'Sprite Zero 12-pack':'🥤','Diet Dr Pepper 12-pack':'🥤','Coke Zero 12-pack':'🥤',
+ 'OLIPOP 4-pack':'🫧','Bottled water 40-pack':'💧',
+ 'Peanut butter':'🥜','Jelly':'🫙','Wildflower honey':'🍯','Green beans (canned)':'🥫',
+ 'GoGo squeeZ pouches':'🧃','Goldfish crackers':'🐠','Oreos':'🍪','Chips Ahoy':'🍪',
+ 'Nutter Butter':'🥜','Cheez-It':'🧀','Pop Secret popcorn':'🍿','Protein bars':'🍫',
+ 'Nabisco variety 20-pk':'🍪','Gevalia coffee':'☕','Cafe Bustelo':'☕',
+ 'Kitchen trash bags':'🗑️','Contractor bags':'🗑️','Toilet paper':'🧻','Ziploc sandwich bags':'🥪',
+ 'Cleaning supplies set':'🧽','Wax melts':'🕯️',
+ 'Toothpaste 2-pack':'🦷','Toothbrushes 4-pack':'🪥','Bar soap 8-pack':'🧼','Body wash':'🧴',
+ 'Razors 4-pack':'🪒','DUDE Wipes':'🧻',
+ 'Dog food (Luna)':'🐕','Dog training pads':'🐾',
+};
+const CAT_ICONS={Produce:'🥕',Protein:'🍖',Drinks:'🥤',Breakfast:'🥣',Pantry:'🥫',Snacks:'🍿',Coffee:'☕',Household:'🧺',Personal:'🧼',Pet:'🐾'};
+const LOC_ICONS={Fridge:'🧊',Freezer:'❄️',Pantry:'🚪',Counter:'🍽️',Garage:'📦'};
+function ic(name){return ICONS[name]||CAT_ICONS[(BOOK[name]||{}).cat]||'🛒';}
+function icn(name,cls){return `<span class="icn ${cls||''}">${ic(name)}</span>`;}
+
 /* perishability windows in days, by category, for the use-soon queue */
 const PERISH={Produce:6,Protein:4,Drinks:10,Breakfast:14};
 const QTY_WORDS=['Empty','Almost empty','About half','Mostly full','Full'];
@@ -352,6 +420,27 @@ function inv(name,loc,qty,purchased,price,store,extra={}){
 }
 function li(name,why,reason){
   return {id:uid(),name,why,reason,qty:1,checked:false};
+}
+
+function seedEmpty(){
+  return {budget:{monthly:800},prefs:{tripPenalty:5.00},inventory:[],list:[],purchases:[],plan:{},wasteLog:[]};
+}
+function resetEmpty(){
+  localStorage.setItem(KEY,JSON.stringify(seedEmpty()));
+  location.reload();
+}
+function resetDemo(){
+  localStorage.removeItem(KEY);
+  location.reload();
+}
+function resetModal(){
+  openModal(`<h3>Reset larder</h3>
+    <p style="font-size:.88rem;color:var(--ink2);margin-bottom:14px">Start fresh wipes the sample data so you can enter what is actually in your house. The price book (ALDI, Walmart, Kroger, Costco) stays either way.</p>
+    <button class="btn primary wide" onclick="if(confirm('Wipe everything and start with an empty kitchen?'))resetEmpty()">🧹 Start fresh · empty kitchen</button>
+    <div class="spacer"></div>
+    <button class="btn wide" onclick="if(confirm('Restore the sample demo data?'))resetDemo()">↺ Reload the demo data</button>
+    <div class="spacer"></div>
+    <button class="btn wide ghost" onclick="closeModal()">Cancel</button>`);
 }
 
 let S;
@@ -480,15 +569,15 @@ function renderToday(){
 
   const actions=[];
   us.slice(0,2).forEach(({it,us})=>{
-    actions.push({t:`${it.name}: ${us.level.toLowerCase()}`,s:it.loc==='Fridge'&&it.cat==='Protein'?'Use tonight or move it to the freezer':'Move it to the front of the '+it.loc.toLowerCase()});
+    actions.push({i:ic(it.name),t:`${it.name}: ${us.level.toLowerCase()}`,s:it.loc==='Fridge'&&it.cat==='Protein'?'Use tonight or move it to the freezer':'Move it to the front of the '+it.loc.toLowerCase()});
   });
   const pbDup=dupsFor('Peanut butter');
   if(pbDup.length>=2&&activeList().some(l=>l.name==='Peanut butter'))
-    actions.push({t:'Peanut butter: already have '+pbDup.length,s:'Remove it from the shopping list'});
+    actions.push({i:'🥜',t:'Peanut butter: already have '+pbDup.length,s:'Remove it from the shopping list'});
   if(low.length&&actions.length<3)
-    actions.push({t:low[0].name+' is running low',s:'Add it to the next shop'});
+    actions.push({i:ic(low[0].name),t:low[0].name+' is running low',s:'Add it to the next shop'});
   if(b.after<0&&actions.length<3)
-    actions.push({t:'Planned cart is over this trip target',s:'Open Shop to trim '+fmt(-b.after)});
+    actions.push({i:'🧾',t:'Planned cart is over this trip target',s:'Open Shop to trim '+fmt(-b.after)});
 
   $('#page-today').innerHTML=`
     <div style="margin:2px 2px 14px">
@@ -511,14 +600,14 @@ function renderToday(){
     <div class="spacer"></div>
 
     ${actions.length?`<h2 class="sect">Needs attention</h2>`+actions.slice(0,3).map((a,i)=>`
-      <div class="action-card"><div class="anum">0${i+1}</div>
-        <div class="atext">${a.t}<small>${a.s}</small></div>
+      <div class="action-card"><span class="icn">${a.i}</span>
+        <div class="atext" style="padding-top:1px">${a.t}<small>${a.s}</small></div>
       </div>`).join(''):''}
 
     <h2 class="sect">Use soon</h2>
     ${us.length?us.slice(0,4).map(({it,us})=>`
       <div class="rrow">
-        <span class="rname"><span class="dot ${confidence(it)}"></span>${it.name}</span>
+        <span class="rname">${icn(it.name,'xs')}<span class="dot ${confidence(it)}"></span>${it.name}</span>
         <span class="leader"></span>
         <span class="pill ${us.cls}">${us.level}</span>
       </div>`).join(''):'<div class="empty">Nothing at risk right now</div>'}
@@ -526,7 +615,7 @@ function renderToday(){
     <h2 class="sect">Running low</h2>
     ${low.length?low.slice(0,4).map(it=>`
       <div class="rrow">
-        <span class="rname">${it.name}</span>
+        <span class="rname">${icn(it.name,'xs')}${it.name}</span>
         <span class="leader"></span>
         <span class="rval warn">${QTY_WORDS[it.qty].toLowerCase()}</span>
       </div>`).join(''):'<div class="empty">Stock looks fine</div>'}
@@ -540,7 +629,45 @@ function monthName(){return new Date().toLocaleDateString('en-US',{month:'short'
 
 /* ---------- render: pantry ---------- */
 let pantryFilter='All';
+let pantryView=localStorage.getItem('larder-view')||'kitchen';
+function setView(v){pantryView=v;localStorage.setItem('larder-view',v);render();}
 function renderPantry(){
+  const toggle=`<div class="viewtoggle">
+    <button class="${pantryView==='kitchen'?'on':''}" onclick="setView('kitchen')">🏠 kitchen</button>
+    <button class="${pantryView==='list'?'on':''}" onclick="setView('list')">☰ list</button>
+  </div>`;
+  $('#page-pantry').innerHTML=toggle+(pantryView==='kitchen'?renderKitchen():renderPantryList());
+  if(pantryView==='kitchen')bindDrag();
+}
+function tileHTML(it){
+  const us=useSoon(it);
+  const short=it.name.replace(/ \(.*\)| \d+-pack| \d+-pk| 12-pack| 2-pack| 4-pack| 8-pack| 40-pack/g,'').split(' ').slice(0,2).join(' ');
+  return`<div class="tile" data-id="${it.id}" role="button" aria-label="${it.name}, ${QTY_WORDS[it.qty]}, in ${it.loc}">
+    <div class="tico">${ic(it.name)}${us?`<span class="tbadge ${us.cls}"></span>`:''}</div>
+    <div class="tname">${short}</div>
+    <div class="tpips">${[1,2,3,4].map(n=>`<i class="${it.qty>=n?'f':''} ${it.qty<=1?'low':''}"></i>`).join('')}</div>
+  </div>`;
+}
+function renderKitchen(){
+  const zone=loc=>{
+    const items=S.inventory.filter(it=>it.loc===loc&&it.qty>0).sort((a,b)=>a.name.localeCompare(b.name));
+    return`<div class="zone" data-loc="${loc}">
+      <div class="zhead">${LOC_ICONS[loc]} ${loc}<span class="zcount">${items.length||''}</span></div>
+      <div class="zbody">${items.map(tileHTML).join('')||`<div class="zempty">empty · add or drag items here</div>`}</div>
+    </div>`;
+  };
+  return`<div class="kitchen">
+    <div class="appliance fridgebox">${zone('Freezer')}${zone('Fridge')}</div>
+    <div class="appliance">${zone('Pantry')}</div>
+    <div class="appliance">${zone('Counter')}</div>
+    <div class="appliance">${zone('Garage')}</div>
+  </div>
+  <div class="spacer"></div>
+  <button class="btn wide" onclick="addItemModal()">+ Add an item</button>
+  <div style="text-align:center;margin-top:8px"><button class="why-link" onclick="resetModal()">reset · clear the sample data</button></div>
+  <div class="hint">Drag an item to move it between the freezer, fridge, pantry, counter and garage. Tap an item for details and quick actions. The corner dot means use soon; pips show how much is left.</div>`;
+}
+function renderPantryList(){
   const cats=['All',...LOCS];
   const items=S.inventory.filter(it=>confidence(it)!=='gone'||it.qty>0)
     .filter(it=>pantryFilter==='All'||it.loc===pantryFilter)
@@ -550,36 +677,141 @@ function renderPantry(){
   const rows=items.map(it=>{
     const conf=confidence(it);
     const us=useSoon(it);
-    const head=(pantryFilter==='All'&&it.loc!==lastLoc)?`<h2 class="sect">${it.loc}</h2>`:'';
+    const head=(pantryFilter==='All'&&it.loc!==lastLoc)?`<h2 class="sect">${LOC_ICONS[it.loc]||''} ${it.loc}</h2>`:'';
     lastLoc=it.loc;
     return head+`
     <div class="item">
-      <div class="top">
-        <div>
-          <span class="name"><span class="dot ${conf}"></span>${it.name}</span>
-          ${us?` <span class="pill ${us.cls}">${us.level}</span>`:''}
+      <div style="display:flex;gap:11px">
+        <span class="icn">${ic(it.name)}</span>
+        <div style="flex:1;min-width:0">
+          <div class="top">
+            <div>
+              <span class="name"><span class="dot ${conf}"></span>${it.name}</span>
+              ${us?` <span class="pill ${us.cls}">${us.level}</span>`:''}
+            </div>
+            <span class="rval" style="font-family:var(--mono);font-size:.72rem;color:var(--ink3)">${it.price?fmt(it.price):''}</span>
+          </div>
+          <div class="meta">${QTY_WORDS[it.qty]}${it.note?' · '+it.note:''} · bought ${daysSince(it.purchased)}d ago${it.store?' · '+it.store:''} · <i>${conf}</i></div>
+          <div class="qtybar">${[1,2,3,4].map(n=>`<b class="${it.qty>=n?'f':''} ${it.qty<=1?'low':''}"></b>`).join('')}</div>
+          <div class="btnrow">
+            <button class="btn tiny" onclick="usedSome('${it.id}')">used some</button>
+            <button class="btn tiny" onclick="finished('${it.id}')">finished</button>
+            <button class="btn tiny" onclick="stillHave('${it.id}')">still have it</button>
+            <button class="btn tiny" onclick="quickAdd('${it.name.replace(/'/g,"\\'")}','Restocking from pantry','low')">+ list</button>
+          </div>
         </div>
-        <span class="rval" style="font-family:var(--mono);font-size:.72rem;color:var(--ink3)">${it.price?fmt(it.price):''}</span>
-      </div>
-      <div class="meta">${QTY_WORDS[it.qty]}${it.note?' · '+it.note:''} · bought ${daysSince(it.purchased)}d ago${it.store?' · '+it.store:''} · <i>${conf}</i></div>
-      <div class="qtybar">${[1,2,3,4].map(n=>`<b class="${it.qty>=n?'f':''} ${it.qty<=1?'low':''}"></b>`).join('')}</div>
-      <div class="btnrow">
-        <button class="btn tiny" onclick="usedSome('${it.id}')">used some</button>
-        <button class="btn tiny" onclick="finished('${it.id}')">finished</button>
-        <button class="btn tiny" onclick="stillHave('${it.id}')">still have it</button>
-        <button class="btn tiny" onclick="quickAdd('${it.name.replace(/'/g,"\\'")}','Restocking from pantry','low')">+ list</button>
       </div>
     </div>`;
   }).join('');
 
-  $('#page-pantry').innerHTML=`
-    <div class="chips">${cats.map(c=>`<button class="chip ${pantryFilter===c?'on':''}" onclick="pantryFilter='${c}';render()">${c}</button>`).join('')}</div>
+  return`
+    <div class="chips">${cats.map(c=>`<button class="chip ${pantryFilter===c?'on':''}" onclick="pantryFilter='${c}';render()">${LOC_ICONS[c]?LOC_ICONS[c]+' ':''}${c}</button>`).join('')}</div>
     ${rows||'<div class="empty">Nothing here yet. Add something below.</div>'}
     <div class="spacer"></div>
     <button class="btn wide" onclick="addItemModal()">+ Add an item</button>
     <div class="hint">Confidence fades on its own: <span class="dot confirmed"></span>confirmed → <span class="dot estimated"></span>estimated → <span class="dot uncertain"></span>uncertain. Tap "still have it" to reset it.</div>
   `;
 }
+/* ---------- drag and drop engine (pointer events: touch + mouse) ---------- */
+const drag={id:null,active:false,sx:0,sy:0,timer:null,el:null};
+function bindDrag(){
+  document.querySelectorAll('#page-pantry .tile').forEach(t=>{
+    t.addEventListener('pointerdown',onTileDown);
+  });
+}
+function onTileDown(e){
+  const el=e.currentTarget;
+  drag.id=el.dataset.id;drag.el=el;drag.sx=e.clientX;drag.sy=e.clientY;drag.active=false;
+  clearTimeout(drag.timer);
+  const delay=e.pointerType==='mouse'?0:220; /* long-press to lift on touch, instant on mouse */
+  drag.timer=setTimeout(()=>{if(drag.id&&e.pointerType!=='mouse')liftTile();},delay===0?9999:delay);
+  document.addEventListener('pointermove',onDragMove);
+  document.addEventListener('pointerup',onDragUp);
+  document.addEventListener('pointercancel',onDragUp);
+}
+function liftTile(){
+  if(!drag.el)return;
+  drag.active=true;
+  drag.el.classList.add('lifted');
+  const it=S.inventory.find(i=>i.id===drag.id);
+  const g=$('#ghost');g.querySelector('.tico').textContent=it?ic(it.name):'🛒';
+  g.style.display='block';
+  moveGhost(drag.sx,drag.sy);
+  if(navigator.vibrate)navigator.vibrate(10);
+}
+function moveGhost(x,y){const g=$('#ghost');g.style.left=x+'px';g.style.top=y+'px';}
+function zoneAt(x,y){
+  const el=document.elementFromPoint(x,y);
+  return el?el.closest('.zone'):null;
+}
+function onDragMove(e){
+  if(!drag.id)return;
+  const dx=e.clientX-drag.sx,dy=e.clientY-drag.sy;
+  if(!drag.active){
+    if(Math.abs(dx)>7||Math.abs(dy)>7){
+      if(e.pointerType==='mouse'){liftTile();}
+      else{clearTimeout(drag.timer);cleanupDrag();return;} /* touch moved early = scroll */
+    }
+    return;
+  }
+  e.preventDefault();
+  moveGhost(e.clientX,e.clientY);
+  document.querySelectorAll('.zone').forEach(z=>z.classList.remove('hover'));
+  const z=zoneAt(e.clientX,e.clientY);
+  if(z)z.classList.add('hover');
+}
+function onDragUp(e){
+  clearTimeout(drag.timer);
+  if(drag.active){
+    const z=zoneAt(e.clientX,e.clientY);
+    const it=S.inventory.find(i=>i.id===drag.id);
+    if(z&&it&&z.dataset.loc!==it.loc){
+      it.loc=z.dataset.loc;
+      if(z.dataset.loc==='Freezer'&&!it.frozen){it.frozen=1;it.purchased=todayISO();} /* freezing pauses the clock */
+      save();
+      toast(ic(it.name)+' '+it.name+' → '+z.dataset.loc+' '+LOC_ICONS[z.dataset.loc]);
+    }
+    cleanupDrag();render();
+  }else if(drag.id&&Math.abs(e.clientX-drag.sx)<7&&Math.abs(e.clientY-drag.sy)<7){
+    const id=drag.id;cleanupDrag();itemSheet(id); /* tap */
+  }else cleanupDrag();
+}
+function cleanupDrag(){
+  drag.id=null;drag.active=false;drag.el&&drag.el.classList.remove('lifted');drag.el=null;
+  $('#ghost').style.display='none';
+  document.querySelectorAll('.zone').forEach(z=>z.classList.remove('hover'));
+  document.removeEventListener('pointermove',onDragMove);
+  document.removeEventListener('pointerup',onDragUp);
+  document.removeEventListener('pointercancel',onDragUp);
+}
+/* block scroll only while an item is lifted */
+document.addEventListener('touchmove',e=>{if(drag.active)e.preventDefault();},{passive:false});
+
+function itemSheet(id){
+  const it=S.inventory.find(i=>i.id===id);if(!it)return;
+  const conf=confidence(it),us=useSoon(it);
+  openModal(`<h3><span class="icn sm">${ic(it.name)}</span>${it.name}</h3>
+    <div class="rrow"><span class="rname">Amount</span><span class="leader"></span><span class="rval">${QTY_WORDS[it.qty]}</span></div>
+    <div class="rrow"><span class="rname">Where</span><span class="leader"></span><span class="rval">${LOC_ICONS[it.loc]} ${it.loc}</span></div>
+    <div class="rrow"><span class="rname">Bought</span><span class="leader"></span><span class="rval">${daysSince(it.purchased)}d ago${it.store?' · '+it.store:''}</span></div>
+    ${it.price?`<div class="rrow"><span class="rname">Paid</span><span class="leader"></span><span class="rval">${fmt(it.price)}</span></div>`:''}
+    <div class="rrow"><span class="rname">Confidence</span><span class="leader"></span><span class="rval"><span class="dot ${conf}"></span>${conf}</span></div>
+    ${us?`<div class="rrow"><span class="rname">Status</span><span class="leader"></span><span class="pill ${us.cls}">${us.level}</span></div>`:''}
+    <label class="flab">Move to</label>
+    <div class="chips" style="margin-bottom:4px">${LOCS.filter(l=>l!==it.loc).map(l=>`<button class="chip" onclick="moveItem('${it.id}','${l}')">${LOC_ICONS[l]} ${l}</button>`).join('')}</div>
+    <div class="btnrow">
+      <button class="btn" onclick="usedSome('${it.id}');closeModal()">used some</button>
+      <button class="btn" onclick="finished('${it.id}');closeModal()">finished</button>
+      <button class="btn" onclick="stillHave('${it.id}');closeModal()">still have it</button>
+      <button class="btn" onclick="quickAdd('${it.name.replace(/'/g,"\\'")}','Restocking from pantry','low');closeModal()">+ list</button>
+    </div>`);
+}
+function moveItem(id,loc){
+  const it=S.inventory.find(i=>i.id===id);if(!it)return;
+  it.loc=loc;if(loc==='Freezer'){it.frozen=1;it.purchased=todayISO();}
+  save();closeModal();render();toast(ic(it.name)+' '+it.name+' → '+loc);
+}
+
 function usedSome(id){const it=S.inventory.find(i=>i.id===id);if(!it)return;it.qty=Math.max(0,it.qty-1);if(it.qty===0)return finished(id);save();render();toast(it.name+': '+QTY_WORDS[it.qty].toLowerCase());}
 function finished(id){
   const it=S.inventory.find(i=>i.id===id);if(!it)return;
@@ -587,7 +819,7 @@ function finished(id){
   toast(it.name+' finished');
   if(!S.list.some(l=>l.name===it.name&&!l.checked)){
     setTimeout(()=>{
-      openModal(`<h3>Finished: ${it.name}</h3>
+      openModal(`<h3>${ic(it.name)} Finished: ${it.name}</h3>
       <p style="font-size:.88rem;color:var(--ink2);margin-bottom:14px">Add it to the next shopping list?</p>
       <div class="btnrow">
         <button class="btn primary" onclick="quickAdd('${it.name.replace(/'/g,"\\'")}','Just ran out','low');closeModal()">Add to list</button>
@@ -641,6 +873,7 @@ function shopList(){
     return`<div class="lrow ${l.checked?'done':''}">
       <button class="chk ${l.checked?'on':''}" onclick="toggleCheck('${l.id}')" aria-label="check off ${l.name}">
         <svg viewBox="0 0 24 24"><path d="M4 12l5 5 11-11"/></svg></button>
+      <span class="icn" style="${l.checked?'opacity:.4;filter:grayscale(1)':''}">${ic(l.name)}</span>
       <div class="lbody">
         <div class="lname">${l.name}${l.qty>1?' ×'+l.qty:''}</div>
         <div class="lwhy">${l.why}</div>
@@ -679,7 +912,7 @@ function addLi(){
   if(dups.length){
     openModal(`<h3>Hold on</h3>
     <p style="font-size:.9rem;margin-bottom:6px">You may already have:</p>
-    ${dups.map(d=>`<div class="rrow"><span class="rname">${d.name}</span><span class="leader"></span><span class="rval">${QTY_WORDS[d.qty].toLowerCase()} · ${d.loc.toLowerCase()}</span></div>`).join('')}
+    ${dups.map(d=>`<div class="rrow"><span class="rname">${icn(d.name,'xs')}${d.name}</span><span class="leader"></span><span class="rval">${QTY_WORDS[d.qty].toLowerCase()} · ${d.loc.toLowerCase()}</span></div>`).join('')}
     <div class="btnrow" style="margin-top:14px">
       <button class="btn" onclick="closeModal();render()">Do not add</button>
       <button class="btn primary" id="dup-add">Add anyway</button>
@@ -691,6 +924,7 @@ function quickAdd(name,why,reason){
   if(S.list.some(l=>l.name===name&&!l.checked))return toast('Already on the list');
   S.list.push(li(name,why,reason));save();render();toast(name+' → list');
 }
+const STORE_ICONS={ALDI:'🛒',Walmart:'⭐',Kroger:'🔵',Costco:'📦'};
 function shopCompare(){
   const totals=storeTotals().filter(t=>t.count>0);
   if(!activeList().length)return'<div class="empty">Add items to the list first.</div>';
@@ -705,7 +939,7 @@ function shopCompare(){
     ${totals.sort((a,b)=>a.total-b.total).map(t=>`
       <div class="store ${pickedStore===t.store?'pick':''}" onclick="pickedStore='${t.store}';render()">
         <div class="shead">
-          <span class="sname">${t.store}${t===bestFull?'<span class="bestflag">best full trip</span>':''}</span>
+          <span class="sname">${STORE_ICONS[t.store]||''} ${t.store}${t===bestFull?'<span class="bestflag">best full trip</span>':''}</span>
           <span class="stotal">${fmt(t.total)}</span>
         </div>
         <div class="scov">${t.covered} of ${t.count} items priced${t.missing.length?' · missing: '+t.missing.slice(0,3).join(', ')+(t.missing.length>3?'…':''):''}</div>
@@ -734,7 +968,7 @@ function checkoutModal(){
   const total=checked.reduce((a,l)=>{const b=BOOK[l.name];const p=b?(b.p[store]??(bestPrice(l.name)||{}).price??0):0;return a+p*l.qty;},0);
   openModal(`<h3>Finish trip</h3>
     ${checked.map(l=>{const b=BOOK[l.name];const p=b?(b.p[store]??(bestPrice(l.name)||{}).price??0):0;
-      return`<div class="rrow"><span class="rname">${l.name}${l.qty>1?' ×'+l.qty:''}</span><span class="leader"></span><span class="rval">${p?fmt(p*l.qty):'·'}</span></div>`;}).join('')}
+      return`<div class="rrow"><span class="rname">${icn(l.name,'xs')}${l.name}${l.qty>1?' ×'+l.qty:''}</span><span class="leader"></span><span class="rval">${p?fmt(p*l.qty):'·'}</span></div>`;}).join('')}
     <div class="rrow" style="border-top:1px dashed var(--line);margin-top:6px;padding-top:9px">
       <span class="rname"><b>Total at</b></span><span class="leader"></span><span class="rval"><b id="co-total">${fmt(total)}</b></span></div>
     <label class="flab">Store</label>
@@ -764,7 +998,7 @@ function checkoutGo(){
 function shopPurchased(){
   const rows=S.purchases.slice(0,12).map(p=>`
     <div class="rrow">
-      <span class="rname">${new Date(p.date+'T12:00').toLocaleDateString('en-US',{month:'short',day:'numeric'})} · ${p.store}</span>
+      <span class="rname">${STORE_ICONS[p.store]||'🧾'} ${new Date(p.date+'T12:00').toLocaleDateString('en-US',{month:'short',day:'numeric'})} · ${p.store}</span>
       <span class="leader"></span>
       <span class="rval">${fmt(p.total)}<span style="color:var(--ink3);font-size:.66rem"> · ${p.items} items</span></span>
     </div>`).join('');
@@ -774,6 +1008,7 @@ function shopPurchased(){
 
 /* ---------- render: plan ---------- */
 const MEAL_TYPES=['cook','leftovers','pantry meal','use-what-we-have','eat out','flexible'];
+const MEAL_ICONS={'cook':'🍳','leftovers':'🍱','pantry meal':'🥫','use-what-we-have':'🧺','eat out':'🍔','flexible':'🌀'};
 function renderPlan(){
   const days=[...Array(7)].map((_,i)=>{
     const d=new Date(Date.now()+i*864e5);
@@ -785,7 +1020,7 @@ function renderPlan(){
   const suggestion=us.length?`
     <div class="card" style="border-color:#E0CFA8;background:var(--amber-soft)">
       <div class="biglabel" style="color:var(--amber)">Eat this first</div>
-      <div style="font-size:.9rem;margin-top:2px">${us.slice(0,3).map(x=>x.it.name).join(', ')} should be used soon. A <b>use-what-we-have night</b> this week would take care of ${us.length>1?'most of it':'it'}.</div>
+      <div style="font-size:.9rem;margin-top:2px">${us.slice(0,3).map(x=>ic(x.it.name)+' '+x.it.name).join(', ')} should be used soon. A <b>use-what-we-have night</b> this week would take care of ${us.length>1?'most of it':'it'}.</div>
       ${mealIdea(us)}
     </div>`:'';
   $('#page-plan').innerHTML=`
@@ -797,7 +1032,7 @@ function renderPlan(){
         return`<div class="day">
           <div class="dlabel"><b>${d.wd}</b>${d.md}</div>
           <div class="dbody"><div class="mealchips">
-            ${MEAL_TYPES.map(m=>`<button class="mchip ${sel===m?'on':''}" onclick="setMeal('${d.iso}','${m}')">${m}</button>`).join('')}
+            ${MEAL_TYPES.map(m=>`<button class="mchip ${sel===m?'on':''}" onclick="setMeal('${d.iso}','${m}')">${MEAL_ICONS[m]} ${m}</button>`).join('')}
           </div></div>
         </div>`;}).join('')}
     </div>
@@ -806,7 +1041,7 @@ function renderPlan(){
 function mealIdea(us){
   const names=us.map(x=>x.it.name);
   if(names.includes('Chicken breast')&&S.inventory.some(i=>i.name==='Green beans (canned)')&&S.inventory.some(i=>i.name==='Frozen waffles'))
-    return`<div class="rrow" style="margin-top:8px"><span class="rname"><b>Chicken, green beans + waffles</b></span><span class="leader"></span><span class="rval good">$0 extra</span></div><div class="hint">Everything is already in the house.</div>`;
+    return`<div class="rrow" style="margin-top:8px"><span class="rname">🍗🥫🧇 <b>Chicken, green beans + waffles</b></span><span class="leader"></span><span class="rval good">$0 extra</span></div><div class="hint">Everything is already in the house.</div>`;
   return'';
 }
 function setMeal(iso,m){
@@ -841,13 +1076,13 @@ function renderBudget(){
     <h2 class="sect">Spend by store · ${monthName()}</h2>
     <div class="card">
       ${Object.keys(cats).length?Object.entries(cats).sort((a,b)=>b[1]-a[1]).map(([s,v])=>`
-        <div class="rrow"><span class="rname">${s}</span><span class="leader"></span><span class="rval">${fmt(v)}</span></div>`).join(''):'<div class="empty">No purchases this month yet</div>'}
+        <div class="rrow"><span class="rname">${STORE_ICONS[s]||'🧾'} ${s}</span><span class="leader"></span><span class="rval">${fmt(v)}</span></div>`).join(''):'<div class="empty">No purchases this month yet</div>'}
     </div>
 
     <h2 class="sect">Waste log</h2>
     <div class="card">
       ${S.wasteLog.length?S.wasteLog.slice(0,5).map(w=>`
-        <div class="rrow"><span class="rname">${w.item}</span><span class="leader"></span><span class="rval" style="color:var(--ink3);font-size:.7rem">${w.reason}</span></div>`).join(''):'<div class="empty">Nothing wasted lately</div>'}
+        <div class="rrow"><span class="rname">${icn(w.item,'xs')}${w.item}</span><span class="leader"></span><span class="rval" style="color:var(--ink3);font-size:.7rem">${w.reason}</span></div>`).join(''):'<div class="empty">Nothing wasted lately</div>'}
       ${S.wasteLog.filter(w=>w.item==='Celery').length>=2?'<div class="hint" style="color:var(--amber)">Celery has been tossed twice after buying a full bunch. Consider a smaller amount, or only buy it attached to a planned meal.</div>':''}
     </div>
 
@@ -858,7 +1093,7 @@ function renderBudget(){
       <label class="flab">What an extra store stop costs you (gas + time)</label>
       <input type="number" step="0.5" id="set-pen" value="${S.prefs.tripPenalty}" onchange="S.prefs.tripPenalty=+this.value||0;save();render()">
       <div class="spacer"></div>
-      <button class="btn tiny ghost" onclick="if(confirm('Reset all data to the starter seed?')){localStorage.removeItem(KEY);location.reload()}">reset app data</button>
+      <button class="btn wide" onclick="resetModal()">Reset app data…</button>
     </div>
     <div class="hint">No red alarms, no guilt. Numbers are here to help you decide, not to scold.</div>`;
 }
