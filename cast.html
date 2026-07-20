@@ -1,0 +1,889 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Macbeth &mdash; Production Hub</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=EB+Garamond:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#0e0a0c;--panel:#171013;--panel-2:#1e1519;--bone:#e9dfce;--bone-dim:#b6a892;
+    --gold:#c9a24b;--gold-soft:#8a6f33;--blood:#a01a2a;--blood-deep:#6e0f1c;
+    --stone:#5c5148;--line:#2c2025;--edge:#33242a;--ok:#4f7a52;--warn:#b8862f;
+    --serif:"EB Garamond",Georgia,"Times New Roman",serif;
+    --display:"Cinzel","Iowan Old Style",Georgia,serif;
+    --mono:ui-monospace,"SFMono-Regular",Menlo,Consolas,monospace;
+  }
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:radial-gradient(1200px 700px at 50% -10%,#241318 0%,transparent 60%),var(--ink);
+    color:var(--bone);font-family:var(--serif);font-size:17px;line-height:1.5;min-height:100vh}
+  a{color:inherit}
+  ::selection{background:var(--blood);color:var(--bone)}
+  button:focus-visible,textarea:focus-visible,input:focus-visible,select:focus-visible,.day:focus-visible,.tab:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+
+  /* Header + tabs */
+  header{padding:28px 20px 0;text-align:center;border-bottom:1px solid var(--line);position:relative}
+  .eyebrow{font-family:var(--display);letter-spacing:.42em;text-transform:uppercase;font-size:11px;color:var(--gold);margin:0 0 8px;padding-left:.42em}
+  h1{font-family:var(--display);font-weight:700;margin:0;font-size:clamp(26px,5.2vw,44px);letter-spacing:.06em;text-shadow:0 2px 18px rgba(160,26,42,.35)}
+  h1 .drop{color:var(--blood)}
+  .globalbtns{position:absolute;top:24px;right:20px;display:flex;gap:8px}
+  .tabs{display:flex;justify-content:center;gap:4px;margin-top:20px;flex-wrap:wrap}
+  .tab{background:none;border:none;border-bottom:2px solid transparent;color:var(--bone-dim);
+    font-family:var(--display);font-size:13px;letter-spacing:.12em;text-transform:uppercase;
+    padding:12px 20px 14px;cursor:pointer;transition:color .15s,border-color .15s}
+  .tab:hover{color:var(--bone)}
+  .tab[aria-selected="true"]{color:var(--gold);border-bottom-color:var(--blood)}
+
+  .btn{background:var(--panel);border:1px solid var(--edge);color:var(--bone);font-family:var(--serif);
+    font-size:14px;padding:8px 12px;border-radius:2px;cursor:pointer}
+  .btn:hover{border-color:var(--gold-soft);color:var(--gold)}
+  select,input[type=text],input[type=search],input[type=date]{background:var(--panel);border:1px solid var(--edge);
+    color:var(--bone);font-family:var(--serif);font-size:15px;padding:9px 11px;border-radius:2px}
+  textarea{width:100%;background:var(--ink);border:1px solid var(--edge);color:var(--bone);
+    font-family:var(--serif);font-size:15px;line-height:1.5;padding:9px 11px;border-radius:2px;resize:vertical}
+  textarea::placeholder,input::placeholder{color:var(--stone);font-style:italic}
+
+  .panel{display:none}
+  .panel.active{display:block}
+  main{max-width:1160px;margin:0 auto}
+
+  /* ============ CALENDAR ============ */
+  .calbar{padding:20px 18px 0;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+  .nav{display:flex;align-items:center;gap:12px}
+  .nav button{background:var(--panel);border:1px solid var(--edge);color:var(--bone);font-family:var(--display);
+    font-size:18px;width:38px;height:38px;border-radius:2px;cursor:pointer;line-height:1}
+  .nav button:hover{border-color:var(--gold-soft);color:var(--gold)}
+  .month{font-family:var(--display);font-weight:600;letter-spacing:.1em;font-size:20px;min-width:200px;text-align:center}
+  .calbar .spacer{flex:1}
+  .calwrap{padding:16px 18px 40px}
+  .dow{display:grid;grid-template-columns:repeat(7,1fr);gap:8px;margin-bottom:8px}
+  .dow span{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--stone);text-align:center}
+  .cal{display:grid;grid-template-columns:repeat(7,1fr);gap:8px}
+  .day{background:var(--panel);border:1px solid var(--line);border-radius:3px;min-height:104px;padding:8px 8px 6px;
+    cursor:pointer;position:relative;display:flex;flex-direction:column;gap:5px;text-align:left;color:inherit;font:inherit}
+  .day.blank{background:transparent;border:none;cursor:default;pointer-events:none}
+  .day:hover{border-color:var(--edge)}
+  .day .num{font-family:var(--mono);font-size:13px;color:var(--bone-dim);align-self:flex-end}
+  .day.today{border-color:var(--gold)}
+  .day.today .num{color:var(--gold);font-weight:700}
+  .day.today::after{content:"TODAY";position:absolute;top:7px;left:8px;font-family:var(--mono);font-size:8px;letter-spacing:.14em;color:var(--gold)}
+  .day.ev-rehearsal{background:linear-gradient(180deg,var(--panel),#24141a);border-color:var(--blood-deep)}
+  .day.ev-zoom,.day.ev-readthrough{background:linear-gradient(180deg,var(--panel),#221a12);border-color:var(--gold-soft)}
+  .day.ev-tech{background:linear-gradient(180deg,var(--panel),#1a1322);border-color:#6f4a8f}
+  .day.ev-show{background:linear-gradient(180deg,#241320,#1c1013);border-color:var(--gold)}
+  .day.ev-photo{background:linear-gradient(180deg,var(--panel),#131a20);border-color:#5f7286}
+  .day.tentative{border-style:dashed;opacity:.92}
+  .ev{font-family:var(--display);font-size:11px;letter-spacing:.04em;line-height:1.25;padding:3px 5px;border-radius:2px}
+  .ev.rehearsal{background:rgba(160,26,42,.2);color:#f0d3c8;border:1px solid var(--blood-deep)}
+  .ev.zoom,.ev.readthrough{background:rgba(201,162,75,.14);color:var(--gold);border:1px solid var(--gold-soft)}
+  .ev.tech{background:rgba(138,92,192,.16);color:#dcc7ef;border:1px solid #6f4a8f}
+  .ev.show{background:linear-gradient(90deg,rgba(201,162,75,.22),rgba(160,26,42,.22));color:#f3e3c0;border:1px solid var(--gold)}
+  .ev.photo{background:rgba(107,122,143,.18);color:#cdd8e6;border:1px solid #5f7286}
+  .ev .t{display:block;font-family:var(--mono);font-size:9px;color:var(--bone-dim);margin-top:1px}
+  .evnote{font-family:var(--mono);font-size:9px;color:var(--gold);line-height:1.3;display:block}
+  .efocus{font-family:var(--serif);font-style:italic;font-size:13px;color:var(--gold);margin-top:3px}
+  .mnote{border:1px solid var(--gold-soft);background:rgba(201,162,75,.08);border-radius:3px;padding:9px 11px;margin-bottom:14px;font-size:14px;color:var(--bone);line-height:1.45}
+  .mnote .lbl{font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--gold);margin-right:6px}
+  .mcalled,.mwhy{font-size:14px;color:var(--bone-dim);line-height:1.5;margin-bottom:12px}
+  .mcalled{color:var(--bone)}
+  .mcalled .lbl,.mwhy .lbl{display:block;font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--gold);margin-bottom:3px}
+  .mwhy{font-style:italic;border-left:2px solid var(--gold-soft);padding-left:10px}
+  .focuschip{cursor:grab;touch-action:none;position:relative}
+  .focuschip .grip{color:var(--gold-soft);letter-spacing:-3px;margin-right:4px;font-size:9px;vertical-align:middle}
+  body.dragging-focus{cursor:grabbing;user-select:none}
+  body.dragging-focus *{cursor:grabbing!important}
+  .day.drop-ok{outline:2px dashed var(--gold);outline-offset:1px;background:rgba(201,162,75,.12)!important}
+  .drag-ghost{position:fixed;transform:translate(-50%,-140%);z-index:80;pointer-events:none;
+    font-family:var(--display);font-size:12px;letter-spacing:.03em;color:#f0d3c8;
+    background:rgba(160,26,42,.85);border:1px solid var(--gold);padding:5px 10px;border-radius:3px;box-shadow:0 6px 18px rgba(0,0,0,.5)}
+  .focusedit{display:flex;gap:8px;margin-bottom:10px}
+  .focusedit input{flex:1}
+  .focusedit .save{background:var(--blood-deep);border:1px solid var(--blood);color:var(--bone);font-family:var(--display);font-size:12px;letter-spacing:.06em;padding:0 16px;border-radius:2px;cursor:pointer}
+  .focusedit .save:hover{background:var(--blood)}
+  .focusswap{display:flex;align-items:center;gap:9px;margin-bottom:16px;font-family:var(--mono);font-size:11px;letter-spacing:.05em;color:var(--stone);text-transform:uppercase}
+  .focusswap select{flex:1}
+  .miss{display:flex;align-items:center;gap:4px;font-family:var(--mono);font-size:9.5px;color:#e59a9a;line-height:1.3}
+  .miss.tent{color:var(--gold);opacity:.92}
+  .miss .dot{width:5px;height:5px;border-radius:50%;background:var(--blood);flex:none}
+  .miss.tent .dot{background:var(--gold-soft)}
+  .hasnote{position:absolute;bottom:6px;right:7px;width:7px;height:7px;border-radius:50%;background:var(--gold);box-shadow:0 0 6px rgba(201,162,75,.7)}
+  .panels{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:22px}
+  .box{background:var(--panel);border:1px solid var(--line);border-left:3px solid var(--gold-soft);border-radius:3px;padding:14px 16px}
+  .box.warn{border-left-color:var(--blood)}
+  .box h3{font-family:var(--display);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);margin:0 0 10px}
+  .box.warn h3{color:#e59a9a}
+  .box ul{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:8px}
+  .box li{font-size:14px;color:var(--bone-dim);display:flex;gap:8px;line-height:1.45}
+  .box li b{color:var(--bone);font-weight:600}
+  .box li .dot{width:6px;height:6px;border-radius:50%;margin-top:7px;flex:none}
+  .legend{display:flex;gap:16px;flex-wrap:wrap;margin-top:16px;font-family:var(--mono);font-size:11px;color:var(--bone-dim)}
+  .legend span{display:inline-flex;align-items:center;gap:7px}
+  .sw{width:14px;height:14px;border-radius:2px;border:1px solid}
+  .sw.reh{background:rgba(160,26,42,.2);border-color:var(--blood-deep)}
+  .sw.zm{background:rgba(201,162,75,.14);border-color:var(--gold-soft)}
+  .sw.tech{background:rgba(138,92,192,.16);border-color:#6f4a8f}
+  .sw.show{background:linear-gradient(90deg,rgba(201,162,75,.22),rgba(160,26,42,.22));border-color:var(--gold)}
+  .sw.photo{background:rgba(107,122,143,.18);border-color:#5f7286}
+  .sw.ab{background:var(--blood);border:none}
+  .sw.nt{background:var(--gold);border:none}
+
+  /* Modal (calendar day) */
+  .scrim{position:fixed;inset:0;background:rgba(6,4,5,.72);backdrop-filter:blur(3px);display:none;align-items:center;justify-content:center;z-index:40;padding:18px}
+  .scrim.open{display:flex}
+  .modal{background:linear-gradient(180deg,var(--panel-2),var(--panel));border:1px solid var(--edge);
+    border-top:3px solid var(--gold);border-radius:4px;width:min(460px,100%);max-height:88vh;overflow:auto;padding:22px}
+  .modal .mdate{font-family:var(--display);font-size:20px;letter-spacing:.05em;margin:0}
+  .modal .mday{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--gold);margin:4px 0 16px}
+  .mev{border:1px solid var(--gold-soft);border-radius:3px;padding:10px 12px;margin-bottom:14px}
+  .mev.rehearsal{border-color:var(--blood-deep);background:rgba(160,26,42,.1)}
+  .mev.zoom,.mev.readthrough{background:rgba(201,162,75,.08)}
+  .mev .et{font-family:var(--display);font-size:14px;letter-spacing:.04em}
+  .mev .etime{font-family:var(--mono);font-size:11px;color:var(--bone-dim);margin-top:2px}
+  .mmiss{margin-bottom:14px}
+  .mmiss .lbl{font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#e59a9a;margin-bottom:7px}
+  .mmiss .row{font-size:14px;color:var(--bone);display:flex;gap:8px;margin-bottom:6px;line-height:1.4}
+  .mmiss .row .dot{width:6px;height:6px;border-radius:50%;background:var(--blood);margin-top:6px;flex:none}
+  .mmiss .row.tent .dot{background:var(--gold-soft)}
+  .mmiss .row small{color:var(--bone-dim);font-size:13px}
+  .nlabel{font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--stone);margin:4px 0 6px}
+  .modal textarea{min-height:110px}
+  .mactions{display:flex;gap:10px;margin-top:16px;justify-content:flex-end}
+  .mactions .save{background:var(--blood-deep);border:1px solid var(--blood);color:var(--bone);font-family:var(--display);font-size:12px;letter-spacing:.08em;padding:9px 18px;border-radius:2px;cursor:pointer}
+  .mactions .save:hover{background:var(--blood)}
+  .mactions .close{background:none;border:1px solid var(--edge);color:var(--bone-dim);font-family:var(--serif);font-size:14px;padding:9px 16px;border-radius:2px;cursor:pointer}
+  .mactions .close:hover{color:var(--gold);border-color:var(--gold-soft)}
+
+  /* ============ CAST ============ */
+  .casttools{position:sticky;top:0;z-index:20;background:rgba(14,10,12,.92);backdrop-filter:blur(6px);
+    border-bottom:1px solid var(--line);padding:12px 18px;display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+  .search{flex:1 1 220px;min-width:170px;position:relative}
+  .search input{width:100%;padding-left:34px}
+  .search svg{position:absolute;left:10px;top:50%;transform:translateY(-50%);opacity:.5}
+  .caststats{display:flex;gap:14px;align-items:center;margin-left:auto;font-family:var(--mono);font-size:12px;color:var(--bone-dim)}
+  .caststats b{color:var(--gold);font-weight:600}
+  .caststats .sep{color:var(--line)}
+  .castwrap{padding:22px 18px 70px}
+  .act{margin:34px 0 14px;display:flex;align-items:center;gap:16px}
+  .act:first-child{margin-top:4px}
+  .act h2{font-family:var(--display);font-weight:600;letter-spacing:.16em;text-transform:uppercase;font-size:15px;color:var(--gold);margin:0;white-space:nowrap}
+  .act .li{flex:1;height:1px;background:linear-gradient(90deg,var(--gold-soft),transparent)}
+  .act .ct{font-family:var(--mono);font-size:11px;color:var(--stone)}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:16px}
+  .card{background:linear-gradient(180deg,var(--panel),var(--panel-2));border:1px solid var(--line);
+    border-left:3px solid var(--gold-soft);border-radius:3px;padding:16px 16px 14px;position:relative;transition:border-color .18s}
+  .card:hover{border-color:var(--edge);border-left-color:var(--gold)}
+  .card.flagged{border-left-color:var(--blood)}
+  .card.hidden{display:none}
+  .card .top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+  .name{font-family:var(--display);font-weight:600;font-size:19px;letter-spacing:.03em;margin:0}
+  .seal{font-family:var(--mono);font-size:10px;letter-spacing:.06em;text-transform:uppercase;padding:5px 8px;border-radius:999px;border:1px solid;background:var(--panel);color:var(--bone);cursor:pointer}
+  .seal.s0{color:var(--stone);border-color:var(--edge)}
+  .seal.s1{color:var(--gold);border-color:var(--gold-soft)}
+  .seal.s2{color:#8fbf93;border-color:#3c5a3f}
+  .seal.s3{color:#e88;border-color:var(--blood-deep)}
+  .roles{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0 4px}
+  .role{font-size:13px;font-style:italic;background:rgba(201,162,75,.08);border:1px solid var(--gold-soft);padding:2px 9px;border-radius:2px}
+  .role.lead{background:rgba(160,26,42,.14);border-color:var(--blood-deep);color:#f0d9c8;font-style:normal}
+  .contact{display:flex;gap:8px;margin:12px 0 2px;flex-wrap:wrap}
+  .contact a{display:inline-flex;align-items:center;gap:7px;text-decoration:none;font-family:var(--mono);font-size:12px;color:var(--bone-dim);border:1px solid var(--edge);padding:6px 10px;border-radius:2px;flex:1 1 auto;justify-content:center}
+  .contact a:hover{color:var(--gold);border-color:var(--gold-soft)}
+  .copy{background:none;border:1px solid var(--edge);color:var(--stone);cursor:pointer;padding:6px 8px;border-radius:2px;font-family:var(--mono);font-size:11px}
+  .copy:hover{color:var(--gold);border-color:var(--gold-soft)}
+  .copy.done{color:var(--ok);border-color:var(--ok)}
+  details.ref{margin:12px 0 2px}
+  details.ref summary{cursor:pointer;font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--stone);list-style:none;padding:5px 0;display:flex;align-items:center;gap:6px}
+  details.ref summary::-webkit-details-marker{display:none}
+  details.ref summary::before{content:"\25B8";color:var(--gold-soft);transition:transform .15s}
+  details.ref[open] summary::before{transform:rotate(90deg)}
+  .ref-body{font-size:14px;color:var(--bone-dim);padding:4px 0 2px;line-height:1.55}
+  .ref-body .lbl{color:var(--gold);font-family:var(--mono);font-size:10px;letter-spacing:.06em;text-transform:uppercase}
+  .ref-body .warnrow{color:#e0a1a1}
+  .fieldlabel{font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--stone);margin:12px 0 5px}
+  .paperwork{display:flex;flex-wrap:wrap;align-items:center;gap:10px 14px;margin:12px 0 2px;padding:10px 12px;
+    background:var(--ink);border:1px solid var(--line);border-radius:3px}
+  .paperwork.done{border-color:var(--gold-soft);background:rgba(201,162,75,.06)}
+  .pwlabel{font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--gold);width:100%}
+  .paperwork label{display:inline-flex;align-items:center;gap:7px;font-size:14px;color:var(--bone-dim);cursor:pointer}
+  .paperwork input{appearance:none;-webkit-appearance:none;width:17px;height:17px;border:1px solid var(--edge);border-radius:3px;
+    background:var(--panel);cursor:pointer;position:relative;flex:none}
+  .paperwork input:checked{background:var(--gold-soft);border-color:var(--gold)}
+  .paperwork input:checked::after{content:"\2713";position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--ink);font-size:12px;font-weight:700}
+  .paperwork input:checked + span,.paperwork label:has(input:checked){color:var(--bone)}
+  .card textarea{min-height:58px}
+  .updates{margin-top:6px;display:flex;flex-direction:column;gap:6px}
+  .update{background:var(--ink);border:1px solid var(--line);border-left:2px solid var(--gold-soft);padding:7px 10px;border-radius:2px;font-size:14px;position:relative}
+  .update .when{font-family:var(--mono);font-size:10px;color:var(--gold);letter-spacing:.05em;display:block;margin-bottom:3px}
+  .update .x{position:absolute;top:6px;right:7px;background:none;border:none;color:var(--stone);cursor:pointer;font-size:15px;line-height:1;padding:2px}
+  .update .x:hover{color:var(--blood)}
+  .addupdate{display:flex;gap:7px;margin-top:8px}
+  .addupdate input{flex:1;background:var(--ink);border-color:var(--edge);font-size:14px}
+  .addupdate button{background:var(--blood-deep);border:1px solid var(--blood);color:var(--bone);font-family:var(--display);font-size:12px;letter-spacing:.08em;padding:0 14px;border-radius:2px;cursor:pointer}
+  .addupdate button:hover{background:var(--blood)}
+
+  /* ============ REHEARSAL NOTES ============ */
+  .notewrap{padding:22px 18px 70px}
+  .composer{background:linear-gradient(180deg,var(--panel-2),var(--panel));border:1px solid var(--edge);
+    border-top:3px solid var(--gold);border-radius:4px;padding:18px;margin-bottom:24px}
+  .composer h3{font-family:var(--display);font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);margin:0 0 14px}
+  .crow{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px}
+  .crow > *{flex:1 1 160px}
+  .composer textarea{min-height:80px;margin-bottom:12px}
+  .composer .addbtn{background:var(--blood-deep);border:1px solid var(--blood);color:var(--bone);font-family:var(--display);
+    font-size:13px;letter-spacing:.08em;padding:11px 22px;border-radius:2px;cursor:pointer;float:right}
+  .composer .addbtn:hover{background:var(--blood)}
+  .notefilters{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:18px}
+  .notefilters .search{flex:1 1 200px}
+  .feed{display:flex;flex-direction:column;gap:12px}
+  .note{background:var(--panel);border:1px solid var(--line);border-left:3px solid var(--gold-soft);border-radius:3px;padding:13px 15px;position:relative}
+  .note .meta{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px}
+  .note .ndate{font-family:var(--mono);font-size:11px;color:var(--bone-dim);letter-spacing:.04em}
+  .chip{font-family:var(--mono);font-size:10px;letter-spacing:.06em;text-transform:uppercase;padding:3px 9px;border-radius:999px;border:1px solid}
+  .chip-person{font-family:var(--display);font-size:11px;letter-spacing:.03em;color:var(--gold);border:1px solid var(--gold-soft);padding:3px 9px;border-radius:999px}
+  .note .body{font-size:15.5px;color:var(--bone);line-height:1.5;white-space:pre-wrap}
+  .note .del{position:absolute;top:10px;right:12px;background:none;border:none;color:var(--stone);cursor:pointer;font-size:16px;line-height:1}
+  .note .del:hover{color:var(--blood)}
+  .empty{text-align:center;color:var(--stone);font-style:italic;padding:56px 20px;font-size:18px}
+
+  footer{border-top:1px solid var(--line);text-align:center;padding:20px;font-family:var(--mono);font-size:11px;color:var(--stone);letter-spacing:.04em}
+  .toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--panel);
+    border:1px solid var(--gold-soft);color:var(--gold);font-family:var(--mono);font-size:12px;padding:10px 18px;border-radius:3px;opacity:0;pointer-events:none;transition:.25s;z-index:60}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+  @media (max-width:680px){
+    .globalbtns{position:static;justify-content:center;margin-top:14px}
+    .panels{grid-template-columns:1fr}
+    .day{min-height:88px;padding:6px}.ev{font-size:10px}.dow span{font-size:9px}
+    .grid{grid-template-columns:1fr}
+    .caststats{width:100%;margin-left:0;justify-content:space-between}
+  }
+  @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+
+<header>
+  <p class="eyebrow">11th Hour Theatre &amp; Creative Studio</p>
+  <h1>MAC<span class="drop">BETH</span> &middot; Production Hub</h1>
+  <div class="globalbtns">
+    <button class="btn" id="exportBtn" title="Download one backup of everything">Export all</button>
+    <button class="btn" id="importBtn">Import</button>
+    <input type="file" id="importFile" accept="application/json" hidden>
+  </div>
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" data-tab="cal" aria-selected="true">Calendar</button>
+    <button class="tab" role="tab" data-tab="cast" aria-selected="false">Cast</button>
+    <button class="tab" role="tab" data-tab="notes" aria-selected="false">Rehearsal Notes</button>
+  </div>
+</header>
+
+<main>
+  <!-- ===== CALENDAR ===== -->
+  <section class="panel active" id="panel-cal" role="tabpanel">
+    <div class="calbar">
+      <div class="nav">
+        <button id="prev" aria-label="Previous month">&lsaquo;</button>
+        <div class="month" id="monthLabel"></div>
+        <button id="next" aria-label="Next month">&rsaquo;</button>
+      </div>
+      <div class="spacer"></div>
+      <button class="btn" id="todayBtn">Jump to today</button>
+    </div>
+    <div class="calwrap">
+      <div class="dow"><span>Sun</span><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span></div>
+      <div class="cal" id="cal"></div>
+      <div class="legend">
+        <span><i class="sw reh"></i> Rehearsal</span>
+        <span><i class="sw zm"></i> Zoom / read-through</span>
+        <span><i class="sw tech"></i> Tech week</span>
+        <span><i class="sw show"></i> Performance</span>
+        <span><i class="sw photo"></i> Photoshoot</span>
+        <span><i class="sw ab"></i> Someone out</span>
+        <span><i class="sw nt"></i> Your note</span>
+      </div>
+      <div class="panels">
+        <div class="box warn">
+          <h3>Standing watch items</h3>
+          <ul>
+            <li><span class="dot" style="background:var(--gold-soft)"></span><span><b>Sunny Hyder</b> can make about 2 of every 3 weekly rehearsals. Expect one miss per week, day not fixed.</span></li>
+            <li><span class="dot" style="background:var(--gold-soft)"></span><span><b>Tyler Slusher</b> may miss a few Tuesdays; makes all of tech.</span></li>
+            <li><span class="dot" style="background:var(--gold-soft)"></span><span><b>Darrell Cox</b> (Duncan / Doctor) is in 'The Foreigner' through Sep 13: out most Aug weeknights and on show Thursdays Aug 27, Sep 3, Sep 10 (all flagged on the calendar). Free from Sep 14, so tech and shows are clear.</span></li>
+            <li><span class="dot" style="background:var(--gold-soft)"></span><span><b>Cody Robinson Steele</b> has UTC obligations that firm up after Aug 24, plus some Sunday wrestling.</span></li>
+          </ul>
+        </div>
+        <div class="box">
+          <h3>How the schedule is built</h3>
+          <ul>
+            <li><span class="dot" style="background:var(--gold)"></span><span>Tap any rehearsal to see who's called and why that night was chosen around the conflicts.</span></li>
+            <li><span class="dot" style="background:var(--blood)"></span><span>Blocking Jul 20 to Aug 1 (all of Darrell's Duncan scenes go in his free July nights).</span></li>
+            <li><span class="dot" style="background:var(--blood)"></span><span>Scene and fight work through August, all of it chosen to not need Darrell while he's in The Foreigner.</span></li>
+            <li><span class="dot" style="background:#6f4a8f"></span><span>Aug 31 is the one Foreigner-dark night: every Darrell scene (Duncan, Doctor, Mysterious Man) is packed in.</span></li>
+            <li><span class="dot" style="background:var(--gold)"></span><span>Full runs Sep 1 onward; the company is whole from Sep 14 (Foreigner closed). Weekends used for combat and stamina runs.</span></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== CAST ===== -->
+  <section class="panel" id="panel-cast" role="tabpanel">
+    <div class="casttools">
+      <div class="search">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+        <input id="q" type="search" placeholder="Search name or role" autocomplete="off">
+      </div>
+      <select id="fStatus" aria-label="Filter by status">
+        <option value="">All statuses</option><option value="0">Not contacted</option>
+        <option value="1">Contacted</option><option value="2">Confirmed</option><option value="3">Follow up needed</option>
+      </select>
+      <select id="fGroup" aria-label="Filter by group">
+        <option value="">All groups</option><option>The Court &amp; Crown</option>
+        <option>The Supernatural</option><option>The Nobles</option><option>Subjects of the Crown</option>
+      </select>
+      <select id="fForms" aria-label="Filter by paperwork">
+        <option value="">All paperwork</option><option value="incomplete">Paperwork missing</option><option value="complete">Paperwork complete</option>
+      </select>
+      <div class="caststats">
+        <span><b id="stTotal">0</b> cast</span><span class="sep">|</span>
+        <span><b id="stConf">0</b> confirmed</span><span class="sep">|</span>
+        <span><b id="stForms">0</b> forms done</span></div>
+    </div>
+    <div class="castwrap" id="castBoard"></div>
+  </section>
+
+  <!-- ===== REHEARSAL NOTES ===== -->
+  <section class="panel" id="panel-notes" role="tabpanel">
+    <div class="notewrap">
+      <div class="composer">
+        <h3>Add a rehearsal note</h3>
+        <div class="crow">
+          <input type="date" id="nDate" aria-label="Note date">
+          <select id="nTag" aria-label="Category"></select>
+          <select id="nPerson" aria-label="Link to cast member"></select>
+        </div>
+        <textarea id="nText" placeholder="What happened, what to fix, blocking decided, a note to give someone..."></textarea>
+        <button class="addbtn" id="nAdd">Add note</button>
+        <div style="clear:both"></div>
+      </div>
+      <div class="notefilters">
+        <div class="search">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+          <input id="nSearch" type="search" placeholder="Search notes" autocomplete="off">
+        </div>
+        <select id="nfTag" aria-label="Filter by category"><option value="">All categories</option></select>
+        <select id="nfPerson" aria-label="Filter by person"><option value="">All people</option></select>
+      </div>
+      <div class="feed" id="noteFeed"></div>
+    </div>
+  </section>
+</main>
+
+<div class="scrim" id="scrim"><div class="modal" id="modal" role="dialog" aria-modal="true"></div></div>
+<footer>Everything saves in this browser. Use Export all to keep a copy or move it between devices.</footer>
+<div class="toast" id="toast"></div>
+
+<script>
+"use strict";
+
+/* ========================= DATA ========================= */
+const GROUPS=["The Court & Crown","The Supernatural","The Nobles","Subjects of the Crown"];
+const CAST=[
+ {id:"arche",name:"Arche Twitty",group:0,roles:[["Macbeth",1]],phone:"423-320-4316",email:"archedivine@gmail.com",
+  conflicts:"Possible tech-week conflict. May be unavailable Oct 11: could add a Thu Oct 8 performance instead.",comfort:"All comfort areas cleared.",
+  note:"Wanted Macbeth only; self-rated familiarity 2. Strong Shakespeare leads (Hamlet, Othello)."},
+ {id:"bmanolis",name:"Brooke Manolis",group:0,roles:[["Lady Macbeth",1]],phone:"706-483-2205",email:"Brooke.manolis@gmail.com",
+  conflicts:"Sept 12 eve & Sept 13 (Rosh Hashanah); Sept 20-21 (Yom Kippur). Open to discuss.",
+  comfort:"No intense intimacy (stage kissing OK). Did not check stage-combat box.",
+  note:"English teacher who has taught the play. Scottish accent, sings, piano."},
+ {id:"cody",name:"Cody Robinson Steele",group:0,roles:[["Banquo",1]],phone:"423-255-7148",email:"Alexadmire@gmail.com",
+  conflicts:"UTC acting requirements; wrestling some Sundays (July 26 set). Weekday conflicts firm up after Aug 24.",
+  comfort:"All comfort areas cleared.",note:""},
+ {id:"jack",name:"Jack Crumbley",group:0,roles:[["Malcolm",1]],phone:"706-671-4627",email:"jackcrumbley328@gmail.com",
+  conflicts:"Works 3rd shift; must leave for work around 11:00 pm.",comfort:"All comfort areas cleared (asthma).",
+  note:"Confirm real DOB (form auto-filled an error)."},
+ {id:"darrell",name:"Darrell Thomas Cox",group:0,roles:[["Duncan",1],["Doctor",0],["Mysterious Man",0]],phone:"404-416-6031",email:"DarrellCox62@gmail.com",
+  conflicts:"In 'The Foreigner' (as David) through Sep 13. Unavailable most Aug weeknights (runs/tech/opening) and on Foreigner show Thursdays Aug 27, Sep 3, Sep 10. On July dates only Jul 23 conflicts (Foreigner 5-7 PM, arrives ~45 min late). Free Aug 31, Sep 1, 7, 8, and everything from Sep 14 on, so Macbeth tech and all shows are clear.",
+  comfort:"Only checked 'comfortable with staged violence' on the form. Confirm his range.",
+  note:"Playing Duncan, the Doctor, and the Mysterious Man."},
+ {id:"tyler",name:"Tyler Slusher",group:0,roles:[["Macduff",1]],phone:"423-305-9006",email:"tylerslusher95@gmail.com",
+  conflicts:"May miss a few Tuesdays; can make ~95% of rehearsals and all of tech.",
+  comfort:"All comfort areas cleared. Peanut allergy.",note:""},
+ {id:"tea",name:"Téa Wilson",group:0,roles:[["Lady Macduff",1],["First Witch (Oct 2 & 3)",0],["Understudy",0]],phone:"423-580-6239",email:"teareneew03@gmail.com",
+  conflicts:"July 24-27 immovable. Also July 6-9 and Sept 4-6.",comfort:"No stage choking toward or from her.",
+  note:"Plays First Witch on the Oct 2 & 3 performances; understudy otherwise."},
+ {id:"morgan",name:"Morgan Jones",group:1,roles:[["First Witch",1],["Murderer",0]],phone:"762-219-1715",email:"morganpreston1@gmail.com",
+  conflicts:"None (said she can commit to all).",comfort:"All comfort areas cleared.",
+  note:"7+ yrs gymnastics/contortion/acro. Strong physical performer."},
+ {id:"venus",name:"Venus Celeste",group:1,roles:[["Second Witch",1],["Murderer",0]],phone:"423-713-1503",email:"venusceleste333@icloud.com",
+  conflicts:"None listed.",comfort:"All comfort areas cleared.",note:"Also submitted as Harlie Davis. Back Alley Productions regular."},
+ {id:"krystale",name:"Krystale Dawson",group:1,roles:[["Third Witch",1],["Murderer",0]],phone:"256-997-6903",email:"kmdawson78@gmail.com",
+  conflicts:"July 9 unavailable. May run late: July 13/14/16 and Aug 3/4/6/10/11/13.",
+  comfort:"All comfort areas cleared.",note:"Deep production side too (SM, props, lights/sound)."},
+ {id:"evelyn",name:"Evelyn Wall",group:1,roles:[["Hecate",1]],phone:"706-618-4097",email:"evelynwall@yahoo.com",
+  conflicts:"None known.",comfort:"All comfort areas cleared.",note:"Extensive lead resume (Ouiser, M'Lynn, Madame Arcati, Rebecca Nurse)."},
+ {id:"sabrina",name:"Sabrina Akers",group:2,roles:[["Ross",1],["Sergeant",0],["Porter",0]],phone:"423-584-2339",email:"sakers7076@gmail.com",
+  conflicts:"Available as far as she knows.",
+  comfort:"Form was contradictory (checked every comfort box AND 'not comfortable with any'). Clarify before violence/intimacy staging.",
+  note:"Playing Ross, the Sergeant, and the Porter. Multiple accents, sings."},
+ {id:"kellie",name:"Kellie Pioch",group:2,roles:[["Lennox",1]],phone:"813-240-2420",email:"Kpioch67@gmail.com",
+  conflicts:"None noted.",comfort:"All comfort areas cleared.",note:""},
+ {id:"nikki",name:"Nikki Sloan",group:2,roles:[["Angus",1]],phone:"423-902-0297",email:"nikki101582@gmail.com",
+  conflicts:"Not available 7/23 (son's birthday).",comfort:"All comfort areas cleared.",note:""},
+ {id:"marie",name:"Marie Dixon",group:2,roles:[["Menteith",1]],phone:"678-951-7706",email:"dixonmarie553@gmail.com",
+  conflicts:"About 45 min away; drives a school bus.",
+  comfort:"Only checked violence + supernatural. No combat, no intimacy. Solid-organ transplant recipient (2011): plan physical staging accordingly.",note:""},
+ {id:"bdouglas",name:"Brooke Douglas",group:2,roles:[["Caithness",1]],phone:"706-901-1121",email:"bdougl@gmail.com",
+  conflicts:"None.",comfort:"All comfort areas cleared.",note:""},
+ {id:"loganq",name:"Logan Qualey",group:3,roles:[["Siward",1]],phone:"423-805-0149",email:"loganqualey@gmail.com",
+  conflicts:"Not available Aug 11.",comfort:"Did not check the intimate-content box.",note:"Asked for a minor role."},
+ {id:"sunny",name:"Sunny Hyder",group:3,roles:[["Gentlewoman",1]],phone:"606-260-3622",email:"madisonhyder1@gmail.com",
+  conflicts:"PT arcade job; can make about 2 of 3 rehearsals per week. No performance-date conflicts.",
+  comfort:"Did not check the romantic/intimate box. Autism and OCD noted.",note:""},
+ {id:"kaidynce",name:"Kaidynce Lepker",group:3,roles:[["Seyton",1]],phone:"762-760-7409",email:"kaidyncelepker@gmail.com",
+  conflicts:"None.",comfort:"All comfort areas cleared. POTS: keeps salt tabs and water on hand.",
+  note:"Since 2009 (Chicago, Gatsby, Frankenstein). Dance, vocal, stage combat, acro."}
+];
+const FLAG=new Set(["darrell","tea","sabrina","marie","cody","bmanolis","jack","arche"]);
+
+function pad2(n){return String(n).padStart(2,"0");}
+function isoOf(dt){return dt.getFullYear()+"-"+pad2(dt.getMonth()+1)+"-"+pad2(dt.getDate());}
+function buildEvents(){
+  const E={};
+  const put=(k,o)=>{E[k]=Object.assign({miss:[]},o);};
+  const addMiss=(k,m)=>{ if(E[k]) E[k].miss.push(m); };
+  const EVE="6:30 to 8:30 PM", WKND="1:00 to 4:00 PM";
+  const reh=(k,time,focus,called,why)=>put(k,{type:"rehearsal",title:"Rehearsal",time,focus,called,why});
+
+  // ---- Read-through + online language work ----
+  put("2026-07-02",{type:"readthrough",title:"Read-through (Zoom)",time:"6:00 PM"});
+  put("2026-07-08",{type:"zoom",title:"Zoom Rehearsal",time:"6:00 PM"});
+  put("2026-07-15",{type:"zoom",title:"Language & scene work (online)",time:"6:00 PM",
+    called:"Witches, Hecate, Thanes, Court Servants",why:"Online session while Darrell is still tied up with The Foreigner all week."});
+
+  /* ===== BLOCKING (July): built around Darrell's only free nights ===== */
+  reh("2026-07-20",EVE,"Block Act 1, sc 1-4","Macbeth, Banquo, Duncan, Malcolm, Macduff, Ross, Lennox, Angus, Witches","Darrell (Duncan) is free tonight, so we block his Act 1 entrances now.");
+  reh("2026-07-21",EVE,"Block Act 1, sc 5-7","Macbeth, Lady Macbeth, Duncan, Banquo, Malcolm, Ross, Lennox, Angus","Darrell free again: finish every Duncan scene before The Foreigner takes him for August.");
+  reh("2026-07-23",EVE,"Block Act 2","Macbeth, Lady Macbeth, Banquo, Fleance, Macduff, Lennox, Ross, Malcolm, Porter","Angus not needed, which covers Nikki being out. Darrell is at The Foreigner until 7, so we open with scenes that don't need Duncan.");
+  reh("2026-07-27",EVE,"Block Act 3, sc 1-3","Macbeth, Lady Macbeth, Banquo, Fleance, Murderers, Ross, Lennox","No Duncan or Doctor needed, so Darrell's Foreigner night doesn't matter. Téa is out this week but isn't called.");
+  reh("2026-07-28",EVE,"Block Act 3, sc 4-6","Macbeth, Lady Macbeth, Banquo (ghost), Hecate, Witches, Lennox","Supernatural-heavy night: all three witches and Hecate are fully free.");
+  reh("2026-07-30",EVE,"Block Act 4","Macbeth, Witches, Hecate, Apparitions, Macduff, Lady Macduff, Malcolm, Ross, Menteith, Caithness, Doctor, Gentlewoman","Darrell free (Foreigner paper tech) and Téa is back from her Jul 24-27 block, so the Macduffs and the Doctor can all work.");
+  reh("2026-08-01",WKND,"Block Act 5: the battle","Macbeth, Macduff, Malcolm, Siward, Seyton, Menteith, Caithness, Angus, Ross","Weekend session to finish blocking. The battle needs no Duncan or Doctor, so Darrell's absence is fine. The Doctor scenes (5.1, 5.3) are saved for a Darrell night.");
+
+  /* ===== SCENE / ACT WORK (August): Darrell is in The Foreigner all month except Aug 31 ===== */
+  reh("2026-08-04",EVE,"Work: Witches & Hecate (1.1, 1.3, 3.5, 4.1)","Witches, Hecate, Macbeth","No Macduff and no Duncan, so it is Tuesday-safe (Tyler) and clear of Darrell's Foreigner week. Krystale may arrive a little late.");
+  reh("2026-08-06",EVE,"Work Act 3 (banquet & murder)","Macbeth, Lady Macbeth, Banquo (ghost), Murderers, Ross, Lennox, Angus","Duncan is dead by now, so Darrell is not needed for any of Act 3.");
+  reh("2026-08-08",WKND,"Fight call 1: Duncan & Banquo murders","Macbeth, Lady Macbeth, Banquo, Fleance, Murderers","Weekend combat call with only the fight-comfortable cast.");
+  reh("2026-08-10",EVE,"Work Act 4 (England & the Macduffs)","Malcolm, Macduff, Ross, Lady Macduff, Child, Murderers","Téa (Lady Macduff) is free and no Darrell is needed.");
+  reh("2026-08-11",EVE,"Work Act 1.7 and Act 2.1-2.2","Macbeth, Lady Macbeth, Banquo, Fleance","Logan (Siward) is out tonight and Krystale may be late, but neither is called. No Macduff, so the Tuesday risk is covered too.");
+  reh("2026-08-13",EVE,"Work Act 3.4 banquet (full) + 3.5-3.6","Macbeth, Lady Macbeth, Thanes, Banquo (ghost), Hecate, Witches, Lennox","Big ensemble scene while everyone it needs is available.");
+  put("2026-08-15",{type:"photo",title:"Photoshoot",time:"Time TBD",why:"Weekend shoot with the full company in costume."});
+  reh("2026-08-17",EVE,"Run Act 4","Macbeth, Witches, Hecate, Macduff, Lady Macduff, Malcolm, Ross, Lennox","Act 4 has no Duncan or Doctor, so it runs cleanly without Darrell during his Foreigner tech week.");
+  reh("2026-08-18",EVE,"Run Act 3","Macbeth, Lady Macbeth, Banquo (ghost), Thanes, Hecate, Witches, Murderers","No Macduff (Tuesday-safe) and no Darrell.");
+  reh("2026-08-20",EVE,"Fight call 2: final battle & Macbeth/Macduff","Macbeth, Macduff, Malcolm, Siward, Seyton","The Act 5 fighters only; Darrell is not needed.");
+  reh("2026-08-23",WKND,"Run Act 5 (the battle)","Macbeth, Macduff, Malcolm, Siward, Seyton, Menteith, Caithness, Angus, Ross","Weekend run of the battle. Doctor scenes are handled separately on a Darrell night.");
+  reh("2026-08-24",EVE,"Run Acts 1-2 (Banquo priority)","Macbeth, Lady Macbeth, Banquo, Macduff, Malcolm, Ross, Lennox, Porter","Lock the Banquo-heavy scenes before Cody's UTC schedule tightens after this week. Duncan is covered by a stand-in while Darrell is in Foreigner opening week.");
+  reh("2026-08-27",EVE,"Run Acts 3-4","Macbeth, Lady Macbeth, Banquo (ghost), Thanes, Hecate, Witches, Macduff, Lady Macduff, Malcolm, Ross","No Duncan or Doctor, so Darrell opening The Foreigner tonight has no effect on us.");
+
+  /* ===== Darrell's free windows + full runs (late Aug - Sept) ===== */
+  reh("2026-08-31",EVE,"Darrell night: Duncan + Doctor (5.1, 5.3) + Mysterious Man","Macbeth, Lady Macbeth, Duncan, Malcolm, Banquo, Doctor, Gentlewoman, Seyton","Rare Foreigner-dark night. Polish every Darrell scene at once: the Duncan material, the sleepwalking (5.1), 5.3, and the Mysterious Man.");
+  reh("2026-09-01",EVE,"Full run Acts 1-2 (with Duncan)","Full Act 1-2 cast + Duncan","Second Darrell-free night: run Acts 1-2 with Duncan in place before he is gone until Sep 14. Tyler (Macduff) may miss a Tuesday, so understudy or SM covers 2.3 if needed.");
+  reh("2026-09-03",EVE,"Full run Acts 3-5","Acts 3-5 cast (Doctor via stand-in)","Darrell is performing tonight, but his scenes are already set, so a stand-in reads the Doctor for the run.");
+  reh("2026-09-07",EVE,"First full run, complete cast","Everyone","Darrell is free and The Foreigner is dark early this week. Please confirm the Labor Day date with the cast.");
+  reh("2026-09-08",EVE,"Full run, complete cast","Everyone","Darrell free again. Tyler may miss a Tuesday, so cover Macduff if needed.");
+  reh("2026-09-14",EVE,"Full run + notes","Everyone","The Foreigner has closed, so from here on the whole company is available.");
+  reh("2026-09-16",EVE,"Full run, fights integrated","Everyone","Run with all fight choreography folded in.");
+  reh("2026-09-19",WKND,"Full run","Everyone","Weekend run for stamina and pacing.");
+  reh("2026-09-21",EVE,"Scenes without Lady Macbeth","Malcolm, Macduff, Ross, Siward, Thanes, Witches, Macbeth","Brooke (Lady Macbeth) is out for Yom Kippur, so we work everything that does not need her: Act 4 England, the Act 5 battle, and the witches.");
+  reh("2026-09-23",EVE,"Full run, complete cast","Everyone","Brooke is back; full run.");
+  reh("2026-09-25",EVE,"Final full run before tech","Everyone","Last full run in the rehearsal room.");
+  reh("2026-09-26",WKND,"Designer / polish run","Everyone","Final polish with designers watching before tech begins.");
+
+  // Residual risk flags
+  addMiss("2026-07-23",{name:"Darrell Cox",reason:"At The Foreigner until 7 PM; would arrive ~45 min late",tent:true});
+  addMiss("2026-09-01",{name:"Tyler Slusher",reason:"May miss some Tuesdays",tent:true});
+  addMiss("2026-09-08",{name:"Tyler Slusher",reason:"May miss some Tuesdays",tent:true});
+
+  /* ===== Tech + performances ===== */
+  ["2026-09-28","2026-09-29","2026-09-30","2026-10-01"].forEach(k=>put(k,{type:"tech",title:"Tech Week",time:"Evenings, may run late"}));
+  put("2026-09-27",{type:"tech",title:"Tech Week begins",time:"Afternoon / evening"});
+  ["2026-10-02","2026-10-03","2026-10-04","2026-10-09","2026-10-10","2026-10-11"].forEach(k=>put(k,{type:"show",title:"Performance",time:"Curtain TBD"}));
+  E["2026-10-02"].note="Téa Wilson plays First Witch tonight (understudy on other dates).";
+  E["2026-10-03"].note="Téa Wilson plays First Witch tonight (understudy on other dates).";
+  E["2026-10-11"].note="Arche (Macbeth) may be unavailable. Possible added performance Thu Oct 8 instead.";
+  put("2026-10-08",{type:"show",title:"Possible Performance",time:"Curtain TBD",tent:true,
+    note:"Tentative. Only if Oct 11 cannot happen (Arche / Macbeth availability)."});
+
+  return E;
+}
+const EVENTS=buildEvents();
+const TODAY_ISO="2026-07-14";
+
+const TAGS=[
+  ["General","#8a6f33"],["Blocking","#a01a2a"],["Actor note","#c9a24b"],
+  ["Line / text","#6b7a8f"],["Props / Set","#7a6a3a"],["Costume","#8f5a6b"],
+  ["Lights / Sound","#4f7a6a"],["Fight / Movement","#b8862f"]
+];
+
+/* ========================= STORAGE ========================= */
+const K_CAST="mac_cast_v1", K_CAL="mac_calendar_notes_v1", K_REH="mac_rehearsal_notes_v1", K_FOCUS="mac_focus_overrides_v1";
+let castState=read(K_CAST,{});
+let calNotes=read(K_CAL,{});
+let rehNotes=read(K_REH,[]);
+let focusOv=read(K_FOCUS,{});
+function read(k,f){ try{return JSON.parse(localStorage.getItem(k))??f;}catch(e){return f;} }
+function write(k,v){ try{localStorage.setItem(k,JSON.stringify(v));}catch(e){toast("Could not save. Storage may be blocked.");} }
+
+/* ========================= TABS ========================= */
+document.querySelectorAll(".tab").forEach(t=>t.addEventListener("click",()=>{
+  document.querySelectorAll(".tab").forEach(x=>x.setAttribute("aria-selected","false"));
+  t.setAttribute("aria-selected","true");
+  document.querySelectorAll(".panel").forEach(p=>p.classList.remove("active"));
+  document.getElementById("panel-"+t.dataset.tab).classList.add("active");
+  window.scrollTo({top:0,behavior:"auto"});
+}));
+
+/* ========================= CALENDAR ========================= */
+const MONTHS=["January","February","March","April","May","June","July","August","September","October","November","December"];
+const DOWFULL=["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+let viewY=2026,viewM=6;
+const cal=document.getElementById("cal"),monthLabel=document.getElementById("monthLabel");
+function iso(y,m,d){return y+"-"+String(m+1).padStart(2,"0")+"-"+String(d).padStart(2,"0");}
+function effectiveFocus(key){ return (key in focusOv)?focusOv[key]:(EVENTS[key]?EVENTS[key].focus:undefined); }
+function setFocus(key,val){ if(val&&val.trim())focusOv[key]=val.trim(); else if(EVENTS[key]) focusOv[key]=""; write(K_FOCUS,focusOv); }
+function swapFocus(a,b){ const fa=effectiveFocus(a)||"", fb=effectiveFocus(b)||""; focusOv[a]=fb; focusOv[b]=fa; write(K_FOCUS,focusOv); renderCalendar(); }
+function evLabel(ev,key){
+  switch(ev.type){
+    case "readthrough": return "Read-through";
+    case "zoom": return "Zoom";
+    case "tech": return "Tech week";
+    case "show": return (ev.tent?"(?) ":"\u2605 ")+"Performance";
+    case "photo": return "Photoshoot";
+    default: return effectiveFocus(key)||"Rehearsal";
+  }
+}
+function renderCalendar(){
+  monthLabel.textContent=MONTHS[viewM]+" "+viewY;
+  cal.innerHTML="";
+  const first=new Date(viewY,viewM,1).getDay(), days=new Date(viewY,viewM+1,0).getDate();
+  for(let i=0;i<first;i++){const b=document.createElement("div");b.className="day blank";cal.appendChild(b);}
+  for(let d=1;d<=days;d++){
+    const key=iso(viewY,viewM,d), ev=EVENTS[key];
+    const cell=document.createElement("button");
+    cell.className="day"+(ev?" ev-"+ev.type:"")+(ev&&ev.tent?" tentative":"")+(key===TODAY_ISO?" today":"");
+    cell.dataset.key=key;
+    let h=`<span class="num">${d}</span>`;
+    if(ev){
+      if(ev.type==="rehearsal"){
+        h+=`<span class="ev rehearsal focuschip" data-key="${key}" title="Drag to another rehearsal to swap"><span class="grip">&#8942;&#8942;</span>${effectiveFocus(key)||"Rehearsal"}<span class="t">${ev.time}</span></span>`;
+      } else {
+        h+=`<span class="ev ${ev.type}">${evLabel(ev,key)}<span class="t">${ev.time}</span></span>`;
+      }
+      if(ev.note) h+=`<span class="evnote">&#9873; ${ev.note.length>44?ev.note.slice(0,42)+"\u2026":ev.note}</span>`;
+      ev.miss.forEach(m=>h+=`<span class="miss${m.tent?" tent":""}"><span class="dot"></span>${m.name}${m.tent?" ?":""}</span>`);
+    }
+    if((calNotes[key]||"").trim()) h+=`<span class="hasnote" title="You have a note"></span>`;
+    cell.innerHTML=h;
+    cell.addEventListener("click",()=>{ if(dragSuppress){dragSuppress=false;return;} openDay(key); });
+    cal.appendChild(cell);
+  }
+}
+/* ---- Drag a rehearsal's act/focus onto another rehearsal to swap them (mouse + touch) ---- */
+let dragSuppress=false;
+cal.addEventListener("pointerdown",e=>{
+  const chip=e.target.closest(".focuschip"); if(!chip) return;
+  if(e.button!==undefined && e.button>0) return;
+  const fromKey=chip.dataset.key, startX=e.clientX, startY=e.clientY;
+  let active=false, ghost=null, lastTarget=null;
+  function clearHi(){ document.querySelectorAll(".day.drop-ok").forEach(x=>x.classList.remove("drop-ok")); }
+  function move(ev){
+    const dx=ev.clientX-startX, dy=ev.clientY-startY;
+    if(!active){
+      if(Math.hypot(dx,dy)<7) return;
+      active=true; document.body.classList.add("dragging-focus");
+      ghost=document.createElement("div"); ghost.className="drag-ghost"; ghost.textContent=effectiveFocus(fromKey)||"Rehearsal";
+      document.body.appendChild(ghost);
+    }
+    ghost.style.left=ev.clientX+"px"; ghost.style.top=ev.clientY+"px";
+    const el=document.elementFromPoint(ev.clientX,ev.clientY);
+    const cell=el&&el.closest(".day.ev-rehearsal");
+    if(cell!==lastTarget){ clearHi(); if(cell&&cell.dataset.key!==fromKey) cell.classList.add("drop-ok"); lastTarget=cell; }
+    ev.preventDefault();
+  }
+  function up(ev){
+    document.removeEventListener("pointermove",move);
+    document.removeEventListener("pointerup",up);
+    if(active){
+      document.body.classList.remove("dragging-focus");
+      if(ghost) ghost.remove();
+      const el=document.elementFromPoint(ev.clientX,ev.clientY);
+      const cell=el&&el.closest(".day.ev-rehearsal");
+      clearHi();
+      if(cell && cell.dataset.key && cell.dataset.key!==fromKey){ swapFocus(fromKey,cell.dataset.key); toast("Swapped."); }
+      dragSuppress=true;
+    }
+  }
+  document.addEventListener("pointermove",move);
+  document.addEventListener("pointerup",up);
+});
+document.getElementById("prev").onclick=()=>{viewM--;if(viewM<0){viewM=11;viewY--;}renderCalendar();};
+document.getElementById("next").onclick=()=>{viewM++;if(viewM>11){viewM=0;viewY++;}renderCalendar();};
+document.getElementById("todayBtn").onclick=()=>{viewY=2026;viewM=6;renderCalendar();};
+
+const scrim=document.getElementById("scrim"),modal=document.getElementById("modal");
+let activeKey=null;
+function openDay(key){
+  activeKey=key;
+  const [y,m,d]=key.split("-").map(Number);
+  const dow=DOWFULL[new Date(y,m-1,d).getDay()], ev=EVENTS[key];
+  let h=`<p class="mdate">${MONTHS[m-1]} ${d}, ${y}</p><p class="mday">${dow}${key===TODAY_ISO?" &middot; today":""}</p>`;
+  if(ev){
+    h+=`<div class="mev ${ev.type}"><div class="et">${ev.title}${ev.tent?" (tentative)":""}</div>${ev.type==="rehearsal"?`<div class="efocus">Focus: ${effectiveFocus(key)||"Rehearsal"}</div>`:(ev.focus?`<div class="efocus">Focus: ${ev.focus}</div>`:"")}<div class="etime">${ev.time}</div></div>`;
+    if(ev.note) h+=`<div class="mnote"><span class="lbl">Note</span> ${ev.note}</div>`;
+    if(ev.called) h+=`<div class="mcalled"><span class="lbl">Called</span> ${ev.called}</div>`;
+    if(ev.why) h+=`<div class="mwhy"><span class="lbl">Why this night</span> ${ev.why}</div>`;
+    if(ev.type==="rehearsal"){
+      const others=Object.keys(EVENTS).filter(k=>EVENTS[k].type==="rehearsal"&&k!==key).sort();
+      h+=`<div class="nlabel">What we're working (drag on the calendar, or edit here)</div>
+        <div class="focusedit">
+          <input type="text" id="focusInput" value="${esc(effectiveFocus(key)||"")}" placeholder="e.g. Act 3 blocking">
+          <button class="save" id="focusSave">Set</button>
+        </div>
+        <div class="focusswap">
+          <span>Swap with</span>
+          <select id="swapSel"><option value="">choose a rehearsal...</option>
+            ${others.map(k=>{const [yy,mm,dd]=k.split("-").map(Number);return `<option value="${k}">${MONTHS[mm-1].slice(0,3)} ${dd} &mdash; ${esc(effectiveFocus(k)||"Rehearsal")}</option>`;}).join("")}
+          </select>
+        </div>`;
+    }
+    if(ev.miss.length){
+      h+=`<div class="mmiss"><div class="lbl">Expected absences</div>`;
+      ev.miss.forEach(mm=>h+=`<div class="row${mm.tent?" tent":""}"><span class="dot"></span><span><b>${mm.name}</b>${mm.tent?" (tentative)":""}<br><small>${mm.reason}</small></span></div>`);
+      h+=`</div>`;
+    }
+  }
+  h+=`<div class="nlabel">Your notes for this day</div>
+      <textarea id="noteArea" placeholder="Scene focus, who to call, props to prep...">${esc(calNotes[key]||"")}</textarea>
+      <div class="mactions"><button class="close" id="closeBtn">Close</button><button class="save" id="saveBtn">Save note</button></div>`;
+  modal.innerHTML=h; scrim.classList.add("open");
+  const fSave=document.getElementById("focusSave");
+  if(fSave) fSave.onclick=()=>{ setFocus(activeKey,document.getElementById("focusInput").value); renderCalendar(); openDay(activeKey); toast("Focus updated."); };
+  const swapSel=document.getElementById("swapSel");
+  if(swapSel) swapSel.onchange=()=>{ if(swapSel.value){ swapFocus(activeKey,swapSel.value); const k=activeKey; openDay(k); toast("Swapped."); } };
+  document.getElementById("saveBtn").onclick=()=>{
+    const v=document.getElementById("noteArea").value;
+    if(v.trim())calNotes[activeKey]=v; else delete calNotes[activeKey];
+    write(K_CAL,calNotes); renderCalendar(); closeModal(); toast("Note saved.");
+  };
+  document.getElementById("closeBtn").onclick=closeModal;
+  const ta=document.getElementById("noteArea"); ta.focus(); ta.setSelectionRange(ta.value.length,ta.value.length);
+}
+function closeModal(){scrim.classList.remove("open");activeKey=null;}
+scrim.addEventListener("click",e=>{if(e.target===scrim)closeModal();});
+document.addEventListener("keydown",e=>{if(e.key==="Escape"&&scrim.classList.contains("open"))closeModal();});
+
+/* ========================= CAST ========================= */
+const castBoard=document.getElementById("castBoard");
+const STATUS=["Not contacted","Contacted","Confirmed","Follow up needed"];
+function crec(id){ if(!castState[id])castState[id]={status:0,notes:"",updates:[]}; if(!castState[id].forms)castState[id].forms={received:false,liability:false,conduct:false}; return castState[id]; }
+function renderCast(){
+  castBoard.innerHTML="";
+  GROUPS.forEach((g,gi)=>{
+    const members=CAST.filter(c=>c.group===gi);
+    const sec=document.createElement("section");
+    const head=document.createElement("div"); head.className="act";
+    head.innerHTML=`<h2>${g}</h2><span class="li"></span><span class="ct">${members.length}</span>`;
+    sec.appendChild(head);
+    const grid=document.createElement("div"); grid.className="grid";
+    members.forEach(c=>grid.appendChild(castCard(c)));
+    sec.appendChild(grid); castBoard.appendChild(sec);
+  });
+  applyCastFilters(); updateCastStats();
+}
+function castCard(c){
+  const r=crec(c.id);
+  const el=document.createElement("article");
+  el.className="card"+(FLAG.has(c.id)?" flagged":"");
+  el.dataset.id=c.id; el.dataset.name=c.name.toLowerCase();
+  el.dataset.roles=c.roles.map(x=>x[0]).join(" ").toLowerCase(); el.dataset.group=String(c.group);
+  const roles=c.roles.map(([n,lead])=>`<span class="role${lead?" lead":""}">${n}</span>`).join("");
+  el.innerHTML=`
+    <div class="top"><h3 class="name">${c.name}</h3>
+      <select class="seal s${r.status}" data-act="status" aria-label="Status for ${c.name}">
+        ${STATUS.map((s,i)=>`<option value="${i}"${i===r.status?" selected":""}>${s}</option>`).join("")}
+      </select></div>
+    <div class="roles">${roles}</div>
+    <div class="contact"><a href="tel:${c.phone.replace(/[^0-9]/g,"")}">${phoneIcon()} ${c.phone}</a><button class="copy" data-act="copyPhone">copy</button></div>
+    <div class="contact"><a href="mailto:${c.email}">${mailIcon()} ${c.email}</a><button class="copy" data-act="copyEmail">copy</button></div>
+    <div class="paperwork${r.forms.received&&r.forms.liability&&r.forms.conduct?" done":""}">
+      <span class="pwlabel">Paperwork</span>
+      <label><input type="checkbox" data-form="received"${r.forms.received?" checked":""}> Forms in</label>
+      <label><input type="checkbox" data-form="liability"${r.forms.liability?" checked":""}> Liability</label>
+      <label><input type="checkbox" data-form="conduct"${r.forms.conduct?" checked":""}> Code of conduct</label>
+    </div>
+    <details class="ref"><summary>From the audition form</summary><div class="ref-body">
+        <div class="${/major|overlap|immovable|contradictor|transplant|3rd shift|clarif/i.test(c.conflicts+c.comfort)?"warnrow":""}"><span class="lbl">Conflicts</span> ${c.conflicts||"None noted."}</div>
+        <div style="margin-top:6px"><span class="lbl">Comfort / access</span> ${c.comfort||"Not specified."}</div>
+        ${c.note?`<div style="margin-top:6px"><span class="lbl">Casting note</span> ${c.note}</div>`:""}
+      </div></details>
+    <div class="fieldlabel">Notes</div>
+    <textarea data-act="notes" placeholder="Costume sizes, blocking reminders...">${esc(r.notes)}</textarea>
+    <div class="fieldlabel">Updates</div>
+    <div class="updates">${r.updates.map((u,i)=>updateHTML(u,i)).join("")}</div>
+    <div class="addupdate"><input type="text" data-act="updateInput" placeholder="Log an update..."><button data-act="addUpdate">Add</button></div>`;
+  return el;
+}
+function updateHTML(u,i){return `<div class="update" data-i="${i}"><button class="x" data-act="delUpdate" title="Remove">&times;</button><span class="when">${u.when}</span><span class="txt">${esc(u.text)}</span></div>`;}
+
+castBoard.addEventListener("click",e=>{
+  const btn=e.target.closest("[data-act]"); if(!btn)return;
+  const cardEl=e.target.closest(".card"); const id=cardEl&&cardEl.dataset.id; const c=CAST.find(x=>x.id===id);
+  const act=btn.dataset.act;
+  if(act==="copyPhone")copy(c.phone,btn);
+  else if(act==="copyEmail")copy(c.email,btn);
+  else if(act==="addUpdate")addCastUpdate(cardEl,id);
+  else if(act==="delUpdate"){const i=+e.target.closest(".update").dataset.i;crec(id).updates.splice(i,1);write(K_CAST,castState);refreshUpdates(cardEl,id);}
+});
+castBoard.addEventListener("keydown",e=>{
+  if(e.target.dataset.act==="updateInput"&&e.key==="Enter"){e.preventDefault();addCastUpdate(e.target.closest(".card"),e.target.closest(".card").dataset.id);}
+});
+castBoard.addEventListener("change",e=>{
+  if(e.target.dataset.act==="status"){
+    const cardEl=e.target.closest(".card"); const r=crec(cardEl.dataset.id);
+    r.status=+e.target.value; e.target.className="seal s"+r.status; write(K_CAST,castState); updateCastStats(); applyCastFilters();
+  } else if(e.target.dataset.form){
+    const cardEl=e.target.closest(".card"); const r=crec(cardEl.dataset.id);
+    r.forms[e.target.dataset.form]=e.target.checked;
+    const pw=e.target.closest(".paperwork");
+    pw.classList.toggle("done", r.forms.received&&r.forms.liability&&r.forms.conduct);
+    write(K_CAST,castState); updateCastStats(); applyCastFilters();
+  }
+});
+castBoard.addEventListener("input",e=>{
+  if(e.target.dataset.act==="notes"){crec(e.target.closest(".card").dataset.id).notes=e.target.value;write(K_CAST,castState);}
+});
+function addCastUpdate(cardEl,id){
+  const input=cardEl.querySelector('[data-act="updateInput"]'); const text=input.value.trim(); if(!text)return;
+  const when=new Date().toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"});
+  crec(id).updates.unshift({when,text}); write(K_CAST,castState); input.value=""; refreshUpdates(cardEl,id); input.focus();
+}
+function refreshUpdates(cardEl,id){cardEl.querySelector(".updates").innerHTML=crec(id).updates.map((u,i)=>updateHTML(u,i)).join("");}
+
+const q=document.getElementById("q"),fStatus=document.getElementById("fStatus"),fGroup=document.getElementById("fGroup"),fForms=document.getElementById("fForms");
+[q,fStatus,fGroup,fForms].forEach(el=>el.addEventListener("input",applyCastFilters));
+function applyCastFilters(){
+  const term=q.value.trim().toLowerCase(), st=fStatus.value, gp=fGroup.value, ff=fForms.value;
+  const gpIndex=gp?GROUPS.findIndex(g=>g===gp.replace(/&amp;/g,"&")):-1;
+  let vis=[0,0,0,0];
+  document.querySelectorAll("#castBoard .card").forEach(el=>{
+    const r=crec(el.dataset.id); let ok=true;
+    if(term&&!(el.dataset.name.includes(term)||el.dataset.roles.includes(term)))ok=false;
+    if(st!==""&&String(r.status)!==st)ok=false;
+    if(gp!==""&&gpIndex!==-1&&String(gpIndex)!==el.dataset.group)ok=false;
+    if(ff){ const complete=r.forms.received&&r.forms.liability&&r.forms.conduct; if(ff==="complete"&&!complete)ok=false; if(ff==="incomplete"&&complete)ok=false; }
+    el.classList.toggle("hidden",!ok); if(ok)vis[+el.dataset.group]++;
+  });
+  document.querySelectorAll("#castBoard section").forEach((s,i)=>s.style.display=vis[i]?"":"none");
+  let empty=document.getElementById("castEmpty");
+  if(!vis.some(n=>n>0)){ if(!empty){empty=document.createElement("div");empty.id="castEmpty";empty.className="empty";empty.textContent="No cast members match. Adjust the search or filters.";castBoard.appendChild(empty);} }
+  else if(empty)empty.remove();
+}
+function updateCastStats(){
+  let conf=0,forms=0; CAST.forEach(c=>{const r=crec(c.id); if(r.status===2)conf++; if(r.forms.received&&r.forms.liability&&r.forms.conduct)forms++;});
+  document.getElementById("stTotal").textContent=CAST.length;
+  document.getElementById("stConf").textContent=conf;
+  document.getElementById("stForms").textContent=forms+"/"+CAST.length;
+}
+
+/* ========================= REHEARSAL NOTES ========================= */
+const nDate=document.getElementById("nDate"),nTag=document.getElementById("nTag"),nPerson=document.getElementById("nPerson"),
+      nText=document.getElementById("nText"),noteFeed=document.getElementById("noteFeed"),
+      nSearch=document.getElementById("nSearch"),nfTag=document.getElementById("nfTag"),nfPerson=document.getElementById("nfPerson");
+function initNotesControls(){
+  nDate.value=TODAY_ISO;
+  TAGS.forEach(([t])=>{ nTag.insertAdjacentHTML("beforeend",`<option>${t}</option>`); nfTag.insertAdjacentHTML("beforeend",`<option>${t}</option>`); });
+  nPerson.insertAdjacentHTML("beforeend",`<option value="">No one in particular</option>`);
+  CAST.forEach(c=>{ nPerson.insertAdjacentHTML("beforeend",`<option value="${c.id}">${c.name}</option>`); nfPerson.insertAdjacentHTML("beforeend",`<option value="${c.id}">${c.name}</option>`); });
+}
+document.getElementById("nAdd").onclick=()=>{
+  const text=nText.value.trim(); if(!text){toast("Write the note first.");return;}
+  rehNotes.unshift({id:"n"+Date.now(),date:nDate.value||TODAY_ISO,ts:Date.now(),tag:nTag.value,person:nPerson.value,text});
+  write(K_REH,rehNotes); nText.value=""; renderNotes(); toast("Note added.");
+};
+[nSearch,nfTag,nfPerson].forEach(el=>el.addEventListener("input",renderNotes));
+noteFeed.addEventListener("click",e=>{
+  const del=e.target.closest(".del"); if(!del)return;
+  const id=del.closest(".note").dataset.id; rehNotes=rehNotes.filter(n=>n.id!==id); write(K_REH,rehNotes); renderNotes();
+});
+function tagColor(t){const f=TAGS.find(x=>x[0]===t);return f?f[1]:"#8a6f33";}
+function fmtDate(d){const [y,m,dd]=d.split("-").map(Number);return MONTHS[m-1].slice(0,3)+" "+dd+", "+y;}
+function renderNotes(){
+  const term=nSearch.value.trim().toLowerCase(), ft=nfTag.value, fp=nfPerson.value;
+  const list=rehNotes.filter(n=>{
+    if(ft&&n.tag!==ft)return false;
+    if(fp&&n.person!==fp)return false;
+    if(term){const person=n.person?(CAST.find(c=>c.id===n.person)||{}).name||"":""; if(!(n.text.toLowerCase().includes(term)||(person.toLowerCase().includes(term))||n.tag.toLowerCase().includes(term)))return false;}
+    return true;
+  }).sort((a,b)=>b.ts-a.ts);
+  if(!list.length){ noteFeed.innerHTML=`<div class="empty">${rehNotes.length?"No notes match. Adjust the filters.":"No notes yet. Add your first one above."}</div>`; return; }
+  noteFeed.innerHTML=list.map(n=>{
+    const col=tagColor(n.tag);
+    const person=n.person?(CAST.find(c=>c.id===n.person)||{}).name:"";
+    return `<div class="note" data-id="${n.id}" style="border-left-color:${col}">
+      <button class="del" title="Delete">&times;</button>
+      <div class="meta">
+        <span class="ndate">${fmtDate(n.date)}</span>
+        <span class="chip" style="color:${col};border-color:${col}">${n.tag}</span>
+        ${person?`<span class="chip-person">${person}</span>`:""}
+      </div>
+      <div class="body">${esc(n.text)}</div></div>`;
+  }).join("");
+}
+
+/* ========================= BACKUP (all tabs) ========================= */
+document.getElementById("exportBtn").onclick=()=>{
+  const bundle={app:"macbeth-production-hub",version:2,exported:new Date().toISOString(),
+    cast:castState,calendarNotes:calNotes,rehearsalNotes:rehNotes,focusOverrides:focusOv};
+  const blob=new Blob([JSON.stringify(bundle,null,2)],{type:"application/json"});
+  const a=document.createElement("a"); a.href=URL.createObjectURL(blob);
+  a.download="macbeth-hub-backup-"+new Date().toISOString().slice(0,10)+".json";
+  a.click(); URL.revokeObjectURL(a.href); toast("Backup downloaded.");
+};
+document.getElementById("importBtn").onclick=()=>document.getElementById("importFile").click();
+document.getElementById("importFile").onchange=e=>{
+  const f=e.target.files[0]; if(!f)return;
+  const r=new FileReader();
+  r.onload=()=>{
+    try{
+      const d=JSON.parse(r.result);
+      if(d.cast||d.calendarNotes||d.rehearsalNotes||d.focusOverrides){
+        if(d.cast)castState=d.cast;
+        if(d.calendarNotes)calNotes=d.calendarNotes;
+        if(Array.isArray(d.rehearsalNotes))rehNotes=d.rehearsalNotes;
+        if(d.focusOverrides)focusOv=d.focusOverrides;
+      } else throw 0;
+      write(K_CAST,castState); write(K_CAL,calNotes); write(K_REH,rehNotes); write(K_FOCUS,focusOv);
+      renderCalendar(); renderCast(); renderNotes(); toast("Backup loaded.");
+    }catch(err){ toast("That file could not be read as a backup."); }
+    e.target.value="";
+  };
+  r.readAsText(f);
+};
+
+/* ========================= HELPERS ========================= */
+let toastTimer;
+function toast(msg){const t=document.getElementById("toast");t.textContent=msg;t.classList.add("show");clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove("show"),2200);}
+function esc(s){return (s||"").replace(/[&<>"]/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[m]));}
+function copy(text,btn){navigator.clipboard.writeText(text).then(()=>{const o=btn.textContent;btn.textContent="copied";btn.classList.add("done");setTimeout(()=>{btn.textContent=o;btn.classList.remove("done");},1200);}).catch(()=>toast("Copy failed."));}
+function phoneIcon(){return '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6 19.8 19.8 0 0 1-3.1-8.7A2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.7a2 2 0 0 1-.5 2.1L8.1 9.9a16 16 0 0 0 6 6l1.4-1.2a2 2 0 0 1 2.1-.5c.9.3 1.8.6 2.7.7a2 2 0 0 1 1.7 2z"/></svg>';}
+function mailIcon(){return '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m2 6 10 7L22 6"/></svg>';}
+
+/* ========================= INIT ========================= */
+renderCalendar();
+renderCast();
+initNotesControls();
+renderNotes();
+</script>
+</body>
+</html>
