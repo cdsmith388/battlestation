@@ -236,6 +236,16 @@ label.flab{font-family:var(--mono);font-size:.62rem;letter-spacing:.1em;text-tra
 #ghost{position:fixed;z-index:100;pointer-events:none;display:none;transform:translate(-50%,-60%) scale(1.18);filter:drop-shadow(0 6px 10px rgba(46,43,38,.25))}
 #ghost .tico{font-size:1.5rem;background:var(--card);border:1px solid var(--line);width:46px;height:46px;border-radius:13px;display:flex;align-items:center;justify-content:center}
 
+/* nutrition label */
+.nlabel{border:1.5px solid var(--ink);border-radius:8px;padding:10px 12px;margin-top:12px;background:var(--card)}
+.nlabel .ntitle{font-family:var(--mono);font-weight:700;font-size:.78rem;letter-spacing:.08em;text-transform:uppercase;border-bottom:5px solid var(--ink);padding-bottom:5px;margin-bottom:6px}
+.nlabel .nserv{font-family:var(--mono);font-size:.66rem;color:var(--ink2);margin-bottom:4px}
+.nlabel .ncal{display:flex;justify-content:space-between;align-items:baseline;border-bottom:3px solid var(--ink);padding-bottom:5px;margin-bottom:5px}
+.nlabel .ncal b{font-family:var(--mono);font-size:1.3rem}
+.nlabel .nrow{display:flex;justify-content:space-between;font-size:.78rem;padding:3px 0;border-bottom:1px solid var(--line);font-family:var(--mono)}
+.nlabel .nrow:last-child{border-bottom:none}
+.nlabel .nfoot{font-size:.6rem;color:var(--ink3);margin-top:6px;font-style:italic}
+
 .empty{color:var(--ink3);font-size:.85rem;padding:14px 4px;text-align:center;font-style:italic}
 .hint{font-size:.75rem;color:var(--ink3);margin-top:6px;line-height:1.4}
 .why-link{font-family:var(--mono);font-size:.62rem;color:var(--teal);cursor:pointer;text-decoration:underline dotted;background:none;border:none;padding:0}
@@ -339,6 +349,73 @@ const BOOK={
  'DUDE Wipes':           {cat:'Personal',per:'48-count',p:{Walmart:8.98,Kroger:9.99,Costco:19.99},v:0},
  'Dog food (Luna)':      {cat:'Pet',per:'30-40 lb',p:{Walmart:32.98,Kroger:34.99,ALDI:19.99,Costco:38.99},v:0},
  'Dog training pads':    {cat:'Pet',per:'50-100 ct',p:{Walmart:14.97,Kroger:16.99,ALDI:12.99,Costco:19.99},v:0},
+ /* standard staples, estimated Dalton area prices */
+ 'Whole milk':           {cat:'Dairy',per:'gallon',p:{Walmart:3.18,Kroger:3.49,ALDI:2.95,Costco:3.29},v:0},
+ '2% milk':              {cat:'Dairy',per:'gallon',p:{Walmart:3.18,Kroger:3.49,ALDI:2.95,Costco:3.29},v:0},
+ 'Butter':               {cat:'Dairy',per:'1 lb',p:{Walmart:4.48,Kroger:4.99,ALDI:3.75,Costco:11.99},v:0},
+ 'Shredded cheddar':     {cat:'Dairy',per:'8 oz',p:{Walmart:2.42,Kroger:2.99,ALDI:1.95,Costco:12.99},v:0},
+ 'American cheese slices':{cat:'Dairy',per:'24 ct',p:{Walmart:2.98,Kroger:3.49,ALDI:2.25},v:0},
+ 'Cream cheese':         {cat:'Dairy',per:'8 oz',p:{Walmart:2.78,Kroger:2.99,ALDI:1.79},v:0},
+ 'Greek yogurt':         {cat:'Dairy',per:'32 oz',p:{Walmart:5.48,Kroger:5.99,ALDI:4.29,Costco:7.99},v:0},
+ 'Sour cream':           {cat:'Dairy',per:'16 oz',p:{Walmart:2.42,Kroger:2.69,ALDI:1.75},v:0},
+ 'String cheese':        {cat:'Dairy',per:'12 ct',p:{Walmart:3.98,Kroger:4.49,ALDI:3.19,Costco:11.99},v:0},
+ 'Ground beef 80/20':    {cat:'Protein',per:'per lb',p:{Walmart:4.97,Kroger:5.49,ALDI:4.29,Costco:4.49},v:0},
+ 'Bacon':                {cat:'Protein',per:'12 oz',p:{Walmart:4.97,Kroger:5.49,ALDI:3.99,Costco:15.99},v:0},
+ 'Hot dogs':             {cat:'Protein',per:'8 ct',p:{Walmart:3.48,Kroger:2.99,ALDI:2.19},v:0},
+ 'Deli turkey':          {cat:'Protein',per:'9 oz',p:{Walmart:4.48,Kroger:4.99,ALDI:3.49},v:0},
+ 'Deli ham':             {cat:'Protein',per:'9 oz',p:{Walmart:4.48,Kroger:4.99,ALDI:3.29},v:0},
+ 'Canned tuna':          {cat:'Protein',per:'5 oz can',p:{Walmart:1.28,Kroger:1.49,ALDI:0.99,Costco:15.99},v:0},
+ 'Rotisserie chicken':   {cat:'Protein',per:'whole',p:{Walmart:6.98,Kroger:7.99,Costco:4.99},v:0},
+ 'Chicken nuggets':      {cat:'Frozen',per:'2 lb bag',p:{Walmart:7.98,Kroger:8.49,ALDI:6.49,Costco:14.99},v:0},
+ 'Ground turkey':        {cat:'Protein',per:'1 lb',p:{Walmart:4.98,Kroger:5.49,ALDI:3.99},v:0},
+ 'Pork chops':           {cat:'Protein',per:'per lb',p:{Walmart:3.98,Kroger:4.49,ALDI:3.79},v:0},
+ 'Potatoes':             {cat:'Produce',per:'5 lb bag',p:{Walmart:3.97,Kroger:4.49,ALDI:3.49},v:0},
+ 'Onions':               {cat:'Produce',per:'3 lb bag',p:{Walmart:2.98,Kroger:3.49,ALDI:2.49},v:0},
+ 'Baby carrots':         {cat:'Produce',per:'1 lb',p:{Walmart:1.48,Kroger:1.79,ALDI:1.09},v:0},
+ 'Broccoli':             {cat:'Produce',per:'per lb',p:{Walmart:2.28,Kroger:2.49,ALDI:1.89},v:0},
+ 'Romaine hearts':       {cat:'Produce',per:'3 ct',p:{Walmart:3.48,Kroger:3.99,ALDI:2.99,Costco:4.99},v:0},
+ 'Tomatoes':             {cat:'Produce',per:'per lb',p:{Walmart:1.98,Kroger:2.29,ALDI:1.69},v:0},
+ 'Strawberries':         {cat:'Produce',per:'1 lb',p:{Walmart:3.48,Kroger:3.99,ALDI:2.49,Costco:6.99},v:0},
+ 'Blueberries':          {cat:'Produce',per:'pint',p:{Walmart:3.98,Kroger:4.49,ALDI:3.29,Costco:7.99},v:0},
+ 'Oranges':              {cat:'Produce',per:'4 lb bag',p:{Walmart:5.98,Kroger:6.49,ALDI:4.99},v:0},
+ 'Avocados':             {cat:'Produce',per:'each',p:{Walmart:0.98,Kroger:1.25,ALDI:0.85,Costco:6.99},v:0},
+ 'Bell peppers':         {cat:'Produce',per:'3 ct',p:{Walmart:3.48,Kroger:3.99,ALDI:2.99},v:0},
+ 'White rice':           {cat:'Pantry',per:'5 lb',p:{Walmart:3.98,Kroger:4.49,ALDI:3.29,Costco:8.99},v:0},
+ 'Spaghetti':            {cat:'Pantry',per:'16 oz',p:{Walmart:1.24,Kroger:1.49,ALDI:0.95},v:0},
+ 'Pasta sauce':          {cat:'Pantry',per:'24 oz',p:{Walmart:1.98,Kroger:2.29,ALDI:1.65},v:0},
+ 'Mac and cheese':       {cat:'Pantry',per:'box',p:{Walmart:1.00,Kroger:1.19,ALDI:0.75},v:0},
+ 'Flour':                {cat:'Pantry',per:'5 lb',p:{Walmart:2.98,Kroger:3.29,ALDI:2.29},v:0},
+ 'Sugar':                {cat:'Pantry',per:'4 lb',p:{Walmart:3.48,Kroger:3.79,ALDI:2.75},v:0},
+ 'Olive oil':            {cat:'Pantry',per:'17 oz',p:{Walmart:7.98,Kroger:8.99,ALDI:5.99,Costco:19.99},v:0},
+ 'Vegetable oil':        {cat:'Pantry',per:'48 oz',p:{Walmart:4.48,Kroger:4.79,ALDI:3.79},v:0},
+ 'Ketchup':              {cat:'Pantry',per:'32 oz',p:{Walmart:3.48,Kroger:3.99,ALDI:2.49},v:0},
+ 'Mustard':              {cat:'Pantry',per:'20 oz',p:{Walmart:1.98,Kroger:2.29,ALDI:1.35},v:0},
+ 'Mayonnaise':           {cat:'Pantry',per:'30 oz',p:{Walmart:4.98,Kroger:5.49,ALDI:3.49,Costco:9.99},v:0},
+ 'Salsa':                {cat:'Pantry',per:'16 oz',p:{Walmart:2.48,Kroger:2.99,ALDI:1.89},v:0},
+ 'Ramen 12-pack':        {cat:'Pantry',per:'12 pk',p:{Walmart:3.12,Kroger:3.49,ALDI:2.99},v:0},
+ 'Chicken noodle soup':  {cat:'Pantry',per:'can',p:{Walmart:1.58,Kroger:1.79,ALDI:1.19},v:0},
+ 'Oatmeal':              {cat:'Breakfast',per:'42 oz',p:{Walmart:4.48,Kroger:4.99,ALDI:3.29,Costco:9.99},v:0},
+ 'Tortillas':            {cat:'Pantry',per:'10 ct',p:{Walmart:2.98,Kroger:3.29,ALDI:2.19},v:0},
+ 'Hamburger buns':       {cat:'Breakfast',per:'8 ct',p:{Walmart:1.98,Kroger:2.29,ALDI:1.35},v:0},
+ 'Pancake syrup':        {cat:'Breakfast',per:'24 oz',p:{Walmart:2.98,Kroger:3.29,ALDI:2.19},v:0},
+ 'Potato chips':         {cat:'Snacks',per:'party size',p:{Walmart:3.98,Kroger:4.49,ALDI:1.99},v:0},
+ 'Tortilla chips':       {cat:'Snacks',per:'13 oz',p:{Walmart:2.98,Kroger:3.49,ALDI:1.99},v:0},
+ 'Saltine crackers':     {cat:'Snacks',per:'16 oz',p:{Walmart:1.98,Kroger:2.29,ALDI:1.35},v:0},
+ 'Black beans':          {cat:'Pantry',per:'can',p:{Walmart:0.98,Kroger:1.19,ALDI:0.79},v:0},
+ 'Cream of mushroom':    {cat:'Pantry',per:'can',p:{Walmart:1.28,Kroger:1.49,ALDI:0.95},v:0},
+ 'Frozen pizza':         {cat:'Frozen',per:'each',p:{Walmart:3.98,Kroger:4.49,ALDI:2.99,Costco:13.99},v:0},
+ 'Ice cream':            {cat:'Frozen',per:'48 oz',p:{Walmart:3.48,Kroger:3.99,ALDI:2.49},v:0},
+ 'Frozen mixed vegetables':{cat:'Frozen',per:'12 oz',p:{Walmart:1.18,Kroger:1.29,ALDI:0.95},v:0},
+ 'Frozen fries':         {cat:'Frozen',per:'32 oz',p:{Walmart:2.98,Kroger:3.29,ALDI:2.49},v:0},
+ 'Frozen broccoli':      {cat:'Frozen',per:'12 oz',p:{Walmart:1.18,Kroger:1.29,ALDI:0.95},v:0},
+ 'Orange juice':         {cat:'Drinks',per:'52 oz',p:{Walmart:3.98,Kroger:4.49,ALDI:2.99},v:0},
+ 'Apple juice':          {cat:'Drinks',per:'64 oz',p:{Walmart:2.48,Kroger:2.79,ALDI:1.99},v:0},
+ 'Paper towels':         {cat:'Household',per:'6 rolls',p:{Walmart:7.98,Kroger:8.99,ALDI:5.99,Costco:21.99},v:0},
+ 'Dish soap':            {cat:'Household',per:'19 oz',p:{Walmart:3.48,Kroger:3.99,ALDI:2.49},v:0},
+ 'Laundry detergent':    {cat:'Household',per:'92 oz',p:{Walmart:11.98,Kroger:12.99,ALDI:8.99,Costco:21.99},v:0},
+ 'Dishwasher pods':      {cat:'Household',per:'32 ct',p:{Walmart:6.98,Kroger:7.99,ALDI:5.49,Costco:13.99},v:0},
+ 'Aluminum foil':        {cat:'Household',per:'75 sq ft',p:{Walmart:2.98,Kroger:3.49,ALDI:2.19},v:0},
+ 'Shampoo':              {cat:'Personal',per:'20 oz',p:{Walmart:4.98,Kroger:5.49,ALDI:3.49},v:0},
 };
 
 /* ---------- item icons ---------- */
@@ -360,14 +437,132 @@ const ICONS={
  'Toothpaste 2-pack':'🦷','Toothbrushes 4-pack':'🪥','Bar soap 8-pack':'🧼','Body wash':'🧴',
  'Razors 4-pack':'🪒','DUDE Wipes':'🧻',
  'Dog food (Luna)':'🐕','Dog training pads':'🐾',
+ 'Whole milk':'🥛','2% milk':'🥛','Butter':'🧈','Shredded cheddar':'🧀','American cheese slices':'🧀',
+ 'Cream cheese':'🥯','Greek yogurt':'🍦','Sour cream':'🥣','String cheese':'🧀',
+ 'Ground beef 80/20':'🥩','Bacon':'🥓','Hot dogs':'🌭','Deli turkey':'🦃','Deli ham':'🍖',
+ 'Canned tuna':'🐟','Rotisserie chicken':'🍗','Chicken nuggets':'🍗','Ground turkey':'🦃','Pork chops':'🥩',
+ 'Potatoes':'🥔','Onions':'🧅','Baby carrots':'🥕','Broccoli':'🥦','Romaine hearts':'🥬',
+ 'Tomatoes':'🍅','Strawberries':'🍓','Blueberries':'🫐','Oranges':'🍊','Avocados':'🥑','Bell peppers':'🫑',
+ 'White rice':'🍚','Spaghetti':'🍝','Pasta sauce':'🍅','Mac and cheese':'🧀','Flour':'🌾','Sugar':'🍬',
+ 'Olive oil':'🫒','Vegetable oil':'🌻','Ketchup':'🍅','Mustard':'🟡','Mayonnaise':'🥚','Salsa':'🌶️',
+ 'Ramen 12-pack':'🍜','Chicken noodle soup':'🍲','Oatmeal':'🥣','Tortillas':'🫓','Hamburger buns':'🍔',
+ 'Pancake syrup':'🍁','Potato chips':'🥔','Tortilla chips':'🌮','Saltine crackers':'🍘',
+ 'Black beans':'🫘','Cream of mushroom':'🍄','Frozen pizza':'🍕','Ice cream':'🍨',
+ 'Frozen mixed vegetables':'🥗','Frozen fries':'🍟','Frozen broccoli':'🥦',
+ 'Orange juice':'🍊','Apple juice':'🧃','Paper towels':'🧻','Dish soap':'🫧','Laundry detergent':'🧺',
+ 'Dishwasher pods':'🍽️','Aluminum foil':'🎞️','Shampoo':'🧴',
 };
-const CAT_ICONS={Produce:'🥕',Protein:'🍖',Drinks:'🥤',Breakfast:'🥣',Pantry:'🥫',Snacks:'🍿',Coffee:'☕',Household:'🧺',Personal:'🧼',Pet:'🐾'};
+const CAT_ICONS={Produce:'🥕',Protein:'🍖',Drinks:'🥤',Breakfast:'🥣',Pantry:'🥫',Snacks:'🍿',Coffee:'☕',Household:'🧺',Personal:'🧼',Pet:'🐾',Dairy:'🥛',Frozen:'❄️'};
+
+/* ---------- nutrition facts: typical label values per serving ---------- */
+/* s serving · cal calories · f fat g · c carbs g · su sugars g · p protein g · na sodium mg */
+const NUTRI={
+ 'Sunbeam bread':{s:'2 slices',cal:140,f:2,c:26,su:4,p:4,na:230},
+ 'Frosted Flakes':{s:'1⅓ cup',cal:150,f:0,c:37,su:12,p:1,na:190},
+ 'Kodiak pancake mix':{s:'½ cup mix',cal:190,f:2,c:30,su:3,p:14,na:380},
+ 'Honey Nut Cheerios':{s:'1 cup',cal:110,f:1.5,c:23,su:9,p:2,na:160},
+ 'Frosted Mini-Wheats':{s:'25 biscuits',cal:210,f:1,c:50,su:12,p:6,na:0},
+ 'Raisin Bran':{s:'1 cup',cal:190,f:1,c:46,su:17,p:5,na:200},
+ 'Frozen waffles':{s:'2 waffles',cal:180,f:6,c:27,su:3,p:4,na:370},
+ 'Protein waffles':{s:'2 waffles',cal:190,f:7,c:22,su:2,p:12,na:420},
+ 'Blueberry muffins':{s:'1 muffin',cal:340,f:16,c:46,su:26,p:4,na:300},
+ 'Honey buns':{s:'1 bun',cal:330,f:18,c:39,su:17,p:4,na:180},
+ 'Bananas':{s:'1 medium',cal:105,f:0,c:27,su:14,p:1,na:1},
+ 'Apples':{s:'1 medium',cal:95,f:0,c:25,su:19,p:0,na:2},
+ 'Grapes':{s:'1 cup',cal:62,f:0,c:16,su:15,p:1,na:3},
+ 'Celery':{s:'2 stalks',cal:15,f:0,c:3,su:1,p:1,na:70},
+ 'Chicken breast':{s:'4 oz raw',cal:120,f:2.5,c:0,su:0,p:23,na:70},
+ 'Eggs':{s:'1 large',cal:70,f:5,c:0,su:0,p:6,na:70},
+ "Milo's Zero Sugar tea":{s:'12 fl oz',cal:0,f:0,c:0,su:0,p:0,na:15},
+ 'Silk Protein choc milk':{s:'1 cup',cal:140,f:5,c:14,su:12,p:10,na:150},
+ 'Silk choc almond milk':{s:'1 cup',cal:100,f:3.5,c:17,su:16,p:1,na:160},
+ 'Sprite Zero 12-pack':{s:'1 can',cal:0,f:0,c:0,su:0,p:0,na:35},
+ 'Diet Dr Pepper 12-pack':{s:'1 can',cal:0,f:0,c:0,su:0,p:0,na:60},
+ 'Coke Zero 12-pack':{s:'1 can',cal:0,f:0,c:0,su:0,p:0,na:40},
+ 'OLIPOP 4-pack':{s:'1 can',cal:35,f:0,c:16,su:2,p:0,na:25},
+ 'Bottled water 40-pack':{s:'1 bottle',cal:0,f:0,c:0,su:0,p:0,na:0},
+ 'Peanut butter':{s:'2 tbsp',cal:190,f:16,c:8,su:3,p:7,na:140},
+ 'Jelly':{s:'1 tbsp',cal:50,f:0,c:13,su:12,p:0,na:0},
+ 'Wildflower honey':{s:'1 tbsp',cal:60,f:0,c:17,su:17,p:0,na:0},
+ 'Green beans (canned)':{s:'½ cup',cal:20,f:0,c:4,su:2,p:1,na:380},
+ 'GoGo squeeZ pouches':{s:'1 pouch',cal:60,f:0,c:15,su:11,p:0,na:0},
+ 'Goldfish crackers':{s:'55 pieces',cal:140,f:5,c:20,su:0,p:3,na:250},
+ 'Oreos':{s:'3 cookies',cal:160,f:7,c:25,su:14,p:1,na:135},
+ 'Chips Ahoy':{s:'3 cookies',cal:160,f:8,c:22,su:11,p:1,na:110},
+ 'Nutter Butter':{s:'2 cookies',cal:130,f:5.5,c:19,su:8,p:2,na:100},
+ 'Cheez-It':{s:'27 crackers',cal:150,f:8,c:17,su:0,p:3,na:230},
+ 'Pop Secret popcorn':{s:'4.5 cups popped',cal:170,f:10,c:19,su:0,p:3,na:300},
+ 'Protein bars':{s:'1 bar',cal:200,f:7,c:17,su:2,p:20,na:190},
+ 'Nabisco variety 20-pk':{s:'1 pack',cal:150,f:6,c:22,su:10,p:2,na:150},
+ 'Gevalia coffee':{s:'1 cup brewed',cal:2,f:0,c:0,su:0,p:0,na:5},
+ 'Cafe Bustelo':{s:'1 cup brewed',cal:2,f:0,c:0,su:0,p:0,na:5},
+ 'Whole milk':{s:'1 cup',cal:150,f:8,c:12,su:12,p:8,na:105},
+ '2% milk':{s:'1 cup',cal:120,f:5,c:12,su:12,p:8,na:115},
+ 'Butter':{s:'1 tbsp',cal:100,f:11,c:0,su:0,p:0,na:90},
+ 'Shredded cheddar':{s:'¼ cup',cal:110,f:9,c:1,su:0,p:6,na:180},
+ 'American cheese slices':{s:'1 slice',cal:60,f:4.5,c:2,su:1,p:3,na:230},
+ 'Cream cheese':{s:'2 tbsp',cal:100,f:9,c:2,su:2,p:2,na:105},
+ 'Greek yogurt':{s:'¾ cup',cal:100,f:0,c:6,su:4,p:17,na:60},
+ 'Sour cream':{s:'2 tbsp',cal:60,f:5,c:1,su:1,p:1,na:15},
+ 'String cheese':{s:'1 stick',cal:80,f:6,c:1,su:0,p:6,na:200},
+ 'Ground beef 80/20':{s:'4 oz raw',cal:280,f:22,c:0,su:0,p:19,na:75},
+ 'Bacon':{s:'2 slices',cal:80,f:7,c:0,su:0,p:6,na:330},
+ 'Hot dogs':{s:'1 frank',cal:150,f:13,c:2,su:1,p:5,na:480},
+ 'Deli turkey':{s:'2 oz',cal:60,f:1,c:2,su:1,p:10,na:440},
+ 'Deli ham':{s:'2 oz',cal:60,f:1.5,c:2,su:2,p:9,na:520},
+ 'Canned tuna':{s:'1 can drained',cal:100,f:0.5,c:0,su:0,p:22,na:280},
+ 'Rotisserie chicken':{s:'3 oz',cal:140,f:7,c:0,su:0,p:19,na:330},
+ 'Chicken nuggets':{s:'5 pieces',cal:210,f:13,c:13,su:0,p:10,na:400},
+ 'Ground turkey':{s:'4 oz raw',cal:170,f:8,c:0,su:0,p:21,na:80},
+ 'Pork chops':{s:'4 oz',cal:210,f:12,c:0,su:0,p:24,na:60},
+ 'Potatoes':{s:'1 medium',cal:110,f:0,c:26,su:1,p:3,na:0},
+ 'Onions':{s:'1 medium',cal:45,f:0,c:11,su:6,p:1,na:5},
+ 'Baby carrots':{s:'3 oz',cal:35,f:0,c:8,su:5,p:1,na:65},
+ 'Broccoli':{s:'1 cup',cal:30,f:0,c:6,su:1,p:2.5,na:30},
+ 'Romaine hearts':{s:'2 cups',cal:15,f:0,c:3,su:1,p:1,na:5},
+ 'Tomatoes':{s:'1 medium',cal:25,f:0,c:5,su:3,p:1,na:5},
+ 'Strawberries':{s:'1 cup',cal:50,f:0,c:12,su:7,p:1,na:0},
+ 'Blueberries':{s:'1 cup',cal:85,f:0,c:21,su:15,p:1,na:0},
+ 'Oranges':{s:'1 medium',cal:60,f:0,c:15,su:12,p:1,na:0},
+ 'Avocados':{s:'⅓ fruit',cal:80,f:7,c:4,su:0,p:1,na:0},
+ 'Bell peppers':{s:'1 medium',cal:25,f:0,c:6,su:4,p:1,na:0},
+ 'White rice':{s:'¼ cup dry',cal:160,f:0,c:36,su:0,p:3,na:0},
+ 'Spaghetti':{s:'2 oz dry',cal:200,f:1,c:42,su:2,p:7,na:0},
+ 'Pasta sauce':{s:'½ cup',cal:60,f:1.5,c:10,su:6,p:2,na:460},
+ 'Mac and cheese':{s:'1 cup prepared',cal:350,f:11,c:49,su:8,p:10,na:710},
+ 'Flour':{s:'¼ cup',cal:110,f:0,c:23,su:0,p:3,na:0},
+ 'Sugar':{s:'1 tsp',cal:15,f:0,c:4,su:4,p:0,na:0},
+ 'Olive oil':{s:'1 tbsp',cal:120,f:14,c:0,su:0,p:0,na:0},
+ 'Vegetable oil':{s:'1 tbsp',cal:120,f:14,c:0,su:0,p:0,na:0},
+ 'Ketchup':{s:'1 tbsp',cal:20,f:0,c:5,su:4,p:0,na:160},
+ 'Mustard':{s:'1 tsp',cal:0,f:0,c:0,su:0,p:0,na:55},
+ 'Mayonnaise':{s:'1 tbsp',cal:90,f:10,c:0,su:0,p:0,na:90},
+ 'Salsa':{s:'2 tbsp',cal:10,f:0,c:2,su:1,p:0,na:230},
+ 'Ramen 12-pack':{s:'½ block + seasoning',cal:190,f:7,c:27,su:1,p:5,na:890},
+ 'Chicken noodle soup':{s:'½ can',cal:60,f:1.5,c:8,su:1,p:3,na:890},
+ 'Oatmeal':{s:'½ cup dry',cal:150,f:3,c:27,su:1,p:5,na:0},
+ 'Tortillas':{s:'1 tortilla',cal:140,f:3.5,c:24,su:1,p:4,na:380},
+ 'Hamburger buns':{s:'1 bun',cal:140,f:2,c:26,su:4,p:5,na:240},
+ 'Pancake syrup':{s:'¼ cup',cal:210,f:0,c:53,su:32,p:0,na:100},
+ 'Potato chips':{s:'about 15 chips',cal:160,f:10,c:15,su:1,p:2,na:170},
+ 'Tortilla chips':{s:'about 12 chips',cal:140,f:7,c:19,su:0,p:2,na:125},
+ 'Saltine crackers':{s:'5 crackers',cal:70,f:1.5,c:12,su:0,p:1,na:135},
+ 'Black beans':{s:'½ cup',cal:110,f:0,c:20,su:0,p:7,na:460},
+ 'Cream of mushroom':{s:'½ cup',cal:90,f:6,c:8,su:1,p:1,na:870},
+ 'Frozen pizza':{s:'⅕ pizza',cal:320,f:14,c:37,su:5,p:14,na:700},
+ 'Ice cream':{s:'⅔ cup',cal:190,f:10,c:23,su:17,p:3,na:65},
+ 'Frozen mixed vegetables':{s:'⅔ cup',cal:50,f:0,c:10,su:3,p:2,na:30},
+ 'Frozen fries':{s:'about 15 fries',cal:130,f:4,c:21,su:0,p:2,na:290},
+ 'Frozen broccoli':{s:'1 cup',cal:30,f:0,c:5,su:1,p:2,na:20},
+ 'Orange juice':{s:'8 fl oz',cal:110,f:0,c:26,su:22,p:2,na:0},
+ 'Apple juice':{s:'8 fl oz',cal:120,f:0,c:28,su:24,p:0,na:10},
+};
 const LOC_ICONS={Fridge:'🧊',Freezer:'❄️',Pantry:'🚪',Counter:'🍽️',Garage:'📦'};
 function ic(name){return ICONS[name]||CAT_ICONS[(BOOK[name]||{}).cat]||'🛒';}
 function icn(name,cls){return `<span class="icn ${cls||''}">${ic(name)}</span>`;}
 
 /* perishability windows in days, by category, for the use-soon queue */
-const PERISH={Produce:6,Protein:4,Drinks:10,Breakfast:14};
+const PERISH={Produce:6,Protein:4,Drinks:10,Breakfast:14,Dairy:10};
 const QTY_WORDS=['Empty','Almost empty','About half','Mostly full','Full'];
 const LOCS=['Fridge','Freezer','Pantry','Counter','Garage'];
 
@@ -712,6 +907,39 @@ function renderPantryList(){
     <div class="hint">Confidence fades on its own: <span class="dot confirmed"></span>confirmed → <span class="dot estimated"></span>estimated → <span class="dot uncertain"></span>uncertain. Tap "still have it" to reset it.</div>
   `;
 }
+/* ---------- nutrition + product sheet ---------- */
+function nutriHTML(name){
+  const n=NUTRI[name];
+  if(!n)return'';
+  return`<div class="nlabel">
+    <div class="ntitle">Nutrition Facts</div>
+    <div class="nserv">serving: ${n.s}</div>
+    <div class="ncal"><span style="font-family:var(--mono);font-size:.78rem;font-weight:700">Calories</span><b>${n.cal}</b></div>
+    <div class="nrow"><span>Total fat</span><span>${n.f} g</span></div>
+    <div class="nrow"><span>Sodium</span><span>${n.na} mg</span></div>
+    <div class="nrow"><span>Total carbs</span><span>${n.c} g</span></div>
+    <div class="nrow"><span>&nbsp;&nbsp;Sugars</span><span>${n.su} g</span></div>
+    <div class="nrow"><span>Protein</span><span>${n.p} g</span></div>
+    <div class="nfoot">typical label values, actual product may vary</div>
+  </div>`;
+}
+function productSheet(name){
+  const b=BOOK[name];
+  const priceRows=b?STORES.filter(s=>b.p[s]!=null).sort((x,y)=>b.p[x]-b.p[y]).map((s,i)=>`
+    <div class="rrow"><span class="rname">${STORE_ICONS[s]} ${s}${i===0?'<span class="bestflag">best</span>':''}</span><span class="leader"></span><span class="rval ${i===0?'good':''}">${fmt(b.p[s])}</span></div>`).join(''):'';
+  const have=dupsFor(name);
+  openModal(`<h3><span class="icn sm">${ic(name)}</span>${name}</h3>
+    ${b?`<div class="hint" style="margin:0 0 8px">${b.per} · ${b.cat.toLowerCase()}</div>`:''}
+    ${priceRows?`<label class="flab">Prices</label>${priceRows}`:'<div class="hint">No prices tracked yet. It will be learned at checkout.</div>'}
+    ${have.length?`<label class="flab">At home</label>${have.map(d=>`<div class="rrow"><span class="rname">${LOC_ICONS[d.loc]} ${d.loc}</span><span class="leader"></span><span class="rval">${QTY_WORDS[d.qty].toLowerCase()}</span></div>`).join('')}`:''}
+    ${nutriHTML(name)}
+    <div class="spacer"></div>
+    <div class="btnrow">
+      <button class="btn primary" onclick="quickAdd('${name.replace(/'/g,"\\'")}','Manually added','manual');closeModal()">+ add to list</button>
+      <button class="btn" onclick="closeModal()">close</button>
+    </div>`);
+}
+
 /* ---------- drag and drop engine (pointer events: touch + mouse) ---------- */
 const drag={id:null,active:false,sx:0,sy:0,timer:null,el:null};
 function bindDrag(){
@@ -804,7 +1032,8 @@ function itemSheet(id){
       <button class="btn" onclick="finished('${it.id}');closeModal()">finished</button>
       <button class="btn" onclick="stillHave('${it.id}');closeModal()">still have it</button>
       <button class="btn" onclick="quickAdd('${it.name.replace(/'/g,"\\'")}','Restocking from pantry','low');closeModal()">+ list</button>
-    </div>`);
+    </div>
+    ${nutriHTML(it.name)}`);
 }
 function moveItem(id,loc){
   const it=S.inventory.find(i=>i.id===id);if(!it)return;
@@ -875,7 +1104,7 @@ function shopList(){
         <svg viewBox="0 0 24 24"><path d="M4 12l5 5 11-11"/></svg></button>
       <span class="icn" style="${l.checked?'opacity:.4;filter:grayscale(1)':''}">${ic(l.name)}</span>
       <div class="lbody">
-        <div class="lname">${l.name}${l.qty>1?' ×'+l.qty:''}</div>
+        <div class="lname" style="cursor:pointer" onclick="productSheet(this.dataset.n)" data-n="${l.name.replace(/"/g,'&quot;')}">${l.name}${l.qty>1?' ×'+l.qty:''}</div>
         <div class="lwhy">${l.why}</div>
         ${dups.length&&!l.checked?`<div class="lwhy" style="color:var(--amber)">⚠ may already have ${dups.length} at home</div>`:''}
       </div>
@@ -900,9 +1129,25 @@ function shopList(){
       <button class="btn" style="white-space:nowrap" onclick="addLi()">add</button>
     </div>
     <datalist id="booklist2">${Object.keys(BOOK).sort().map(n=>`<option value="${n}">`).join('')}</datalist>
+    <button class="btn wide ghost" onclick="browseModal()">📖 Browse the staples catalog</button>
     ${checked.length?`<button class="btn primary wide" onclick="checkoutModal()">Finish trip · ${checked.length} in cart</button>`:''}
     <div class="hint">Every item shows why it is on the list. Check items off as you shop, then finish the trip to move them into the pantry and log the spend.</div>`;
 }
+function browseModal(cat){
+  const cats=[...new Set(Object.values(BOOK).map(b=>b.cat))].sort();
+  const active=cat||cats[0];
+  const items=Object.keys(BOOK).filter(n=>BOOK[n].cat===active).sort();
+  openModal(`<h3>📖 Staples catalog</h3>
+    <div class="chips">${cats.map(c=>`<button class="chip ${c===active?'on':''}" onclick="browseModal('${c}')">${CAT_ICONS[c]||''} ${c}</button>`).join('')}</div>
+    ${items.map(n=>{const bp=bestPrice(n);const have=dupsFor(n).length;return`
+      <div class="rrow" style="cursor:pointer" onclick="productSheet(this.dataset.n)" data-n="${n.replace(/"/g,'&quot;')}">
+        <span class="rname">${icn(n,'xs')}${n}${have?' <span class="pill ok">have '+have+'</span>':''}</span>
+        <span class="leader"></span>
+        <span class="rval">${bp?fmt(bp.price):''}</span>
+      </div>`;}).join('')}
+    <div class="hint">Tap any item for prices at all four stores and its nutrition facts. Best price shown here.</div>`);
+}
+
 function toggleCheck(id){const l=S.list.find(x=>x.id===id);if(!l)return;l.checked=!l.checked;save();render();}
 function removeLi(id){S.list=S.list.filter(x=>x.id!==id);save();render();}
 function addLi(){
@@ -987,7 +1232,7 @@ function checkoutGo(){
     const b=BOOK[l.name];
     const price=b?(b.p[store]??(bestPrice(l.name)||{}).price??0):0;
     const cat=(b||{}).cat||'Pantry';
-    const loc=cat==='Produce'?'Fridge':cat==='Protein'?'Fridge':cat==='Drinks'?'Fridge':cat==='Household'||cat==='Pet'?'Garage':'Pantry';
+    const loc=cat==='Frozen'?'Freezer':cat==='Produce'||cat==='Protein'||cat==='Drinks'||cat==='Dairy'?'Fridge':cat==='Household'||cat==='Pet'?'Garage':'Pantry';
     S.inventory.push(inv(l.name,loc,4,todayISO(),price,store));
   });
   S.purchases.unshift({id:uid(),date:todayISO(),store,total:actual,items:checked.length});
