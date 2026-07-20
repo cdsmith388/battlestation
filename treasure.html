@@ -1,0 +1,2012 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Jim Hawkins: The Line Treasure Quest</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ocean:#0e1a2b; --ocean2:#13253c; --sea:#1d5b6e; --seahi:#2e7d95;
+  --parch:#e8d5a0; --parch2:#d4b978; --parchdark:#b89a5e;
+  --gold:#ffd23f; --gold2:#f2a71b; --coral:#d94f30; --coral2:#a83a22;
+  --ink:#2a1f14; --white:#f5efe0; --green:#4caf6d; --green2:#2e7d4f;
+  --purple:#6c5b9e; --hp:#e04b3a; --hpbg:#4a1810;
+}
+*{box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent;}
+html,body{height:100%;}
+body{
+  background:var(--ocean);
+  font-family:'VT323', monospace;
+  color:var(--white);
+  overflow:hidden;
+  user-select:none;
+  -webkit-user-select:none;
+  image-rendering:pixelated;
+}
+/* pixel water backdrop */
+#seaBg{
+  position:fixed; inset:0; z-index:0;
+  background:
+    repeating-linear-gradient(0deg, transparent 0 22px, rgba(46,125,149,.10) 22px 24px),
+    repeating-linear-gradient(90deg, transparent 0 46px, rgba(46,125,149,.06) 46px 48px),
+    linear-gradient(180deg, #0a1420 0%, #0e1a2b 40%, #123049 100%);
+}
+.wave{position:fixed; width:36px; height:8px; background:var(--seahi); opacity:.35; z-index:0;
+  box-shadow:12px 0 0 -2px var(--seahi), -12px 0 0 -2px var(--seahi);
+  animation:bob 3.6s ease-in-out infinite;}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(6px)}}
+
+#game{position:relative; z-index:2; height:100%; max-width:760px; margin:0 auto; display:flex; flex-direction:column;}
+
+/* ---------- HUD ---------- */
+#hud{
+  display:none; align-items:center; gap:10px; padding:8px 12px;
+  background:var(--ocean2); border-bottom:4px solid #000;
+  font-family:'Press Start 2P', monospace; font-size:11px;
+}
+#hud.show{display:flex;}
+.hudItem{display:flex; align-items:center; gap:5px; color:var(--gold);}
+.hudItem .val{color:var(--white);}
+#streakBox{color:#ff8c42;}
+#backBtn{margin-left:auto; cursor:pointer; background:var(--sea); border:3px solid #000; color:var(--white);
+  font-family:'Press Start 2P',monospace; font-size:9px; padding:7px 9px; box-shadow:0 3px 0 #000;}
+#backBtn:active{transform:translateY(2px); box-shadow:0 1px 0 #000;}
+#masteryWrap{width:100%; padding:6px 12px 8px; background:var(--ocean2); border-bottom:4px solid #000; display:none;}
+#masteryWrap.show{display:block;}
+#masteryLbl{font-family:'Press Start 2P',monospace; font-size:8px; color:var(--parch2); margin-bottom:4px; letter-spacing:1px;}
+.pbar{height:16px; background:#000; border:3px solid #000; position:relative; overflow:hidden;}
+.pbar .fill{height:100%; background:repeating-linear-gradient(90deg, var(--gold) 0 8px, var(--gold2) 8px 16px); transition:width .5s steps(8);}
+.pbar .txt{position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+  font-family:'Press Start 2P',monospace; font-size:8px; color:#fff; text-shadow:1px 1px 0 #000;}
+
+#stage{flex:1; overflow-y:auto; overflow-x:hidden; position:relative; padding-bottom:20px;}
+#stage::-webkit-scrollbar{width:10px;}
+#stage::-webkit-scrollbar-thumb{background:var(--sea); border:2px solid #000;}
+
+/* ---------- Title screen ---------- */
+#title{display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:100%; text-align:center; padding:24px; gap:18px;}
+#title h1{font-family:'Press Start 2P',monospace; font-size:clamp(18px,5vw,34px); color:var(--gold);
+  text-shadow:3px 3px 0 var(--coral2), 6px 6px 0 #000; line-height:1.5; animation:titleFloat 3s ease-in-out infinite;}
+@keyframes titleFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+#title h2{font-family:'Press Start 2P',monospace; font-size:clamp(9px,2.4vw,13px); color:var(--seahi); line-height:1.9;}
+.bigBtn{
+  font-family:'Press Start 2P',monospace; font-size:clamp(12px,3vw,16px);
+  background:var(--coral); color:#fff; border:4px solid #000; padding:16px 28px;
+  box-shadow:0 6px 0 var(--coral2), 0 6px 0 3px #000; cursor:pointer; letter-spacing:1px;
+}
+.bigBtn:active{transform:translateY(4px); box-shadow:0 2px 0 var(--coral2), 0 2px 0 3px #000;}
+.bigBtn.green{background:var(--green); box-shadow:0 6px 0 var(--green2), 0 6px 0 3px #000;}
+.bigBtn.green:active{box-shadow:0 2px 0 var(--green2), 0 2px 0 3px #000;}
+.bigBtn.gold{background:var(--gold2); color:#3a2100; box-shadow:0 6px 0 #b3780e, 0 6px 0 3px #000;}
+.bigBtn.gold:active{box-shadow:0 2px 0 #b3780e, 0 2px 0 3px #000;}
+#soundToggle{position:fixed; bottom:12px; right:12px; top:auto; z-index:50; font-family:'Press Start 2P',monospace; font-size:10px;
+  background:var(--ocean2); color:var(--gold); border:3px solid #000; padding:8px; cursor:pointer; box-shadow:0 3px 0 #000;}
+
+/* ---------- World Map (SMW style) ---------- */
+#mapScreen{padding:0 0 30px;}
+#mapTitle{font-family:'Press Start 2P',monospace; text-align:center; font-size:clamp(11px,3vw,15px); color:var(--gold); margin:12px 0; text-shadow:2px 2px 0 #000;}
+#worldMap{
+  position:relative; height:1560px; margin:0 8px; overflow:hidden;
+  border:5px solid #000; box-shadow:0 0 0 3px var(--sea);
+  background:linear-gradient(180deg,
+    #e8cf8a 0%, #dcc077 4%,            /* island beach top rim */
+    #f0dc9a 6%, #cdb069 9%,
+    #2f8f4a 10%, #1f6b38 26%,          /* island jungle */
+    #f0dc9a 27%, #d8bd78 30%,          /* island south beach */
+    #3a7ec2 31%, #1c4a8a 42%,          /* deep sea */
+    #2f6cb0 46%, #1a4680 56%,          /* sea */
+    #58c0e0 57%, #58c0e0 58%,
+    #d8bd78 58.5%, #c8ab66 60%,        /* England shore */
+    #58a050 61%, #3f8040 78%, #2f6030 100%); /* England green */
+}
+/* SNES terrain textures */
+.zoneTex{position:absolute; left:0; right:0; z-index:1; pointer-events:none;}
+.grassTex{background:
+  repeating-linear-gradient(90deg, rgba(0,0,0,.07) 0 3px, transparent 3px 7px),
+  repeating-linear-gradient(0deg, rgba(255,255,255,.05) 0 2px, transparent 2px 9px);}
+.grassTex.jungle{background:
+  radial-gradient(circle at 30% 30%, rgba(255,255,255,.08) 2px, transparent 3px),
+  repeating-linear-gradient(90deg, rgba(0,0,0,.12) 0 4px, transparent 4px 9px);
+  background-size:15px 12px, auto;}
+.sandTex{background-image:radial-gradient(circle, rgba(90,60,20,.28) 1px, transparent 1.7px); background-size:9px 7px;}
+.foamTex{background:repeating-linear-gradient(90deg, rgba(240,250,255,.95) 0 9px, transparent 9px 17px); height:6px;}
+.waterTex{background:
+  repeating-linear-gradient(0deg, rgba(255,255,255,.10) 0 2px, transparent 2px 14px),
+  repeating-linear-gradient(90deg, rgba(8,26,66,.18) 0 26px, transparent 26px 52px);
+  animation:waterScroll 7s linear infinite;}
+@keyframes waterScroll{0%{background-position:0 0, 0 0;}100%{background-position:0 28px, 52px 0;}}
+.seaSparkle{position:absolute; width:26px; height:6px; background:rgba(255,255,255,.35); pointer-events:none; animation:bob 3s ease-in-out infinite;}
+.mapNode{
+  position:absolute; width:46px; height:46px; margin:-23px 0 0 -23px; cursor:pointer; z-index:6;
+  background:var(--gold); border:4px solid #000; border-radius:50%;
+  box-shadow:0 4px 0 #000, inset -5px -5px 0 var(--gold2);
+  font-family:'Press Start 2P',monospace; font-size:13px; color:#3a2100;
+  display:flex; align-items:center; justify-content:center;
+  animation:nodePulse 1.6s steps(2) infinite;
+}
+.mapNode.beat{background:var(--green); box-shadow:0 4px 0 #000, inset -5px -5px 0 var(--green2); color:#eafff0; animation:none;}
+.mapNode:hover{transform:scale(1.15);}
+@keyframes nodePulse{0%,100%{box-shadow:0 4px 0 #000, inset -5px -5px 0 var(--gold2);}50%{box-shadow:0 4px 0 #000, inset -5px -5px 0 var(--gold2), 0 0 0 6px rgba(255,210,63,.35);}}
+.nodeSpr{position:absolute; z-index:5; pointer-events:none; transform:translate(-50%,-100%);}
+.nodeSpr canvas{filter:drop-shadow(2px 3px 0 rgba(0,0,0,.4)); animation:bob 2.6s ease-in-out infinite;}
+.nodeLbl{
+  position:absolute; z-index:7; transform:translate(-50%,0); pointer-events:none;
+  font-family:'Press Start 2P',monospace; font-size:7px; line-height:1.6; color:#fff;
+  background:rgba(0,0,0,.65); border:2px solid #000; padding:4px 6px; text-align:center; white-space:nowrap;
+}
+.nodeStars{position:absolute; z-index:7; transform:translate(-50%,0); pointer-events:none; font-size:15px; letter-spacing:1px; color:rgba(0,0,0,.35); text-shadow:1px 1px 0 rgba(255,255,255,.25);}
+.nodeStars .lit{color:var(--gold); text-shadow:1px 1px 0 #000;}
+.pathDot{position:absolute; width:8px; height:8px; background:#fff8e0; border:2px solid #000; z-index:4; margin:-4px 0 0 -4px; pointer-events:none;}
+.decor{position:absolute; z-index:3; pointer-events:none;}
+.decor canvas{filter:drop-shadow(2px 3px 0 rgba(0,0,0,.35));}
+.decor.clickable{pointer-events:auto; cursor:pointer;}
+.mtn{position:absolute; width:0; height:0; z-index:2; pointer-events:none;
+  border-left:70px solid transparent; border-right:70px solid transparent; border-bottom:95px solid #6b6b7a;}
+.mtn::after{content:''; position:absolute; left:-24px; top:34px; border-left:24px solid transparent; border-right:24px solid transparent; border-bottom:30px solid #e8e8f0;}
+.bigX{position:absolute; z-index:3; font-family:'Press Start 2P',monospace; font-size:30px; color:var(--coral); text-shadow:3px 3px 0 #000; pointer-events:none; animation:nodePulse 2s steps(2) infinite;}
+.innHouse{position:absolute; z-index:3; width:86px; pointer-events:none;}
+.innRoof{width:0;height:0;border-left:43px solid transparent;border-right:43px solid transparent;border-bottom:34px solid #8f2f1c; margin:0 auto;}
+.innBody{width:70px; height:44px; background:#a5754a; border:4px solid #000; margin:0 auto; position:relative;}
+.innBody::before{content:''; position:absolute; left:8px; top:8px; width:14px; height:14px; background:#ffd23f; border:3px solid #000;}
+.innBody::after{content:''; position:absolute; right:8px; top:8px; width:16px; height:26px; background:#4e2e18; border:3px solid #000;}
+.innSign{font-family:'Press Start 2P',monospace; font-size:6px; color:#fff; background:#000; text-align:center; padding:3px 2px; width:86px;}
+/* serpent easter egg */
+.serpentSpot{position:absolute; z-index:8; width:100px; height:110px; overflow:hidden; pointer-events:none; transform:translate(-50%,-100%);}
+.serpentSpot canvas{position:absolute; left:14px; animation:serpentRise 2.4s ease-in-out forwards;}
+@keyframes serpentRise{0%{top:120px;}25%{top:8px;}60%{top:8px; transform:rotate(0deg);}70%{transform:rotate(-8deg);}100%{top:130px; transform:rotate(-4deg);}}
+.splashPx{position:absolute; width:8px; height:8px; background:#bfe8ff; border:1px solid #2e7d95; z-index:9; pointer-events:none; animation:splashFly .7s ease-out forwards;}
+@keyframes splashFly{0%{opacity:1; transform:translate(0,0);}100%{opacity:0; transform:translate(var(--sx), var(--sy));}}
+
+/* ---------- Level intro / stage select ---------- */
+.panel{
+  margin:18px auto; max-width:560px; background:var(--ocean2);
+  border:4px solid #000; box-shadow:0 0 0 3px var(--sea), 0 8px 0 rgba(0,0,0,.55);
+  padding:18px 16px; text-align:center;
+}
+.panel h3{font-family:'Press Start 2P',monospace; font-size:clamp(11px,3vw,14px); color:var(--gold); line-height:1.8; margin-bottom:6px;}
+.panel .sub{font-size:22px; color:var(--seahi); margin-bottom:12px;}
+.stageBtn{
+  display:flex; align-items:center; gap:12px; width:100%; margin:10px 0; padding:12px 14px;
+  background:var(--sea); border:4px solid #000; box-shadow:0 4px 0 #000; cursor:pointer; text-align:left;
+  color:var(--white);
+}
+.stageBtn:active{transform:translateY(3px); box-shadow:0 1px 0 #000;}
+.stageBtn .ico{font-size:26px; width:34px; text-align:center;}
+.stageBtn .stTitle{font-family:'Press Start 2P',monospace; font-size:11px; color:var(--gold);}
+.stageBtn .stDesc{font-size:19px; color:#bcd8e2; line-height:1.1;}
+.stageBtn.done{background:var(--green2);}
+.stageBtn.done .stTitle{color:#d9ffd9;}
+.stageBtn.lockedStage{opacity:.4; pointer-events:none;}
+
+/* ---------- Play area ---------- */
+#playWrap{padding:14px 12px 30px; max-width:620px; margin:0 auto;}
+#stageHeader{display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:10px;}
+#stageName{font-family:'Press Start 2P',monospace; font-size:11px; color:var(--gold); line-height:1.7;}
+#lineCount{font-family:'Press Start 2P',monospace; font-size:9px; color:var(--seahi);}
+.miniPbar{height:12px; margin-bottom:14px;}
+
+.cueBox{
+  background:var(--parch); color:var(--ink); border:4px solid var(--ink);
+  box-shadow:0 5px 0 rgba(0,0,0,.5); padding:12px 14px; margin-bottom:14px; position:relative;
+}
+.cueBox .cueTag{font-family:'Press Start 2P',monospace; font-size:8px; color:var(--coral2); margin-bottom:6px; letter-spacing:1px;}
+.cueBox .cueTxt{font-size:clamp(22px,4.5vw,27px); line-height:1.15;}
+.lineBox{
+  background:#10314a; border:4px solid var(--seahi); box-shadow:0 5px 0 rgba(0,0,0,.5);
+  padding:14px; margin-bottom:14px;
+}
+.lineBox .lineTag{font-family:'Press Start 2P',monospace; font-size:8px; color:var(--gold); margin-bottom:8px; letter-spacing:1px;}
+.lineBox .lineTxt{font-size:clamp(24px,5vw,30px); line-height:1.2; color:var(--white);}
+.blankSlot{display:inline-block; min-width:70px; border-bottom:4px solid var(--gold); color:var(--gold); text-align:center; padding:0 4px; margin:0 2px;}
+.blankSlot.filledOk{color:var(--green); border-color:var(--green);}
+.chipRow{display:flex; flex-wrap:wrap; gap:10px; justify-content:center; margin-top:10px;}
+.chip{
+  font-family:'VT323',monospace; font-size:24px; background:var(--gold); color:#3a2100;
+  border:4px solid #000; box-shadow:0 4px 0 #b3780e, 0 4px 0 3px #000; padding:8px 16px; cursor:pointer;
+}
+.chip:active{transform:translateY(3px); box-shadow:0 1px 0 #b3780e, 0 1px 0 3px #000;}
+.chip.wrongFlash{background:var(--coral); color:#fff; animation:shakeX .3s;}
+.chip.used{opacity:.25; pointer-events:none;}
+@keyframes shakeX{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+.tileTray{display:flex; flex-wrap:wrap; gap:10px; justify-content:center; margin-top:12px;}
+.buildLine{min-height:56px; background:#0b2436; border:4px dashed var(--seahi); padding:10px; font-size:26px; line-height:1.25; margin-top:4px;}
+.buildLine .placed{color:var(--white);}
+.ctrlRow{display:flex; gap:12px; justify-content:center; margin-top:16px; flex-wrap:wrap;}
+
+/* ---------- Battle ---------- */
+#battleArena{position:relative; background:linear-gradient(180deg,#152c42 0%, #0d2033 100%);
+  border:4px solid #000; box-shadow:0 6px 0 rgba(0,0,0,.5); padding:14px 10px 10px; margin-bottom:14px;}
+#bossRow{display:flex; justify-content:space-between; align-items:flex-end; gap:10px; min-height:130px;}
+.fighter{text-align:center; width:44%;}
+.fighter canvas{filter:drop-shadow(3px 3px 0 rgba(0,0,0,.5));}
+.fighter .fname{font-family:'Press Start 2P',monospace; font-size:8px; margin-top:4px; line-height:1.6;}
+.hpbar{height:14px; background:var(--hpbg); border:3px solid #000; margin-top:5px; overflow:hidden;}
+.hpbar .hpfill{height:100%; background:var(--hp); transition:width .4s steps(6);}
+.hpbar.jimHp .hpfill{background:var(--green);}
+#bossTaunt{font-size:22px; color:var(--parch); text-align:center; min-height:26px; margin-top:8px; font-style:normal;}
+.hitFlash{animation:hitAnim .35s steps(2);}
+@keyframes hitAnim{0%{filter:brightness(3) drop-shadow(3px 3px 0 rgba(0,0,0,.5));}100%{filter:brightness(1) drop-shadow(3px 3px 0 rgba(0,0,0,.5));}}
+.shake{animation:screenShake .3s steps(4);}
+@keyframes screenShake{0%,100%{transform:translate(0,0)}25%{transform:translate(-5px,3px)}50%{transform:translate(5px,-3px)}75%{transform:translate(-3px,-2px)}}
+.hintTxt{font-size:26px; letter-spacing:3px; color:var(--gold); line-height:1.4; word-spacing:8px;}
+.gradeRow{display:flex; gap:10px; justify-content:center; margin-top:14px; flex-wrap:wrap;}
+.gradeBtn{font-family:'Press Start 2P',monospace; font-size:10px; border:4px solid #000; padding:12px 14px; cursor:pointer; box-shadow:0 4px 0 #000; color:#fff;}
+.gradeBtn:active{transform:translateY(3px); box-shadow:0 1px 0 #000;}
+.gNail{background:var(--green);}
+.gAlmost{background:var(--gold2); color:#3a2100;}
+.gMiss{background:var(--coral);}
+
+/* ---------- Feedback / fx ---------- */
+#toast{position:fixed; left:50%; top:38%; transform:translate(-50%,-50%); z-index:60;
+  font-family:'Press Start 2P',monospace; font-size:clamp(13px,4vw,20px); color:var(--gold);
+  text-shadow:3px 3px 0 #000; pointer-events:none; opacity:0;}
+#toast.pop{animation:toastPop 1s steps(6) forwards;}
+@keyframes toastPop{0%{opacity:0; transform:translate(-50%,-30%) scale(.4);}20%{opacity:1; transform:translate(-50%,-50%) scale(1.15);}40%{transform:translate(-50%,-50%) scale(1);}80%{opacity:1;}100%{opacity:0; transform:translate(-50%,-80%) scale(1);}}
+.coinFx{position:fixed; z-index:55; font-size:24px; pointer-events:none; animation:coinFly 1s ease-out forwards;}
+@keyframes coinFly{0%{opacity:1; transform:translateY(0) scale(1);}100%{opacity:0; transform:translateY(-110px) scale(1.4);}}
+.centerCol{display:flex; flex-direction:column; align-items:center; gap:14px; text-align:center; padding:20px;}
+.victoryStars{font-size:52px; letter-spacing:8px;}
+.victoryStars .lit{color:var(--gold); text-shadow:2px 2px 0 var(--coral2), 4px 4px 0 #000;}
+.victoryStars .dim{color:#3a4a5a;}
+.rewardTxt{font-size:26px; color:var(--parch); line-height:1.3;}
+.speechBubble{background:var(--white); color:var(--ink); border:4px solid #000; padding:10px 14px; font-size:24px; position:relative; max-width:420px; margin:0 auto 8px;}
+.speechBubble::after{content:''; position:absolute; bottom:-14px; left:40px; border:8px solid transparent; border-top-color:#000;}
+.smallNote{font-size:19px; color:#7fa8ba; margin-top:8px; line-height:1.2;}
+/* ---------- Treasure Chest gallery & shop ---------- */
+#chestBtn{cursor:pointer; background:var(--gold2); border:3px solid #000; color:#3a2100;
+  font-family:'Press Start 2P',monospace; font-size:9px; padding:7px 9px; box-shadow:0 3px 0 #000;}
+#chestBtn:active{transform:translateY(2px); box-shadow:0 1px 0 #000;}
+.tabRow{display:flex; gap:10px; justify-content:center; margin:12px 0;}
+.tabBtn{font-family:'Press Start 2P',monospace; font-size:10px; padding:10px 14px; border:4px solid #000;
+  background:var(--sea); color:var(--white); cursor:pointer; box-shadow:0 4px 0 #000;}
+.tabBtn.active{background:var(--gold2); color:#3a2100;}
+.itemGrid{display:grid; grid-template-columns:repeat(auto-fill,minmax(140px,1fr)); gap:12px; padding:0 12px 30px; max-width:640px; margin:0 auto;}
+.itemCard{background:var(--ocean2); border:4px solid #000; box-shadow:0 4px 0 rgba(0,0,0,.5); padding:10px 6px; text-align:center;}
+.itemCard.owned{border-color:var(--gold2); box-shadow:0 4px 0 rgba(0,0,0,.5), 0 0 0 2px var(--gold2);}
+.itemCard canvas{margin:4px auto; display:block;}
+.itemCard.mystery canvas{filter:brightness(0) opacity(.55);}
+.itemName{font-family:'Press Start 2P',monospace; font-size:8px; color:var(--gold); line-height:1.7; min-height:26px;}
+.itemCard.mystery .itemName{color:#5d7a8a;}
+.itemHow{font-size:17px; color:#8fb3c2; line-height:1.15; margin-top:4px;}
+.buyBtn{font-family:'Press Start 2P',monospace; font-size:9px; margin-top:8px; padding:8px 10px;
+  background:var(--green); color:#fff; border:3px solid #000; box-shadow:0 3px 0 #000; cursor:pointer;}
+.buyBtn:active{transform:translateY(2px); box-shadow:0 1px 0 #000;}
+.buyBtn.cant{background:#555; cursor:default;}
+#chestCount{font-family:'Press Start 2P',monospace; font-size:9px; text-align:center; color:var(--seahi); margin-bottom:6px;}
+/* award popup */
+#awardOverlay{position:fixed; inset:0; z-index:80; background:rgba(0,0,0,.75); display:flex; align-items:center; justify-content:center;}
+#awardBox{background:var(--ocean2); border:5px solid var(--gold2); box-shadow:0 0 0 4px #000, 0 10px 0 rgba(0,0,0,.6);
+  padding:22px 26px; text-align:center; animation:awardPop .4s steps(4);}
+@keyframes awardPop{0%{transform:scale(.3);}70%{transform:scale(1.12);}100%{transform:scale(1);}}
+#awardBox h3{font-family:'Press Start 2P',monospace; font-size:13px; color:var(--gold); line-height:1.8; margin-bottom:8px;}
+#awardBox canvas{margin:10px auto; display:block; animation:titleFloat 2s ease-in-out infinite;}
+#awardBox .aname{font-family:'Press Start 2P',monospace; font-size:11px; color:var(--white); line-height:1.8; margin-bottom:14px;}
+/* map life */
+.flyer{position:absolute; z-index:7; pointer-events:none;}
+.flyer canvas{animation:bob 1s ease-in-out infinite;}
+.flyParrot{animation:flyAcross 18s linear infinite;}
+.flyGull{animation:flyAcross 24s linear infinite reverse;}
+@keyframes flyAcross{0%{left:-9%;}100%{left:105%;}}
+.fireGlow canvas{animation:fireFlick .35s steps(2) infinite alternate;}
+@keyframes fireFlick{0%{filter:brightness(1) drop-shadow(0 0 6px rgba(255,140,0,.6));}100%{filter:brightness(1.5) drop-shadow(0 0 12px rgba(255,180,0,.9));}}
+.crabby{transition:left .5s steps(6);}
+.flagWave canvas{animation:flagW 1.2s steps(2) infinite;}
+@keyframes flagW{0%{transform:skewY(0deg);}50%{transform:skewY(3deg);}100%{transform:skewY(0deg);}}
+/* ---------- CHRONO TRIGGER WINDOW SKIN ---------- */
+.panel, .lineBox, #battleArena{
+  background:linear-gradient(180deg,#3a56c4 0%, #22349a 45%, #0f1c5e 100%);
+  border:3px solid #eef0f8; border-radius:9px;
+  box-shadow: inset 0 0 0 3px #1a2a78, 0 0 0 3px #0a1030, 0 7px 0 rgba(0,0,0,.5);
+}
+.stageBtn{
+  background:linear-gradient(180deg,#3350bc,#16246e);
+  border:3px solid #eef0f8; border-radius:9px;
+  box-shadow: inset 0 0 0 2px #1a2a78, 0 0 0 2px #0a1030, 0 4px 0 rgba(0,0,0,.6);
+}
+.stageBtn.done{background:linear-gradient(180deg,#2f8f5a,#155a32);}
+#hud, #masteryWrap{
+  background:linear-gradient(180deg,#2c449c,#131f60);
+  border-bottom:3px solid #eef0f8; box-shadow:0 3px 0 #0a1030;
+}
+.itemCard{background:linear-gradient(180deg,#2c449c,#101c58); border:3px solid #8f96b0; border-radius:9px;}
+.itemCard.owned{border-color:var(--gold); box-shadow:0 4px 0 rgba(0,0,0,.5), 0 0 10px rgba(255,210,63,.35);}
+.buildLine{background:linear-gradient(180deg,#16246e,#0c1548); border-radius:9px;}
+#awardBox{background:linear-gradient(180deg,#3a56c4,#101c58); border-radius:10px;}
+.cueBox{border-radius:9px; box-shadow:0 5px 0 rgba(0,0,0,.5), inset 0 0 0 2px #b89a5e;}
+.pbar, .hpbar{border-radius:5px;}
+.gradeBtn, .bigBtn, .chip, .tabBtn, #backBtn, #chestBtn, #soundToggle, .buyBtn{border-radius:7px;}
+.mapNode{box-shadow:0 4px 0 #000, inset -6px -6px 0 var(--gold2), inset 3px 3px 0 var(--gold) , inset 3px 3px 0 3px #fff3c0;}
+/* ---------- DAY / NIGHT CYCLE ---------- */
+#dayNight{position:absolute; inset:0; z-index:9; pointer-events:none; animation:dayCycle 90s linear infinite;}
+@keyframes dayCycle{
+  0%, 52%{background:rgba(0,0,0,0);}
+  60%{background:rgba(255,140,50,.22);}
+  68%, 82%{background:rgba(10,20,70,.48);}
+  90%{background:rgba(255,150,120,.2);}
+  100%{background:rgba(0,0,0,0);}
+}
+#starsLayer{position:absolute; inset:0; z-index:9; pointer-events:none; opacity:0;
+  background-image:radial-gradient(#fff 1px, transparent 1.6px), radial-gradient(rgba(255,255,255,.7) 1px, transparent 1.5px);
+  background-size:97px 83px, 61px 47px; background-position:0 0, 30px 20px;
+  animation:starsCycle 90s linear infinite;}
+@keyframes starsCycle{0%,60%{opacity:0;} 68%,82%{opacity:.9;} 88%,100%{opacity:0;}}
+/* ---------- BATTLE BACKGROUNDS PER LOCATION ---------- */
+#battleArena.bt-wood{background:
+  radial-gradient(circle at 82% 12%, rgba(255,190,90,.35), transparent 42%),
+  linear-gradient(180deg, rgba(0,0,0,.18), rgba(0,0,0,.38)),
+  repeating-linear-gradient(90deg, #6a4526 0 26px, #5a3a1e 26px 52px);}
+#battleArena.bt-storm{background:
+  repeating-linear-gradient(115deg, rgba(200,220,255,.14) 0 2px, transparent 2px 15px),
+  linear-gradient(180deg,#141d38,#060a18);}
+#battleArena.bt-attic{background:
+  radial-gradient(circle at 18% 14%, rgba(255,210,120,.22), transparent 45%),
+  repeating-linear-gradient(0deg, #4a3018 0 22px, #3e2812 22px 44px);}
+#battleArena.bt-study{background:
+  repeating-linear-gradient(90deg, rgba(255,220,150,.07) 0 4px, transparent 4px 34px),
+  linear-gradient(180deg,#5a2030,#280d16);}
+#battleArena.bt-deck{background:
+  repeating-linear-gradient(90deg, rgba(0,0,0,.12) 0 2px, transparent 2px 32px),
+  linear-gradient(180deg,#7ec8e8 0%, #4a9ad8 34%, #2f6cb0 55%, #8a6238 56%, #6e4c28 100%);}
+#battleArena.bt-hold{background:
+  radial-gradient(circle at 50% 92%, rgba(140,95,45,.45), transparent 60%),
+  linear-gradient(180deg,#241408,#100903);}
+#battleArena.bt-jungle{background:
+  radial-gradient(circle, rgba(0,0,0,.16) 3px, transparent 4px),
+  radial-gradient(circle at 22% 16%, rgba(140,230,150,.16), transparent 42%),
+  linear-gradient(180deg,#1f6b38,#0e3a1d); background-size:27px 23px, auto, auto;}
+#battleArena.bt-camp{background:
+  radial-gradient(circle at 50% 104%, rgba(255,140,40,.55), rgba(255,80,20,.16) 42%, transparent 66%),
+  linear-gradient(180deg,#0d1c30,#060d16);}
+#battleArena.bt-cave{background:
+  radial-gradient(#ffd23f 1px, transparent 1.9px),
+  radial-gradient(circle at 72% 82%, rgba(255,210,80,.28), transparent 52%),
+  linear-gradient(180deg,#232733,#0b0d12); background-size:67px 53px, auto, auto;}
+@media (prefers-reduced-motion: reduce){ *{animation:none !important; transition:none !important;} }
+</style>
+</head>
+<body>
+<div id="seaBg"></div>
+<button id="soundToggle">♪ ON</button>
+<div id="game">
+  <div id="hud">
+    <div class="hudItem">🪙 <span class="val" id="coinVal">0</span></div>
+    <div class="hudItem" id="streakBox">🔥 <span class="val" id="streakVal">0</span></div>
+    <div class="hudItem">⭐ <span class="val" id="starVal">0</span></div>
+    <button id="backBtn">◀ MAP</button>
+    <button id="chestBtn">🧰</button>
+  </div>
+  <div id="masteryWrap">
+    <div id="masteryLbl">LINES MASTERED</div>
+    <div class="pbar"><div class="fill" id="masteryFill" style="width:0%"></div><div class="txt" id="masteryTxt">0%</div></div>
+  </div>
+  <div id="stage"></div>
+</div>
+<div id="toast"></div>
+<script>
+/* ============ JIM HAWKINS: THE LINE TREASURE QUEST ============ */
+</script>
+<script>
+/* ================= SPRITES (pixel grids) ================= */
+// Each sprite: rows of chars, palette maps char->color. '.'=transparent
+const PAL_BASE = {'.':null,'k':'#141414','w':'#f5efe0','s':'#e8b98a','S':'#c98d5e','r':'#d94f30','R':'#8f2f1c','b':'#2e5d9e','B':'#1c3a63','g':'#3f7d46','G':'#26512c','y':'#ffd23f','Y':'#c98a12','p':'#7a4a2a','P':'#4e2e18','x':'#888','m':'#6c5b9e','M':'#463a6b','t':'#39b0a0','o':'#e07b2a',
+// SNES shading ramps: highlights & shadows
+'h':'#f2d1a8','c':'#5d8fd0','a':'#f08a60','e':'#6fcf7f','i':'#ffe98a','l':'#c9cede','v':'#a9773f','n':'#0d1830','d':'#3a3e4a','u':'#3a2410','f':'#17421f','z':'#7a2314','j':'#a07a10','q':'#58c0e0'};
+
+const SPRITES = {
+jim:[ // boy, brown hair, white shirt, blue vest
+"....kkkk....",
+"...kppppk...",
+"..kpppppki..".replace('i','.'),
+"..kssssski.".replace('i','.')+".",
+"..ksksksk...",
+"..kssssk....",
+"...kssk.....",
+"..kwwwwk....",
+".kwbwwbwk...",
+".kwbwwbwks..",
+".skbwwbks...",
+"..kbbbbk....",
+"..kbkkbk....",
+"..kpk.kpk...",
+".kppk.kppk.."
+],
+billy:[ // old captain, tricorn, dark blue coat
+"..kkkkkkkk..",
+".kBBBBBBBBk.",
+"kBBkBBBBkBBk",
+"..kssssssk..",
+"..ksksksk...",
+"..kswwwsk...",
+"..ksssssk...",
+"..kBBBBBBk..",
+".kBywwwyBBk.",
+".kBBwwwBBBk.",
+".skBBBBBBks.",
+"..kBBkkBBk..",
+"..kBk..kBk..",
+".kppk..kppk."
+],
+blackdog:[ // green coat rogue, scar
+"...kkkkkk...",
+"..kGGGGGGk..",
+".kGGGGGGGGk.",
+"..ksssrssk..",
+"..ksksksK...".replace('K','k'),
+"..kssssrk...",
+"...ksssk....",
+"..kGGGGk....",
+".kGgssgGGk..",
+".kGgssgGGk..",
+".skGGGGks...",
+"..kGGkkGk...",
+"..kGk.kGk...",
+".kppk.kppk.."
+],
+pew:[ // blind pew, black blindfold, grey cloak, cane
+"....kkkk....",
+"...kxxxxk...",
+"..kxxxxxxk..",
+"..kkkkkkkk..",
+"..kssssssk.y",
+"..ksssssk..y",
+"...ksssk...y",
+"..kxxxxk...y",
+".kxxxxxxk..y",
+".kxxxxxxkkky",
+".skxxxxks..y",
+"..kxxxxk....",
+"..kxk.kxk...",
+".kppk.kppk.."
+],
+mrsH:[ // Mrs Hawkins, red dress, broom energy
+"....kkkk....",
+"...kPPPPk...",
+"..kPPPPPPk..",
+"..kssssssk..",
+"..ksksksk...",
+"..kssssk....",
+"...kssk.....",
+"..krrrrk....",
+".krrwwrrk...",
+".krrwwrrks..",
+".skrrrrks...",
+"..krrrrrk...",
+".krrrrrrrk..",
+".krrrrrrrk.."
+],
+squire:[ // fancy squire, gold coat, big hat feather
+"..r.kkkkk...",
+".rkyyyyyyk..",
+"kyyyyyyyyyk.",
+"..kssssssk..",
+"..ksksksk...",
+"..kswwwsk...",
+"..ksssssk...",
+"..kyyyyyyk..",
+".kyYwwYyyk..",
+".kyYwwYyyk..",
+".skyyyyks...",
+"..kyykkyk...",
+"..kyk.kyk...",
+".kwwk.kwwk.."
+],
+silver:[ // Long John Silver: one leg + crutch, parrot green shoulder
+"...kkkkkk...",
+"..kBBBBBBk..",
+".kBBBBBBBBk.",
+"..kssssssk..",
+"..ksksksk.g.",
+"..kssssskgg.",
+"...ksssk..g.",
+"..kwwwwwk...",
+".kwYssYwwk..",
+".kwYssYwwkp.",
+".skwwwwks.p.",
+"..kwwwwk..p.",
+"..kwk.....p.",
+".kppk....kpk"
+],
+pirate:[ // generic crew pirate, bandana red
+"....kkkk....",
+"...krrrrk...",
+"..krrrrrrk..",
+"..kssssssk..",
+"..ksksksk...",
+"..ksswssk...",
+"...ksssk....",
+"..kxxxxk....",
+".kxwsswxxk..",
+".kxwsswxxk..",
+".skxxxxks...",
+"..kxxkkxk...",
+"..kxk.kxk...",
+".kppk.kppk.."
+],
+hands:[ // Israel Hands, purple bandana, cutlass
+"....kkkk....",
+"...kmmmmk...",
+"..kmmmmmmk..",
+"..kssssssk..",
+"..ksksksk..w",
+"..kssssrk..w",
+"...ksssk...w",
+"..kMMMMk...w",
+".kMssssMMkkw",
+".kMssssMMk.w",
+".skMMMMks..y",
+"..kMMkkMk...",
+"..kMk.kMk...",
+".kppk.kppk.."
+],
+gunn:[ // Ben Gunn, wild hair, goat-skin rags, cheese vibes
+"..k.kkkk.k..",
+".kxkxxxxkxk.",
+".kxxxxxxxxk.",
+"..kssssssk..",
+"..ksksksk...",
+"..kswwwsk...",
+"..kxsssxk...",
+"..kppppppk..",
+".kpxppxppk..",
+".kppxppxpky.",
+".skppppks.y.",
+"..kpppppk...",
+"..kpk.kpk...",
+".kssk.kssk.."
+],
+chest:[ // treasure chest
+"............",
+"..kkkkkkkk..",
+".kPPPPPPPPk.",
+".kPpppppppk.",
+".kPpYYYYppk.",
+".kkkkkkkkkk.",
+".kPppkYkppk.",
+".kPppkkkppk.",
+".kPpppppppk.",
+".kPpppppppk.",
+".kkkkkkkkkk.",
+"............",
+"............",
+"............"
+],
+serpent:[ // sea serpent easter egg
+"....kkkk....",
+"...kttwtk...",
+"..ktttttk...",
+"..ktrtttk...",
+"..kkrkttk...",
+"....kttk....",
+"...kttk.....",
+"..kttk......",
+".kttk.......",
+".kttkk......",
+"..ktttk.....",
+"...kkttk....",
+"....kttk....",
+"...kttttk...",
+"....kkkk...."
+],
+ship:[ // the Hispaniola
+"........k.......",
+"........kww.....",
+"........kwwww...",
+"........kwwwwww.",
+"........kwwww...",
+"........kww.....",
+"....k...k.......",
+"....kr..k.......",
+"....k...k.......",
+".kkkkkkkkkkkkk..",
+".kPPPPPPPPPPPk..",
+"..kPPyPPyPPyk...",
+"...kkkkkkkkk...."
+],
+palm:[ // palm tree
+"..gg....gg..",
+".gggg..gggg.",
+"gg..ggggg.gg",
+"g...kppk...g",
+"....kppk....",
+"...kpp......",
+"...kpp......",
+"..kpp.......",
+"..kpp.......",
+".kppk......."
+],
+parrot:[ // Cap'n Flint the parrot for the finale
+"............",
+"....kkk.....",
+"...kggwk....",
+"..kggggko...",
+"..kgggggk...",
+"..krrggk....",
+"..krrrgk....",
+"..krrrrk....",
+"...krrk.....",
+"...kyyk.....",
+"....kk......",
+"............",
+"............",
+"............"
+]
+};
+
+function drawSprite(name, scale, flip){
+  const grid = SPRITES[name];
+  const h = grid.length, w = Math.max(...grid.map(r=>r.length));
+  const c = document.createElement('canvas');
+  c.width = w*scale; c.height = h*scale;
+  const ctx = c.getContext('2d');
+  for(let y=0;y<h;y++){
+    const row = grid[y];
+    for(let x=0;x<row.length;x++){
+      const col = PAL_BASE[row[x]];
+      if(!col) continue;
+      const dx = flip ? (w-1-x) : x;
+      ctx.fillStyle = col;
+      ctx.fillRect(dx*scale, y*scale, scale, scale);
+    }
+  }
+  c.style.imageRendering = 'pixelated';
+  return c;
+}
+
+/* ============ SPRITE UPGRADE PASS: detailed characters & scenery ============ */
+// Programmatic character builder v2 -- SNES style: shading ramps, bigger heads, detailed coats
+const HI_MAP={b:'c',B:'b',r:'a',R:'r',g:'e',G:'g',y:'i',Y:'y',x:'l',p:'v',P:'p',m:'l',M:'m',w:'l',s:'h'};
+const SH_MAP={b:'B',B:'n',r:'z',R:'z',g:'f',G:'f',y:'j',Y:'j',x:'d',p:'u',P:'u',m:'M',M:'n',w:'x',s:'S'};
+function genChar(o){
+  const H=o.H||'B', C=o.C||'b', L=o.L||'p', E=o.eyes||'k';
+  const h1=HI_MAP[H]||'w', h2=SH_MAP[H]||'k', c1=HI_MAP[C]||'w', c2=SH_MAP[C]||'k';
+  const r=[];
+  if(o.hat==='tricorn')      r.push("...kkkkkkkkk...", ".kkH11HHHH44kk.", "kHHkkkkkkkkkHHk");
+  else if(o.hat==='bandana') r.push("....kkkkkkk....", "...kH11HH44k...", "..kH1HHHHHH4kk.");
+  else if(o.hat==='wild')    r.push(".kk.kkkkkkk.kk.", "kHHkH11HH44kHHk", ".kHHHHHHHHH44k.");
+  else if(o.hat==='bonnet')  r.push("...kkkkkkkkk...", "..kH11HHHH44k..", ".kHHHHHHHHH44k.");
+  else                       r.push("....kkkkkkk....", "...kHH11H44k...", "...kHHHHHH4k...");
+  if(o.blindfold) r.push("..kkkkkkkkkkk..");
+  else r.push("..khw"+E+"sssw"+E+"Sk..");
+  if(o.beard){ const X=o.beard;
+    r.push("..kh"+X+"sssss"+X+"Sk..");
+    r.push("..k"+X+X+X+"rr"+X+X+X+X+"k..");
+    r.push("...k"+X+X+X+X+X+X+X+"k...");
+  } else {
+    r.push("..khsssssssSk..");
+    r.push("..khssrrssssk..");
+    r.push("...ksssssssk...");
+  }
+  r.push(".....ksssk.....");
+  if(o.dress){
+    r.push(".k2CCCCCCCCC3k.");
+    r.push(".k2sCCCiCCCs3k.");
+    r.push(".k2CCCCCCCCC3k.");
+    r.push("k2CCCCCCCCCCC3k");
+    r.push("kCCCCCCCCCCCCCk");
+    r.push(".kkkkkkkkkkkkk.");
+    r.push("..kssk...kssk..");
+  } else {
+    r.push(".k22CCCCCCC33k.");
+    r.push(".k2sCCCiCCCs3k.");
+    r.push(".k2sCCCCCCCs3k.");
+    r.push(".k2hCCCiCCCh3k.");
+    r.push("..kkkkkikkkkk..");
+    if(o.pegleg){ r.push("..kLLLk..kuk...", "..kPPPk..kuk...", ".kkkkkk..kuk..."); }
+    else        { r.push("..kLLLk.kLLLk..", "..kPPPk.kPPPk..", ".kkkkkk.kkkkkk."); }
+  }
+  let rows = r.map(x=>x.replace(/H/g,H).replace(/1/g,h1).replace(/4/g,h2).replace(/C/g,C).replace(/2/g,c1).replace(/3/g,c2).replace(/L/g,L));
+  if(o.scar && !o.blindfold) rows[3]=rows[3].slice(0,11)+'z'+rows[3].slice(12);
+  if(o.parrot){ rows[7]=rows[7].slice(0,10)+'ego'+rows[7].slice(13); rows[8]=rows[8].slice(0,14)+'g'; }
+  if(o.crutch){ rows[8]=rows[8]+'.uu'; for(let i=9;i<=15;i++){ if(rows[i]) rows[i]=rows[i]+'..u'; } }
+  return rows;
+}
+SPRITES.jim      = genChar({hat:'hair', H:'p', C:'b', L:'p'});
+SPRITES.billy    = genChar({hat:'tricorn', H:'B', C:'B', L:'B', beard:'x'});
+SPRITES.blackdog = genChar({hat:'tricorn', H:'G', C:'G', L:'p', scar:1});
+SPRITES.pew      = genChar({hat:'hair', H:'x', C:'x', L:'x', blindfold:1});
+SPRITES.mrsH     = genChar({hat:'bonnet', H:'P', C:'r', dress:1});
+SPRITES.squire   = genChar({hat:'tricorn', H:'y', C:'r', L:'w'});
+SPRITES.silver   = genChar({hat:'tricorn', H:'B', C:'b', L:'B', pegleg:1, parrot:1, crutch:1});
+SPRITES.pirate   = genChar({hat:'bandana', H:'r', C:'x', L:'p'});
+SPRITES.hands    = genChar({hat:'bandana', H:'m', C:'M', L:'p', beard:'P'});
+SPRITES.gunn     = genChar({hat:'wild', H:'x', C:'p', L:'S', beard:'x'});
+// Shaded scenery: CT-style tree, rock, upgraded chest & parrot
+SPRITES.tree = [
+"....kkkkk......",
+"...keeeggk.....",
+"..keegggggGk...",
+".keeggggggGGk..",
+"keegggggggGGGk.",
+"kegggggggGGGfk.",
+"kegggggggGGGfk.",
+".kgggggggGGfk..",
+"..kfggGGGGffk..",
+"...kkffffffk...",
+".....kuvk......",
+".....kuvk......",
+"....kuuvk......",
+"....kuuvvk.....",
+"...kkkkkkkk...."
+];
+SPRITES.rock = [
+"...kkkk....",
+"..kllxxk...",
+".klxxxxdk..",
+"klxxxxxddk.",
+"kxxxxxdddk.",
+".kkkkkkkk.."
+];
+SPRITES.chest = [
+"..kkkkkkkk..",
+".kvvvvvvvvk.",
+".kvPPPPPPuk.",
+".kvPiyyiPuk.",
+".kkkkkkkkkk.",
+".kvPPkkPPuk.",
+".kvPPikPPuk.",
+".kvPPPPPPuk.",
+".kuPPPPPPuk.",
+".kkkkkkkkkk."
+];
+SPRITES.parrot = [
+"....kkk.....",
+"...kegwk....",
+"..keggggko..",
+"..kegggggk..",
+"..kaarrggk..",
+"..krrrrggk..",
+"..krrrrgk...",
+"...krrrk....",
+"...kyyk.....",
+"....kk......"
+];
+SPRITES.it_silverparrot = SPRITES.parrot;
+// The Hispaniola: shaded sails & hull
+SPRITES.ship = [
+"......kkw........kkw......",
+"......kwk........kwk......",
+"......k..........k........",
+"...kwwwwwwl...kwwwwwwwl...",
+"..kwwwwwwwll.kwwwwwwwwll..",
+"..kwwwwwwwll.kwwwwwwwwll..",
+"..kwwwwwwwll.kwwwwwwwwll..",
+"...kwwwwwwl...kwwwwwwwl...",
+"......k..........k........",
+"......k..........k........",
+"kkkkkkkkkkkkkkkkkkkkkkkkk.",
+"kvvvvvvvvvvvvvvvvvvvvvvvk.",
+".kPPyPPyPPyPPyPPyPPyPPyk..",
+"..kuuuuuuuuuuuuuuuuuuuk...",
+"...kkkkkkkkkkkkkkkkkkk...."
+];
+// 1883 England scenery -- shaded brick, glowing windows
+function genBuilding(wall, roof, w, h){
+  const rHi = HI_MAP[roof]||'l', wSh = SH_MAP[wall]||'d';
+  const rows=['.'+'k'.repeat(w-2)+'.', 'k'+rHi.repeat(w-2)+'k', 'k'+roof.repeat(w-2)+'k', 'k'.repeat(w)];
+  for(let y=0;y<h;y++){
+    let rr='k';
+    for(let x=1;x<w-2;x++) rr += ((x%3===1)&&(y%2===0)) ? 'i' : wall;
+    rows.push(rr+wSh+'k');
+  }
+  const half=Math.floor((w-2)/2);
+  const door='k'+wall.repeat(half-1)+'uu'+wall.repeat(w-2-half-2)+wSh+'k';
+  rows.push(door, door, 'k'.repeat(w));
+  return rows;
+}
+SPRITES.bldgA = genBuilding('r','x',12,4);
+SPRITES.bldgB = genBuilding('S','B',10,5);
+SPRITES.bldgC = genBuilding('x','R',11,3);
+SPRITES.church = [
+".....kk.....",
+".....kk.....",
+"....kxxk....",
+"....kxxk....",
+"...kxxxxk...",
+"...kxyyxk...",
+"...kxxxxk...",
+".kkkkkkkkkk.",
+".kxxxxxxxxk.",
+".kxxyyxyyxk.",
+".kxxyyxyyxk.",
+".kxxxkkxxxk.",
+".kkkkkkkkkk."
+];
+SPRITES.tower = [
+"...kkkk...",
+"..kyyyyk..",
+".kxxxxxxk.",
+".kxwwwwxk.",
+".kxwkwwxk.",
+".kxwwwwxk.",
+".kxxxxxxk.",
+".kxxyyxxk.",
+".kxxxxxxk.",
+".kxxxxxxk.",
+".kkkkkkkk."
+];
+SPRITES.flagUJ = [
+"kbwbbrbbwb",
+"kwbwbrbwbw",
+"krrrrrrrrr",
+"kwbwbrbwbw",
+"kbwbbrbbwb",
+"k.........",
+"k.........",
+"k.........",
+"k.........",
+"k.........",
+"kk........"
+];
+SPRITES.lamp = [
+"..kk..",
+".kyyk.",
+".kyyk.",
+"..kk..",
+"..kk..",
+"..kk..",
+"..kk..",
+".kkkk."
+];
+// Wild island life
+SPRITES.crab = [
+"k...k..k...k",
+".kr.krrk.rk.",
+"..krrrrrrk..",
+".krwrrrrwrk.",
+"..krrrrrrk..",
+".kr.k..k.rk."
+];
+SPRITES.flower = [".m.m.","mmymm",".m.m.","..g..","..g.."];
+SPRITES.flower2 = [".o.o.","ooyoo",".o.o.","..g..","..g.."];
+SPRITES.skullrock = [
+"..kkkkkk..",
+".kwwwwwwk.",
+"kwwkwwkwwk",
+"kwwwwwwwwk",
+"kwwwkkwwwk",
+".kwkwkwkk.",
+".kkkkkkkk."
+];
+SPRITES.fire = [
+"...r....",
+"..ror...",
+".royor..",
+".ryyyr..",
+"..kkk...",
+".kpppk.."
+];
+SPRITES.gull = ["w...w",".w.w.","..w.."];
+SPRITES.flyparrot = [
+"..kkk...",
+".kggwk..",
+"kggggko.",
+"krggggk.",
+".krrgk..",
+"..kkk..."
+];
+/* ---- Treasure item sprites: detailed SNES shading ---- */
+SPRITES.it_map = [
+".kkkkkkkkkkkkk.",
+"khwhhhhhhhhhhSk",
+"khhhbbhhhhhhhSk",
+"khhhhhbbhhhhhSk",
+"khhhhhhhbhhhhSk",
+"khhhhhhhbbhhhSk",
+"khhrhrhhhbhhhSk",
+"khhhrhhhhhhhhSk",
+"khhrhrhhhhhhhSk",
+"khSSSSSSSSSSSSk",
+".kkkkkkkkkkkkk."];
+SPRITES.it_blackspot = [
+".kkkkkkkkkk.",
+"khhhhhhhhhSk",
+"khhkkkkkhhSk",
+"khkkkkkkkhSk",
+"khkkdkkkkhSk",
+"khkkkkkkkhSk",
+"khhkkkkkhhSk",
+"khhhhhhhhhSk",
+".kkkkkkkkkk."];
+SPRITES.it_flintlog = [
+".kkkkkkkkkkk.",
+"kvPPPPPPPPPuk",
+"kvPiiiiiiiPuk",
+"kvPPPPPPPPPuk",
+"kvPPwwwPPPPuk",
+"kvPPwkwPPPPuk",
+"kvPPwwwPPPPuk",
+"kvPPPkPPPPPuk",
+"kvPPPPPPiPPuk",
+"kkkkkkkkkkkkk"];
+SPRITES.it_pieces8 = [
+"....kkkkk......",
+"...kiyyyjk.....",
+"...kyiwyjk.....",
+"...kyyyyjk.....",
+"....kkkkk......",
+".kkkkk..kkkkk..",
+"kiyyyjkkiyyyjk.",
+"kyiwyjkkyiwyjk.",
+"kyyyyjkkyyyyjk.",
+".kkkkk..kkkkk.."];
+SPRITES.it_compass = [
+"...kkkkkkk...",
+"..kyyiyyyjk..",
+".kyiwwwwwwyk.",
+".kywwwrwwwyk.",
+".kywwwrwwwyk.",
+".kywwwbwwwyk.",
+".kywwwbwwwyk.",
+".kjwwwwwlwjk.",
+"..kyyyyyjjk..",
+"...kkkkkkk..."];
+SPRITES.it_spyglass = [
+"..........kkk..",
+".........kiiyk.",
+"........kiyyk..",
+".......kyyjk...",
+"......klxlk....",
+".....kxxxk.....",
+"....kxxdk......",
+"...klxk........",
+"..kvpk.........",
+".kvpk..........",
+".kkk..........."];
+SPRITES.it_cheese = [
+"....kkkkkkkk...",
+"..kkiiiiiiiik..",
+".kiyyyyykyyyjk.",
+"kiyyykyyyyyyjk.",
+"kyyyyyyykyyjjk.",
+"kyykyyyyyyjjk..",
+"kkkkkkkkkkkkk.."];
+SPRITES.it_pistols = [
+".kk............",
+"kxxkkkkkkkkkkk.",
+"kxlxxxxxxxxxxdk",
+".kkkkkkxxkkkkk.",
+".....kvpxk.....",
+".....kvpki.....",
+"....kvpuk......",
+"....kpuk.......",
+".....kk........"];
+SPRITES.it_unionjack = [
+"kukkkkkkkkkkk",
+"kukwbbbrbbbwk",
+"kukbwbbrbbwbk",
+"kukbbwbrbwbbk",
+"kukrrrrrrrrrk",
+"kukbbwbrbwbbk",
+"kukbwbbrbbwbk",
+"kukwbbbrbbbwk",
+"kukkkkkkkkkkk",
+"ku...........",
+"ku...........",
+"kk..........."];
+SPRITES.it_medbag = [
+".....kkkk.....",
+"....kv..pk....",
+"....kv..pk....",
+".kkkkkkkkkkkk.",
+"kvvvvvvvvvvvuk",
+"kvpppwrwppppuk",
+"kvppwrrrwpppuk",
+"kvpppwrwppppuk",
+"kvppppppppppuk",
+"kuuuuuuuuuuuuk",
+".kkkkkkkkkkkk."];
+const GEM = [
+".....kkkkk.....",
+"...kkEEEEEkk...",
+"..kEwEEEEEGGk..",
+".kEEwEEEGGGGFk.",
+".kEEEEEGGGFFFk.",
+"..kEEEGGGFFFk..",
+"...kEGGGGFFk...",
+"....kGGFFFk....",
+".....kFFFk.....",
+"......kkk......"];
+function gemSpr(E,G,F){ return GEM.map(r=>r.replace(/E/g,E).replace(/G/g,G).replace(/F/g,F)); }
+SPRITES.it_emerald = gemSpr('e','g','f');
+SPRITES.it_ruby    = gemSpr('a','r','z');
+SPRITES.it_topaz   = gemSpr('i','o','j');
+SPRITES.it_shells = [
+"..kkkkk....kk..",
+".khwhhhk..kaak.",
+"khhShShSk.kahak",
+"khhhShhSk.kaaak",
+".khhhhSk..kkkk.",
+"..kkkkk........"];
+SPRITES.it_tinderbox = [
+"..i...i........",
+".iyi.iyi.......",
+"..i...i........",
+".kkkkkkkkkkk...",
+".kllllllllxk...",
+".klxvpvpxxdk...",
+".klxxxxxxxdk...",
+".kkkkkkkkkkk..."];
+SPRITES.it_watch = [
+"kk.............",
+".kyk...........",
+"..kik..........",
+"...kyk.........",
+"....kkkkk......",
+"...kiyyyjk.....",
+"..kyiwwwlyk....",
+"..kywwkwwyk....",
+"..kywwkkwyk....",
+"..kylwwwwyk....",
+"...kjyyyjk.....",
+"....kkkkk......"];
+SPRITES.it_silverbar = [
+"...kkkkkkkkk...",
+"..kllwlllllldk.",
+".kllllkkllllldk",
+"klllllllllllddk",
+"kkkkkkkkkkkkkkk"];
+SPRITES.it_sanddollar = [
+"....kkkkk....",
+"..kkhhhhhkk..",
+".khhhhwhhhhk.",
+".khhwhwhwhhk.",
+".khhhwwwhhSk.",
+".khhwhwhwhSk.",
+".khhhhwhhhSk.",
+"..kkhhhhhSk..",
+"....kkkkk...."];
+SPRITES.it_barrel = [
+"....kg.........",
+"...krakra......",
+".kkkkkkkkkk....",
+".kvpppppppuk...",
+".kjyyyyyyyjk...",
+".kvpppppppuk...",
+".kvpppppppuk...",
+".kjyyyyyyyjk...",
+".kvpppppppuk...",
+".kkkkkkkkkk...."];
+SPRITES.it_whistle = [
+".kkk...........",
+"kx.xk..........",
+"kx.xk..........",
+".kkkkk.........",
+"..klxxkkkkkkk..",
+"..klxxxxxxxxdk.",
+"..kxxkxxxxxxdk.",
+"...kkkkxxxxdk..",
+"......kkkkkk..."];
+SPRITES.it_goldbars = [
+"...kkkkkkkkk....",
+"..kiyyywyyyjk...",
+"..kiyyyyyyjjk...",
+"..kkkkkkkkkkk...",
+"kkkkkkkkkkkkkkkk",
+"kiyywyjkkiyywyjk",
+"kiyyyyjkkiyyyyjk",
+"kkkkkkkkkkkkkkkk"];
+SPRITES.it_goldskull = [
+"....kkkkkkk....",
+"..kkiyyyyyykk..",
+".kiyyyyyyyyyjk.",
+"kiyyyyyyyyyyjjk",
+"kiykkkyyykkkjjk",
+"kiykrkyyykrkjjk",
+"kiyyyykkkyyyjjk",
+".kiyyyyyyyjjk..",
+".kykykykykyjk..",
+"..kkkkkkkkkk..."];
+
+/* ================= SOUND (chiptune bleeps) ================= */
+let AC=null, soundOn=true;
+function ac(){ if(!AC) AC = new (window.AudioContext||window.webkitAudioContext)(); return AC; }
+function beep(freq, dur, type, vol, when){
+  if(!soundOn) return;
+  try{
+    const a=ac(), o=a.createOscillator(), g=a.createGain();
+    o.type=type||'square'; o.frequency.value=freq;
+    g.gain.setValueAtTime(vol||0.12, a.currentTime+(when||0));
+    g.gain.exponentialRampToValueAtTime(0.001, a.currentTime+(when||0)+dur);
+    o.connect(g); g.connect(a.destination);
+    o.start(a.currentTime+(when||0)); o.stop(a.currentTime+(when||0)+dur+0.02);
+  }catch(e){}
+}
+const SFX = {
+  tap:()=>beep(520,.06,'square',.08),
+  good:()=>{beep(660,.09); beep(880,.12,'square',.12,.09);},
+  great:()=>{beep(523,.08); beep(659,.08,'square',.12,.08); beep(784,.09,'square',.12,.16); beep(1047,.2,'square',.13,.24);},
+  bad:()=>{beep(180,.2,'sawtooth',.1); beep(140,.25,'sawtooth',.1,.1);},
+  coin:()=>{beep(988,.06,'square',.1); beep(1319,.18,'square',.1,.06);},
+  hit:()=>{beep(220,.08,'sawtooth',.14); beep(110,.14,'sawtooth',.12,.06);},
+  fanfare:()=>{[523,659,784,1047,784,1047].forEach((f,i)=>beep(f,.14,'square',.12,i*.13));},
+  swoosh:()=>beep(340,.1,'triangle',.1)
+};
+/* ---- 8-bit sea shanty (Drunken Sailor, traditional) ---- */
+const N = {D2:73.42,C2:65.41,F2:87.31,G2:98.00,A2:110.00,C3:130.81,D3:146.83,E3:164.81,F3:174.61,G3:196.00,A3:220.00,C4:261.63,D4:293.66,E4:329.63,F4:349.23,G4:392.00,A4:440.00};
+// 32 eighth-note steps per loop
+const SHANTY_MEL = [
+  N.D4,N.D4,N.D4,N.D4, N.D4,N.E4,N.F4,N.D4,
+  N.C4,N.C4,N.C4,N.C4, N.C4,N.D4,N.E4,N.C4,
+  N.D4,N.E4,N.F4,N.G4, N.A4,N.A4,N.G4,N.F4,
+  N.E4,N.C4,N.D4,0,    N.D4,0,N.A3,0
+];
+const SHANTY_BASS = [ // one note per 2 steps
+  N.D3,N.D2,N.D3,N.D2, N.C3,N.C2,N.C3,N.C2,
+  N.D3,N.D2,N.F3,N.G3, N.C3,N.C3,N.D3,N.D2
+];
+let musicGain=null, musicTimer=null, musicStarted=false;
+function musicNote(freq, when, dur, type, vol){
+  const a=ac(), o=a.createOscillator(), g=a.createGain();
+  o.type=type; o.frequency.value=freq;
+  g.gain.setValueAtTime(0.0001, when);
+  g.gain.linearRampToValueAtTime(vol, when+0.02);
+  g.gain.exponentialRampToValueAtTime(0.001, when+dur);
+  o.connect(g); g.connect(musicGain);
+  o.start(when); o.stop(when+dur+0.05);
+}
+function scheduleShanty(){
+  if(!musicStarted) return;
+  const a=ac(), step=0.205, t0=a.currentTime+0.08;
+  SHANTY_MEL.forEach((f,i)=>{ if(f) musicNote(f, t0+i*step, step*0.92, 'square', 0.05); });
+  SHANTY_BASS.forEach((f,i)=>{ if(f) musicNote(f, t0+i*step*2, step*1.7, 'triangle', 0.09); });
+  // little off-beat "concertina" chirp
+  for(let i=1;i<32;i+=4) musicNote(N.A3, t0+i*step, step*0.4, 'square', 0.018);
+  musicTimer = setTimeout(scheduleShanty, (32*step-0.1)*1000);
+}
+function startMusic(){
+  if(musicStarted) return;
+  const a=ac();
+  musicGain = a.createGain(); musicGain.gain.value = soundOn?1:0; musicGain.connect(a.destination);
+  musicStarted = true; scheduleShanty();
+}
+function splashSound(){
+  if(!soundOn) return;
+  try{
+    const a=ac(), len=a.sampleRate*0.35, buf=a.createBuffer(1,len,a.sampleRate), d=buf.getChannelData(0);
+    for(let i=0;i<len;i++) d[i]=(Math.random()*2-1)*(1-i/len);
+    const src=a.createBufferSource(); src.buffer=buf;
+    const f=a.createBiquadFilter(); f.type='lowpass'; f.frequency.value=900;
+    const g=a.createGain(); g.gain.value=0.25;
+    src.connect(f); f.connect(g); g.connect(a.destination); src.start();
+    beep(160,.3,'sine',.1); beep(90,.4,'sine',.09,.08);
+  }catch(e){}
+}
+document.getElementById('soundToggle').onclick = function(){
+  soundOn=!soundOn; this.textContent = soundOn ? '♪ ON' : '♪ OFF';
+  if(musicGain) musicGain.gain.value = soundOn?1:0;
+  if(soundOn) SFX.coin();
+};
+</script>
+<script>
+/* ================= LEVEL DATA =================
+   cue: what Jim hears right before his line (or a stage direction in parens)
+   line: Jim's line, exactly as in the script
+*/
+const LEVELS = [
+{ id:"inn", name:"The Admiral Benbow Inn", boss:"Billy Bones", sprite:"billy",
+  taunts:["Yo-ho-ho! Ye forgot yer line, lad!","Fifteen men couldn't remember that one!","Arr! Trouble always arrives anyway!"],
+  cheers:["Good lad!","Smart as paint!","Aye, that be it!"],
+  lines:[
+  {cue:"MRS. HAWKINS: The sea never gave answers to someone staring through the window.", line:"It might. You never know. It feels like it has some deep understanding of something."},
+  {cue:"MRS. HAWKINS: Well it has no manners, if it won't share it with us.", line:"Do you think anyone ever comes here...you know, on purpose?"},
+  {cue:"MRS. HAWKINS: Only the lost.", line:"But if they are lost, how is that on purpose? And if its on purpose how are they lost? Its just the same ole same ole day in and day out. Never anything changing except the sea and really its not changing, just the tides and the occasional storm..."},
+  {cue:"BILLY BONES: But it usually arrives anyway.", line:"You talk as though you've seen a great deal of trouble."},
+  {cue:"BILLY BONES: More than enough for one lifetime.", line:"At sea?"},
+  {cue:"BILLY BONES: Trouble simply decides when it has had its fill of you.", line:"Have you sailed far?"},
+  {cue:"BILLY BONES: Farther than any sensible person ought.", line:"Have you seen battles?"},
+  {cue:"BILLY BONES: Aye.", line:"Storms?"},
+  {cue:"BILLY BONES: Worse.", line:"What's worse than a storm?"},
+  {cue:"(Billy rattles his coin purse. Silence. You break it...)", line:"Do you... plan to stay long?"},
+  {cue:"MRS. HAWKINS: Get the captain and his things to his room, Jim.", line:"Yes ma'am"},
+  {cue:"MRS. HAWKINS: That man is trouble. Jim.", line:"You always think pirates are trouble."},
+  {cue:"(You exit singing!)", line:"Fifteen men on the dead man's chest... Yo-ho-ho, and a bottle of rum!"}
+]},
+{ id:"blackdog", name:"The Visit of Black Dog", boss:"Black Dog", sprite:"blackdog",
+  taunts:["Would Sir Reginald Featherbuttons help ye remember?","Boy asks too many questions... but forgets his lines!","Everything belongs to somebody... except that line!"],
+  cheers:["The boy remembers!","Sharp as a cutlass!","Well now, look at that!"],
+  lines:[
+  {cue:"(Billy sits muttering over his rum. You sweep the floor...)", line:"You know, Mr. Billy, most guests ask for breakfast, you always ask for drink."},
+  {cue:"(Dr. Livesey enters the inn.)", line:"Good morning Dr. Livesey."},
+  {cue:"BLACK DOG: We have some business left...", line:"That cannot be your real name."},
+  {cue:"BLACK DOG: Especially Flint's share.", line:"Who's Flint?"},
+  {cue:"(Black Dog runs out! Billy collapses into a chair, shaking.)", line:"Are you okay? What happened? Who was that?"},
+  {cue:"BILLY BONES: If they come -- protect the chest. Do you hear? Protect it.", line:"The chest? The one you showed me? In your room?"},
+  {cue:"BILLY BONES: Say it back, what do you protect Jim.", line:"The chest Billy, I protect the chest."},
+  {cue:"BILLY BONES: Good lad.", line:"Why is it so important?"},
+  {cue:"BILLY BONES: Because men fear what's inside.", line:"Gold?"},
+  {cue:"BILLY BONES: Not exactly.", line:"Then what?"},
+  {cue:"BILLY BONES: The kind of thing that makes men chase each other across oceans.", line:"That doesn't answer the question."},
+  {cue:"DR. LIVESEY: Billy, Hes a boy. He doesn't need to be pulled into this.", line:"I can make my own decision. I understand what to do if trouble comes."}
+]},
+{ id:"pew", name:"Blind Pew Arrives", boss:"Blind Pew", sprite:"pew",
+  taunts:["I can smell a forgotten line...","Blindness sees more than sight ever did!","That wasn't a request, boy!"],
+  cheers:["Hmph. The boy knows it.","Sharp ears, sharp mind.","Even I can see ye nailed that."],
+  lines:[
+  {cue:"(Night. Wind howls. Billy paces back and forth...)", line:"Billy you've been pacing for hours."},
+  {cue:"BILLY BONES: A pirate never says -- (LOUD FOOTSTEPS!)", line:"Captain?"},
+  {cue:"BILLY BONES: Their here Jim, what.. Jim...", line:"Captain? Hide now."},
+  {cue:"PEW: Where is Billy Bones? I know he is here.", line:"He is resting I suppose."},
+  {cue:"PEW: Resting is what the dead call it when they don't want company.", line:"What does that mean?"},
+  {cue:"PEW: Take my hand, boy. Guide me. Help the blind.", line:"I don't want to."},
+  {cue:"PEW: That wasn't a request.", line:"You're blind."},
+  {cue:"PEW: And yet I know exactly where I am.", line:"How?"},
+  {cue:"PEW: Because I can smell him. Too well.", line:"Thats kind of rude. Why do you want to find him?"},
+  {cue:"PEW: I'm here on business.", line:"You don't seem like a businessman."},
+  {cue:"PEW: There we are...Closer...I can smell old Billy --", line:"I can't give you lodging this late at night. I will call my.."}
+]},
+{ id:"blackspot", name:"The Black Spot", boss:"Billy Bones", sprite:"billy",
+  taunts:["The mark... ye forgot the mark!","Till ten o'clock, lad... learn it by then!","Too much drink... too few lines..."],
+  cheers:["Good lad, Jim!","Ye can be trusted after all!","The chest is safe with you."],
+  lines:[
+  {cue:"(Pew exits laughing. Billy collapses! You rush forward...)", line:"Captain! What is it?"},
+  {cue:"BILLY BONES: No, Jim stay with me.", line:"He's gone Billy don't fear. But, What do we do now?"},
+  {cue:"BILLY BONES: They're coming. The whole pack of them.", line:"Then we must leave."},
+  {cue:"BILLY BONES: The chest... Must get the chest...Jim... help...", line:"Forget the chest."},
+  {cue:"BILLY BONES: Can't.", line:"Why?"},
+  {cue:"BILLY BONES: Doctor... tell him... Don't trust pirates.", line:"You are a pirate, kind of..."},
+  {cue:"DR. LIVESEY: He's dead. (Silence.)", line:"What do we do?"},
+  {cue:"DR. LIVESEY: If those men are coming, we have little time.", line:"Yes, Doctor."},
+  {cue:"DR. LIVESEY: And do you know what chest and map and all that jiberish was about?", line:"Kind of yes"}
+]},
+{ id:"seachest", name:"The Sea Chest & the Map", boss:"The Sea Chest", sprite:"chest",
+  taunts:["*click* ...The chest stays locked to line-forgetters!","Clothes. Tools. Shells. No lines in here!","The whistle blows... and ye froze!"],
+  cheers:["*CREAK* The chest opens for you!","Found it!","The map is yours, Jim!"],
+  lines:[
+  {cue:"MRS. HAWKINS: May God have mercy on him.", line:"The Doctor said we must search the chest before the pirates return and hide it fast. Probably in the store room. Maybe throw in things to confuse them."},
+  {cue:"MRS. HAWKINS: Then we shall. Quickly.", line:"It's locked."},
+  {cue:"MRS. HAWKINS: There must be a key.", line:"He told me it was ..."},
+  {cue:"MRS. HAWKINS: Billy hurry, they'll be coming after this fast", line:"Found it!"},
+  {cue:"(The lid creaks open. You both stare inside...)", line:"I've never seen so much strange stuff."},
+  {cue:"MRS. HAWKINS: Clothes. Tools. Shells. Foreign coins. And enough dirt to start a farm.", line:"What's this?"},
+  {cue:"MRS. HAWKINS: Whatever would they want with all these ...", line:"It a secret. map. Its a treasure map..."},
+  {cue:"MRS. HAWKINS: You're certain?", line:"Look."},
+  {cue:"MRS. HAWKINS: I don't know what I'm looking at.", line:"Neither do I, but it certainly looks important and looks like a map, with XX and I'm suppose to protect it like Billy told me."},
+  {cue:"(A distant whistle is heard outside. You both freeze!)", line:"Did you hear that?"},
+  {cue:"MRS. HAWKINS: Jim. Take the map, leave the rest. Go find the doctor. He will know what to do.", line:"But the chest... they'll come"},
+  {cue:"MRS. HAWKINS: Now do what I say ok? And follow Dr. Livesey's instructions.", line:"What about you?"}
+]},
+{ id:"squire", name:"The Squire's Grand Plan", boss:"Squire Trelawney", sprite:"squire",
+  taunts:["Nonsense! Say the line properly, my boy!","It's how adventure works... not how forgetting works!","Impeccable I tell you... except that attempt!"],
+  cheers:["Magnificent! Absolutely magnificent!","Good heavens, the boy has it!","Best of the best!"],
+  lines:[
+  {cue:"(Livesey and Trelawney study the oilskin packet, ignoring you...)", line:"I put it back just as I found it. Inside theres..."},
+  {cue:"DR. LIVESEY: Patience. It could be booby trapped.", line:"We already opened it, its not anything ... just its a T..."},
+  {cue:"SQUIRE TRELAWNEY: Good heavens.", line:"See, perfectly safe and its..."},
+  {cue:"DR. LIVESEY: Its a map of an island.", line:"Yea a map like I was saying"},
+  {cue:"SQUIRE TRELAWNEY: Not merely an island. Look there. Three red crosses.", line:"We figured it was..."},
+  {cue:"SQUIRE TRELAWNEY: Treasure, my boy. Captain Flint's treasure.", line:"Yeah, that. Thats what I was trying to tell you. Billy Bones said Captain Flint was the most feared pirate who ever sailed the Spanish Main. He's Dead. But not forgotten as Billy said. Its his map... Thats why I had to protect it. Thats what they were coming for."},
+  {cue:"SQUIRE TRELAWNEY: We will chart a course, we will --", line:"I think I technically own the map...and I'm beginning to understand why you two are friends."},
+  {cue:"SQUIRE TRELAWNEY: See?", line:"I don't think that proved your point."},
+  {cue:"DR. LIVESEY: Especially not a cook.", line:"Excuse me, but I think we need to"},
+  {cue:"SQUIRE TRELAWNEY: Lets go...", line:"Okay, My mom said to follow you and you seem to have the best resources for this ... this... um adventure?"}
+]},
+{ id:"hispaniola", name:"Aboard the Hispaniola", boss:"Long John Silver", sprite:"silver",
+  taunts:["Once a ship leaves harbor, it becomes a very very very very small place... for forgotten lines!","Cheer up, lad! Adventure, remember? Yer LINES, remember?","I hate problems at sea. Hard to bury them."],
+  cheers:["Smart as paint, I always said it!","The boy's got a head on his shoulders!","Well said, Jimmy lad!"],
+  lines:[
+  {cue:"SQUIRE TRELAWNEY: ...a man with one leg hobbled over to see us rigging our new ship.", line:"One leg?"},
+  {cue:"TRELAWNEY: Why are you so alarmed?", line:"Billy Bones often talked about a sailor with one leg. He said to beware!"},
+  {cue:"DR. LIVESEY: That was interesting...", line:"I like him."},
+  {cue:"(A familiar laugh rings out from below deck!)", line:"That voice -- I know it! Thats trouble."},
+  {cue:"SILVER: ...it becomes a very very very very small place.", line:"What does that mean?"},
+  {cue:"DR. LIVESEY: That, Squire... was not nothing.", line:"Doctor...I think we've got a Problem, Doctor?"}
+]},
+{ id:"barrel", name:"The Apple Barrel", boss:"The Mutinous Crew", sprite:"pirate",
+  taunts:["When do we strike? When ye forget again!","Dead men don't bite... and don't remember lines!","We'll tip the barrel over, line and all!"],
+  cheers:["The boy heard everything!","Quick thinking, lad!","Warn them all, Jim!"],
+  lines:[
+  {cue:"(LAND AHOY! The pirates rush off. You crawl out of the barrel...)", line:"That was close....I almost got found. And them talking about... Wait a minute I need to find the Doctor and tell him what I just heard."},
+  {cue:"(You find the Squire, bursting with news...)", line:"Admiral Trelawney, I have some important news --"},
+  {cue:"TRELAWNEY: We've reached the treasure island already, can you imagine?", line:"No, Admiral, it's something else --"},
+  {cue:"(You rush to the Doctor...)", line:"Dr Livesey, I just overheard"},
+  {cue:"(You find the Captain at last!)", line:"Captain Smollett, I fear there'll be a mutiny!"},
+  {cue:"SMOLLETT: A mutiny, you say? What makes you say such a thing?", line:"I overheard them scheming in the hold. They plan to kill you as soon as the treasure is found."},
+  {cue:"SMOLLETT: Who looked to be in charge of this plan?", line:"John Silver, Captain."},
+  {cue:"SMOLLETT: If a mutiny is what they plan, we shall make them show their hand.", line:"Right away, Captain."},
+  {cue:"DR. LIVESEY: Yes?", line:"We're not safe here."},
+  {cue:"DR. LIVESEY: We also have something else.", line:"What?"}
+]},
+{ id:"captain", name:"Captain Jim!", boss:"Israel Hands", sprite:"hands",
+  taunts:["Tell the truth, boy... or tell the line!","Tie him up till he remembers!","My grandmother could say lines better than you!"],
+  cheers:["By the powers, he said it!","The cabin-boy outsmarts us all!","God save the King!"],
+  lines:[
+  {cue:"PIRATE: Perhaps you wouldn't mind telling us where they hid the treasure map?", line:"What treasure map?"},
+  {cue:"PIRATE: The treasure map that you stole from Billy Bones' dead body, by all accounts.", line:"Oh, THAT treasure map. I haven't seen it since we set sail."},
+  {cue:"PIRATE: Or maybe you'd prefer to wait until Cap'n Silver returns.", line:"Captain Silver? I don't know any Captain Silver."},
+  {cue:"(The pirates fight each other and fall! You grab a telescope...)", line:"No-one in sight -- they must have retreated inland. Well, if I'm the last man left alive on this ship, I suppose that makes me captain."},
+  {cue:"(You look up. The Jolly Roger flies overhead!)", line:"And while I'm captain, we can't have the Jolly Roger flying."},
+  {cue:"(You raise the Union Jack high!)", line:"God save the King! And down with Captain Silver!"}
+]},
+{ id:"gunn", name:"Ben Gunn's Island", boss:"Ben Gunn", sprite:"gunn",
+  taunts:["Three years I waited for that line... THREE YEARS!","You mightn't happen to have the line about you, now?","Cheese! I mean... LINES!"],
+  cheers:["What dread spectre are you?!","Toasted, mostly! Perfect!","Ben Gunn approves! CHEESE for everyone!"],
+  lines:[
+  {cue:"GUNN: Who are you?", line:"Jim Hawkins, sir."},
+  {cue:"(Gunn releases his hold of you...)", line:"Who are you?"},
+  {cue:"GUNN: I'm poor Ben Gunn, I am, and I haven't spoke to a soul these last three years.", line:"Three years! Were you shipwrecked?"},
+  {cue:"GUNN: You mightn't happen to have a piece of cheese about you, now? You know. Cheese.", line:"Cheese?"},
+  {cue:"GUNN: Cheese!", line:"Cheese?"},
+  {cue:"GUNN: ...and then woken up and found myself in this accursed place again.", line:"You can have cheese by the barrel if I can find my friends. Have you seen any sign of them?"},
+  {cue:"GUNN: Wait a minute! Who was you sent by? What ship do you sail with?", line:"The Hispaniola, sir."},
+  {cue:"GUNN: That ain't Captain Flint's ship?", line:"No, sir."},
+  {cue:"GUNN: They didn't look like pirates, but I didn't want to take no chances.", line:"Then my friends are safe! Lead me to this fort, and you will be rewarded. You have nothing to fear; Flint is dead."},
+  {cue:"GUNN: ...and nowhere, not nowhere, did I find a single slice of cheese.", line:"Sorry, cheese? Again?"},
+  {cue:"GUNN: Aye. Cheese. Cheese!", line:"It seems our misfortune is also yours. Some of Flint's old crew sailed with us, and mutinied the moment we reached shore."},
+  {cue:"GUNN: Not a man -- with one -- leg?", line:"Long John Silver?"},
+  {cue:"GUNN: The very same!", line:"He's the ship's cook, and their ringleader too. They captured the ship and forced every honest man ashore. Luckily, I was able to capture the ship back from them and sail it to the other side of the island."},
+  {cue:"GUNN: You captured the ship? From pirates? What dread spectre are you?", line:"It was nothing. But Long John Silver's men will kill all my friends if we don't find them and sail away quickly!"},
+  {cue:"GUNN: If I come across Long John, I'm as good as dead.", line:"If you were to help us, our chances would be greater."},
+  {cue:"GUNN: And if I were to fight for you, would that secure me a passage home?", line:"Of course!"}
+]},
+{ id:"silvercamp", name:"Silver's Camp: The Big Speech", boss:"Long John Silver", sprite:"silver",
+  taunts:["Shiver my timbers! The speech, lad, the SPEECH!","You and me might have done a lot of good together... if ye knew yer lines!","The Black Spot for forgotten words!"],
+  cheers:["I never seen a better boy than that!","The laugh's been on YOUR side, lad!","By thunder, he's got it all!"],
+  lines:[
+  {cue:"(The dark fort at night. Sleeping figures. You whisper...)", line:"Dr. Livesey? Admiral Trelawney? Captain Smollett?"},
+  {cue:"SILVER: I always hoped you would come to your senses and come to our side. I take it that's why you're here?", line:"Before I answer, I have a right to know what's what, and why you're here, and where my friends are."},
+  {cue:"SILVER: He's either dead or he's become a pirate... and to be frank I don't much care.", line:"Really?"},
+  {cue:"SILVER: ...or you throw your fate in with ours and become a pirate. I know you've got it in you, Jimmy lad.", line:"It seems I have no choice."},
+  {cue:"SILVER: I knew you'd see sense, my boy!", line:"But first, there's a thing or two I have to tell you. The first is, you're not in such a good position yourself. No ship, no treasure, no men, your whole plan has failed, Long John Silver, and it was all thanks to me! It was I who overheard your plans from the apple-barrel, and reported every word of it to the Captain. It was I who captured the ship, and sailed her to a place you'll never find her. Kill me or let me live, for all I care, but remember the laugh's been on my side from the first, and Captain Flint will drag you all to the bottom of the sea with him before I betray my country!", big:true},
+  {cue:"SILVER: They're going to depose me. And why? Because I stood by you, through thick and thin.", line:"What do you need me for?"},
+  {cue:"(Silver triumphantly unrolls the map! The pirates gasp!)", line:"I don't understand! Why would Dr. Livesey..."}
+]},
+{ id:"cave", name:"The Treasure Cave", boss:"Cap'n Flint the Parrot", sprite:"parrot",
+  taunts:["SQUAWK! Pieces of lines! Pieces of lines!","SQUAWK! The parrot remembers better than you!","Six dead men on a dead man's chest... SQUAWK!"],
+  cheers:["SQUAWK! Smart as paint!","SQUAWK! The honour was HIS!","SQUAWK! Treasure Island forever!"],
+  lines:[
+  {cue:"TRELAWNEY: Jim! Jim, my boy! We thought all was lost.", line:"I'm so sorry I didn't flee the ship with you. You must have thought me turned to piracy."},
+  {cue:"SMOLLETT: I will look after this hostage and see he doesn't shoot us in the backs.", line:"Can't I do that?"},
+  {cue:"SMOLLETT: What?", line:"Watch the hostage, I mean. I'm in no fit shape to transport this treasure."},
+  {cue:"SILVER: One good turn deserves another, don't it? ...What do you say?", line:"Smart as paint. Knew that from the moment I laid eyes on you. Now go."},
+  {cue:"(Silver makes a sudden dart downwards! You jump!)", line:"Don't you dare try anything now!"},
+  {cue:"SILVER: Jim Hawkins, it's been an honour to sail with you.", line:"The honour was mine."},
+  {cue:"(You turn to the audience for the final speech...)", line:"None protested when I told them that Long John Silver had given me the slip. We simply loaded the Hispaniola with our fortunes and made a swift voyage home. You can imagine the stir we caused on our arrival home! Out of the twenty-seven men who had sailed out, only five returned. The rest had returned to Captain Flint's crew, where no doubt they are still sailing across the wrong side of eternity. Of Silver, we heard no more. For all I know, he still lives in comfort with his faithful parrot, on Treasure Island.", big:true}
+]}
+];
+</script>
+<script>
+/* ================= GAME ENGINE ================= */
+const $ = s => document.querySelector(s);
+const stage = $('#stage');
+const TOTAL_LINES = LEVELS.reduce((a,l)=>a+l.lines.length,0);
+
+let state = {
+  coins:0, streak:0, bestStreak:0,
+  levels:{} // id -> {learn, drop, build, stars, bestNailed}
+};
+function save(){ try{ localStorage.setItem('jimQuestTI', JSON.stringify(state)); }catch(e){} }
+function load(){
+  try{ const s = localStorage.getItem('jimQuestTI'); if(s) state = Object.assign(state, JSON.parse(s)); }catch(e){}
+  LEVELS.forEach(l=>{ if(!state.levels[l.id]) state.levels[l.id] = {learn:false, drop:false, build:false, stars:0, bestNailed:0}; });
+}
+load();
+
+function totalStars(){ return LEVELS.reduce((a,l)=>a+(state.levels[l.id].stars||0),0); }
+function masteredLines(){ return LEVELS.reduce((a,l)=>a+(state.levels[l.id].bestNailed||0),0); }
+function levelUnlocked(i){ return true; } // every level open -- play in any order!
+
+function updateHUD(){
+  $('#coinVal').textContent = state.coins;
+  $('#streakVal').textContent = state.streak;
+  $('#starVal').textContent = totalStars();
+  const pct = Math.round(masteredLines()/TOTAL_LINES*100);
+  $('#masteryFill').style.width = pct+'%';
+  $('#masteryTxt').textContent = masteredLines()+' / '+TOTAL_LINES+' LINES ('+pct+'%)';
+}
+function toast(msg, color){
+  const t = $('#toast'); t.textContent = msg; t.style.color = color||'var(--gold)';
+  t.classList.remove('pop'); void t.offsetWidth; t.classList.add('pop');
+}
+function coinBurst(n, x, y){
+  for(let i=0;i<n;i++){
+    const c = document.createElement('div'); c.className='coinFx'; c.textContent='🪙';
+    c.style.left = (x + (Math.random()*80-40))+'px'; c.style.top = (y + (Math.random()*20-10))+'px';
+    c.style.animationDelay = (i*0.07)+'s';
+    document.body.appendChild(c); setTimeout(()=>c.remove(), 1400);
+  }
+}
+function addCoins(n, ev){
+  state.coins += n; updateHUD(); SFX.coin();
+  const x = ev && ev.clientX ? ev.clientX : window.innerWidth/2;
+  const y = ev && ev.clientY ? ev.clientY : window.innerHeight/2;
+  coinBurst(Math.min(n,5), x, y);
+}
+function bumpStreak(){ state.streak++; if(state.streak>state.bestStreak) state.bestStreak=state.streak; if(state.streak>0 && state.streak%5===0){ toast('🔥 '+state.streak+' STREAK!','#ff8c42'); SFX.great(); state.coins+=5; } updateHUD(); }
+function breakStreak(){ state.streak=0; updateHUD(); }
+
+/* ---------- text helpers ---------- */
+function words(s){ return s.split(/\s+/).filter(Boolean); }
+function firstLetters(s){
+  return words(s).map(w=>{
+    const m = w.match(/^([^A-Za-z]*)([A-Za-z])(.*)$/);
+    if(!m) return w;
+    return m[1]+m[2]+m[3].replace(/[A-Za-z]/g,'_');
+  }).join(' ');
+}
+function splitChunks(line, maxWords){
+  // split on sentence-ish punctuation, then merge small pieces
+  const parts = line.match(/[^.!?…]+[.!?…]*(\s|$)/g) || [line];
+  const out = [];
+  parts.forEach(p=>{
+    p = p.trim(); if(!p) return;
+    const ws = words(p);
+    if(ws.length <= maxWords){ out.push(p); }
+    else {
+      for(let i=0;i<ws.length;i+=maxWords) out.push(ws.slice(i,i+maxWords).join(' '));
+    }
+  });
+  // merge tiny fragments into neighbors
+  const merged=[];
+  out.forEach(p=>{
+    if(merged.length && words(p).length<=2 && words(merged[merged.length-1]).length+words(p).length<=maxWords+2)
+      merged[merged.length-1]+=' '+p;
+    else merged.push(p);
+  });
+  return merged;
+}
+function battleCards(level){
+  // big lines become chained chunks (memorization by chaining)
+  const cards=[];
+  level.lines.forEach((L,idx)=>{
+    if(L.big){
+      const ch = splitChunks(L.line, 16);
+      ch.forEach((c,i)=>{
+        cards.push({cue: i===0 ? L.cue : '(...keep going! You just said: "...'+words(ch[i-1]).slice(-5).join(' ')+'")', line:c, lineIdx:idx, part:i+1, parts:ch.length});
+      });
+    } else cards.push({cue:L.cue, line:L.line, lineIdx:idx});
+  });
+  return cards;
+}
+function shuffle(a){ a=a.slice(); for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
+function esc(s){ const d=document.createElement('div'); d.textContent=s; return d.innerHTML; }
+
+/* ---------- screens ---------- */
+let currentLevel = null;
+function show(html){ stage.innerHTML = html; stage.scrollTop = 0; }
+function setChrome(on){ $('#hud').classList.toggle('show',on); $('#masteryWrap').classList.toggle('show',on); }
+
+function showTitle(){
+  setChrome(false);
+  show(`<div id="title">
+    <div id="titleSprites"></div>
+    <h1>JIM HAWKINS</h1>
+    <h2>THE LINE TREASURE QUEST<br>⚓ Treasure Island ⚓</h2>
+    <div class="speechBubble">Ahoy! Learn all your lines, sail the map, and defeat every pirate boss. X marks the spot!</div>
+    <button class="bigBtn" id="startBtn">▶ SET SAIL!</button>
+    <div class="smallNote">${state.coins>0 ? 'Welcome back, Captain! Your treasure is saved.' : 'Best practice: say every line OUT LOUD like a real actor!'}</div>
+  </div>`);
+  const ts = $('#titleSprites');
+  ts.appendChild(drawSprite('jim',7));
+  const p = drawSprite('parrot',6); p.style.marginLeft='14px'; ts.appendChild(p);
+  $('#startBtn').onclick = ()=>{ startMusic(); SFX.fanfare(); showMap(); };
+}
+
+function starStr(n){ let s=''; for(let i=0;i<3;i++) s += `<span class="${i<n?'lit':''}">★</span>`; return s; }
+
+/* ================= TREASURE COLLECTION ================= */
+const ITEMS = [
+  {id:'watch',       name:'Old Spanish Watch',    spr:'it_watch',       how:'level', lvl:'inn'},
+  {id:'pistols',     name:'Flintlock Pistols',    spr:'it_pistols',     how:'level', lvl:'blackdog'},
+  {id:'blackspot',   name:'The Black Spot',       spr:'it_blackspot',   how:'level', lvl:'pew'},
+  {id:'medbag',      name:'Medicine Bag',         spr:'it_medbag',      how:'level', lvl:'blackspot'},
+  {id:'map',         name:'The Treasure Map',     spr:'it_map',         how:'level', lvl:'seachest'},
+  {id:'spyglass',    name:'Spyglass',             spr:'it_spyglass',    how:'level', lvl:'squire'},
+  {id:'compass',     name:"Hispaniola's Compass", spr:'it_compass',     how:'level', lvl:'hispaniola'},
+  {id:'barrel',      name:'Apple Barrel',         spr:'it_barrel',      how:'level', lvl:'barrel'},
+  {id:'unionjack',   name:'Union Jack',           spr:'it_unionjack',   how:'level', lvl:'captain'},
+  {id:'cheese',      name:"Ben Gunn's Cheese",    spr:'it_cheese',      how:'level', lvl:'gunn'},
+  {id:'silverparrot',name:"Silver's Parrot",      spr:'it_silverparrot',how:'level', lvl:'silvercamp'},
+  {id:'goldbars',    name:'Gold Bars',            spr:'it_goldbars',    how:'level', lvl:'cave'},
+  {id:'pieces8',     name:'Pieces of Eight',      spr:'it_pieces8',     how:'egg'},
+  {id:'shells',      name:'West Indian Shells',   spr:'it_shells',      how:'egg'},
+  {id:'flintlog',    name:"Captain Flint's Log",  spr:'it_flintlog',    how:'egg'},
+  {id:'tinderbox',   name:'Tinder Box',           spr:'it_tinderbox',   how:'egg'},
+  {id:'sanddollar',  name:'Sand Dollar',          spr:'it_sanddollar',  how:'egg'},
+  {id:'whistle',     name:'A Whistle',            spr:'it_whistle',     how:'shop', price:40},
+  {id:'silverbar',   name:'Silver Bar Fragment',  spr:'it_silverbar',   how:'shop', price:100},
+  {id:'topaz',       name:'Topaz',                spr:'it_topaz',       how:'shop', price:120},
+  {id:'emerald',     name:'Emerald',              spr:'it_emerald',     how:'shop', price:150},
+  {id:'ruby',        name:'Ruby',                 spr:'it_ruby',        how:'shop', price:200},
+  {id:'goldskull',   name:'THE GOLD SKULL',       spr:'it_goldskull',   how:'ultimate'}
+];
+const LEVEL_ITEM = {}; ITEMS.forEach(it=>{ if(it.how==='level') LEVEL_ITEM[it.lvl]=it.id; });
+if(!state.items) state.items = {};
+function ownedCount(){ return ITEMS.filter(it=>state.items[it.id]).length; }
+let awardQueue=[];
+function processAwards(){
+  if(document.getElementById('awardOverlay') || !awardQueue.length) return;
+  const it = awardQueue.shift();
+  SFX.fanfare();
+  const ov=document.createElement('div'); ov.id='awardOverlay';
+  ov.innerHTML=`<div id="awardBox"><h3>${it.id==='goldskull'?'🏆 ULTIMATE PRIZE! 🏆':'✨ NEW TREASURE! ✨'}</h3><div class="aname">${esc(it.name)}</div><div id="awSpr"></div><button class="bigBtn gold" id="awOk">TO THE CHEST! 🧰</button></div>`;
+  document.body.appendChild(ov);
+  ov.querySelector('#awSpr').appendChild(drawSprite(it.spr, 8));
+  ov.querySelector('#awOk').onclick=()=>{ SFX.coin(); ov.remove(); processAwards(); };
+}
+function awardItem(id){
+  if(state.items[id]) return false;
+  state.items[id]=true; save(); updateHUD();
+  awardQueue.push(ITEMS.find(x=>x.id===id));
+  processAwards();
+  // the gold skull: own every other treasure
+  if(id!=='goldskull' && ITEMS.every(x=>x.id==='goldskull'||state.items[x.id])){
+    setTimeout(()=>awardItem('goldskull'), 600);
+  }
+  return true;
+}
+function showChest(tab){
+  tab = tab||'collection';
+  setChrome(true); updateHUD(); currentLevel=null;
+  const shopItems = ITEMS.filter(i=>i.how==='shop');
+  const list = tab==='shop' ? shopItems : ITEMS;
+  show(`<div style="padding:10px 0 30px;">
+    <div id="mapTitle">🧰 JIM'S TREASURE CHEST 🧰</div>
+    <div id="chestCount">${ownedCount()} / ${ITEMS.length} TREASURES FOUND</div>
+    <div class="tabRow">
+      <button class="tabBtn ${tab==='collection'?'active':''}" data-t="collection">COLLECTION</button>
+      <button class="tabBtn ${tab==='shop'?'active':''}" data-t="shop">🏪 TRADING POST</button>
+    </div>
+    ${tab==='shop'?'<div class="smallNote" style="text-align:center; margin-bottom:8px;">Earn gold for every right answer, matey!<br>Your gold: 🪙 '+state.coins+'</div>':''}
+    <div class="itemGrid">${list.map(it=>{
+      const owned = !!state.items[it.id];
+      let how='';
+      if(it.how==='level'){ const L=LEVELS.find(l=>l.id===it.lvl); how = owned?'Won in battle!':'Defeat '+L.boss+' at '+L.name; }
+      if(it.how==='egg') how = owned?'You found a secret!':'Hidden somewhere on the map... 👀';
+      if(it.how==='shop') how = owned?'Bought at the Trading Post':'🪙 '+it.price;
+      if(it.how==='ultimate') how = owned?'YOU FOUND EVERYTHING!':'Collect ALL other treasures!';
+      return `<div class="itemCard ${owned?'owned':'mystery'}">
+        <div class="icSpr" data-spr="${it.spr}"></div>
+        <div class="itemName">${owned||it.how==='shop'?esc(it.name):'???'}</div>
+        <div class="itemHow">${how}</div>
+        ${tab==='shop'&&!owned?`<button class="buyBtn ${state.coins>=it.price?'':'cant'}" data-buy="${it.id}">BUY</button>`:''}
+      </div>`;
+    }).join('')}</div>
+  </div>`);
+  document.querySelectorAll('.icSpr').forEach(el=>el.appendChild(drawSprite(el.dataset.spr,4)));
+  document.querySelectorAll('.tabBtn').forEach(b=>b.onclick=()=>{ SFX.tap(); showChest(b.dataset.t); });
+  document.querySelectorAll('.buyBtn').forEach(b=>b.onclick=()=>{
+    const it=ITEMS.find(x=>x.id===b.dataset.buy);
+    if(state.coins>=it.price){ state.coins-=it.price; save(); awardItem(it.id); setTimeout(()=>showChest('shop'),300); }
+    else { SFX.bad(); toast('NOT ENOUGH GOLD!','var(--coral)'); }
+  });
+}
+document.getElementById('chestBtn').onclick=()=>{ SFX.tap(); showChest(); };
+
+/* Node positions on the world map: journey reads bottom (England) to top (Treasure Island) */
+const MAP_POS = {
+  inn:       {x:62, y:1450}, blackdog:  {x:30, y:1330}, pew:       {x:64, y:1230},
+  blackspot: {x:32, y:1120}, seachest:  {x:66, y:1030}, squire:    {x:30, y:930},
+  hispaniola:{x:56, y:790},  barrel:    {x:32, y:650},  captain:   {x:64, y:520},
+  gunn:      {x:26, y:350},  silvercamp:{x:72, y:250},  cave:      {x:50, y:105}
+};
+/* ambient characters + scenery: {spr,x%,ypx,scale,flip,click,cls} */
+const MAP_DECOR = [
+  // --- 1883 England: Bristol town ---
+  {spr:'bldgA', x:12, y:1520, s:4}, {spr:'bldgB', x:26, y:1525, s:4}, {spr:'bldgC', x:40, y:1518, s:4},
+  {spr:'church',x:87, y:1530, s:4}, {spr:'tower', x:75, y:1528, s:4}, {spr:'bldgB', x:62, y:1525, s:4},
+  {spr:'flagUJ',x:70, y:1462, s:3, cls:'flagWave'}, {spr:'flagUJ',x:20, y:1462, s:3, cls:'flagWave'},
+  {spr:'flagUJ',x:36, y:905, s:3, cls:'flagWave'},
+  {spr:'lamp',  x:47, y:1465, s:3}, {spr:'lamp', x:24, y:940, s:3}, {spr:'lamp', x:52, y:938, s:3},
+  {spr:'bldgA', x:12, y:965, s:4}, {spr:'bldgC', x:42, y:960, s:4},  // Bristol dockside
+  // --- characters ---
+  {spr:'mrsH',  x:76, y:1400, s:4},
+  {spr:'billy', x:52, y:1445, s:4, flip:1},
+  {spr:'blackdog', x:19, y:1325, s:4},
+  {spr:'pew',   x:76, y:1225, s:4, flip:1},
+  {spr:'squire',x:19, y:900, s:4},
+  {spr:'pirate',x:22, y:645, s:4},
+  {spr:'hands', x:75, y:515, s:4, flip:1},
+  {spr:'silver',x:84, y:245, s:4, flip:1},
+  {spr:'gunn',  x:14, y:345, s:4},
+  // --- the sea ---
+  {spr:'ship',  x:45, y:730, s:5, click:'ship'},
+  {spr:'gull',  x:0,  y:560, s:3, cls:'flyer flyGull'},
+  {spr:'gull',  x:0,  y:840, s:3, cls:'flyer flyGull', delay:-9},
+  // --- wild Treasure Island ---
+  {spr:'tree',  x:14, y:230, s:4}, {spr:'tree', x:88, y:330, s:4}, {spr:'tree', x:47, y:195, s:4},
+  {spr:'tree',  x:68, y:365, s:3}, {spr:'tree', x:30, y:170, s:3},
+  {spr:'rock',  x:6,  y:455, s:3}, {spr:'rock', x:80, y:440, s:3}, {spr:'rock', x:38, y:945, s:3},
+  {spr:'tree',  x:8,  y:1230, s:4}, {spr:'tree', x:90, y:1330, s:4}, {spr:'tree', x:88, y:1120, s:3},
+  {spr:'tree',  x:10, y:1035, s:3},
+  {spr:'palm',  x:7,  y:430, s:5}, {spr:'palm', x:90, y:410, s:5}, {spr:'palm', x:62, y:320, s:4},
+  {spr:'palm',  x:38, y:300, s:4}, {spr:'palm', x:82, y:150, s:4},
+  {spr:'flower',x:30, y:275, s:3}, {spr:'flower2',x:55, y:230, s:3}, {spr:'flower',x:70, y:180, s:3}, {spr:'flower2',x:20, y:250, s:3},
+  {spr:'skullrock', x:10, y:170, s:4},
+  {spr:'fire',  x:78, y:290, s:4, cls:'fireGlow'},
+  {spr:'crab',  x:52, y:445, s:3, click:'crab', cls:'crabby'},
+  {spr:'crab',  x:24, y:455, s:3, click:'crab', cls:'crabby'},
+  {spr:'flyparrot', x:0, y:200, s:4, cls:'flyer flyParrot'},
+  {spr:'flyparrot', x:0, y:120, s:4, cls:'flyer flyParrot', delay:-7, flip:1},
+  {spr:'parrot',x:57, y:150, s:4, click:'parrot'},
+  {spr:'chest', x:42, y:120, s:4, click:'chest'}
+];
+let serpentBusy=false;
+function spawnSplash(map, x, y, n){
+  for(let i=0;i<n;i++){
+    const p=document.createElement('div'); p.className='splashPx';
+    p.style.left=x+'px'; p.style.top=y+'px';
+    p.style.setProperty('--sx', (Math.random()*90-45)+'px');
+    p.style.setProperty('--sy', (-(Math.random()*70+20))+'px');
+    p.style.animationDelay=(Math.random()*0.1)+'s';
+    map.appendChild(p); setTimeout(()=>p.remove(),900);
+  }
+}
+function spawnSerpent(map, x, y){
+  if(serpentBusy) return; serpentBusy=true;
+  splashSound(); spawnSplash(map, x, y, 10);
+  const spot=document.createElement('div'); spot.className='serpentSpot';
+  spot.style.left=x+'px'; spot.style.top=(y+14)+'px';
+  spot.appendChild(drawSprite('serpent',6, Math.random()<0.5));
+  map.appendChild(spot);
+  beep(392,.12,'triangle',.12,.5); beep(330,.12,'triangle',.12,.65); beep(262,.2,'triangle',.12,.8); // serpent song
+  setTimeout(()=>{ splashSound(); spawnSplash(map, x, y, 12); }, 1900);
+  setTimeout(()=>{ spot.remove(); serpentBusy=false; awardItem('shells'); }, 2500);
+}
+function showMap(){
+  setChrome(true); updateHUD(); currentLevel=null;
+  show(`<div id="mapScreen">
+    <div id="mapTitle">🗺 TREASURE ISLAND 🗺</div>
+    <div id="worldMap"></div>
+    <div class="smallNote" style="text-align:center; margin-top:10px;">Sail from the Admiral Benbow Inn up to the X! Tap any number to play.<br>Psst... strange things live in these waters. 👀</div>
+  </div>`);
+  const map = document.getElementById('worldMap');
+  const W = ()=> map.clientWidth;
+  // SNES terrain textures: dithered grass, stippled sand, animated water, shore foam
+  [{t:0,h:150,c:'zoneTex sandTex'},{t:150,h:255,c:'zoneTex grassTex jungle'},{t:405,h:65,c:'zoneTex sandTex'},
+   {t:470,h:6,c:'zoneTex foamTex'},{t:478,h:428,c:'zoneTex waterTex'},{t:906,h:6,c:'zoneTex foamTex'},
+   {t:914,h:36,c:'zoneTex sandTex'},{t:950,h:610,c:'zoneTex grassTex'}].forEach(z=>{
+    const el=document.createElement('div'); el.className=z.c;
+    el.style.top=z.t+'px'; el.style.height=z.h+'px'; map.appendChild(el);
+  });
+  // mountain + X at summit
+  const mtn=document.createElement('div'); mtn.className='mtn'; mtn.style.left='calc(50% - 70px)'; mtn.style.top='30px'; map.appendChild(mtn);
+  const bigX=document.createElement('div'); bigX.className='bigX'; bigX.style.left='calc(50% + 42px)'; bigX.style.top='40px'; bigX.textContent='X'; map.appendChild(bigX);
+  // the inn (click the hearth for a secret!)
+  const inn=document.createElement('div'); inn.className='innHouse'; inn.style.left='calc(62% + 26px)'; inn.style.top='1352px'; inn.style.pointerEvents='auto'; inn.style.cursor='pointer';
+  inn.innerHTML='<div class="innRoof"></div><div class="innBody"></div><div class="innSign">ADMIRAL BENBOW</div>';
+  inn.onclick=(e)=>{ e.stopPropagation(); beep(660,.08,'triangle',.1); beep(880,.1,'triangle',.1,.08); toast('🔥 A WARM HEARTH!','var(--gold2)'); awardItem('tinderbox'); };
+  map.appendChild(inn);
+  // sea sparkles
+  for(let i=0;i<16;i++){ const s=document.createElement('div'); s.className='seaSparkle';
+    s.style.left=(Math.random()*90+4)+'%'; s.style.top=(500+Math.random()*380)+'px';
+    s.style.animationDelay=(Math.random()*3)+'s'; map.appendChild(s); }
+  // decorations & characters
+  MAP_DECOR.forEach(dc=>{
+    const el=document.createElement('div'); el.className='decor'+(dc.click?' clickable':'')+(dc.cls?' '+dc.cls:'');
+    el.style.left=dc.x+'%'; el.style.top=dc.y+'px'; el.style.transform='translate(-50%,-100%)';
+    if(dc.delay) el.style.animationDelay=dc.delay+'s';
+    el.appendChild(drawSprite(dc.spr, dc.s, dc.flip));
+    if(dc.click==='parrot') el.onclick=(e)=>{ e.stopPropagation(); SFX.great(); toast('SQUAWK! PIECES OF EIGHT!','var(--green)'); awardItem('pieces8'); };
+    if(dc.click==='ship') el.onclick=(e)=>{ e.stopPropagation(); beep(110,.5,'sawtooth',.2); beep(147,.5,'sawtooth',.18,.1); toast('⚓ THE HISPANIOLA!','var(--seahi)'); el.firstChild.style.animation='none'; void el.offsetWidth; el.firstChild.style.animation='bob 0.5s ease-in-out 3'; awardItem('flintlog'); };
+    if(dc.click==='crab') el.onclick=(e)=>{ e.stopPropagation(); SFX.tap(); el.style.left=(dc.x+(Math.random()*14-7))+'%'; toast('A CRAB SCUTTLES AWAY!','var(--coral)'); awardItem('sanddollar'); };
+    if(dc.click==='chest') el.onclick=(e)=>{ e.stopPropagation(); SFX.coin(); showChest(); };
+    map.appendChild(el);
+  });
+  // path dots between nodes (SMW trail)
+  const ids = LEVELS.map(l=>l.id);
+  for(let i=0;i<ids.length-1;i++){
+    const a=MAP_POS[ids[i]], b=MAP_POS[ids[i+1]];
+    const steps=7;
+    for(let s=1;s<steps;s++){
+      const d=document.createElement('div'); d.className='pathDot';
+      d.style.left=(a.x+(b.x-a.x)*s/steps)+'%';
+      d.style.top=(a.y+(b.y-a.y)*s/steps)+'px';
+      map.appendChild(d);
+    }
+  }
+  // level nodes + boss sprite + label + stars
+  LEVELS.forEach((l,idx)=>{
+    const p=MAP_POS[l.id], st=state.levels[l.id];
+    const spr=document.createElement('div'); spr.className='nodeSpr';
+    spr.style.left=p.x+'%'; spr.style.top=(p.y-26)+'px';
+    spr.appendChild(drawSprite(l.sprite, 4, p.x>50)); map.appendChild(spr);
+    const node=document.createElement('div'); node.className='mapNode'+(st.stars>0?' beat':'');
+    node.style.left=p.x+'%'; node.style.top=p.y+'px'; node.textContent=idx+1;
+    node.onclick=(e)=>{ e.stopPropagation(); SFX.tap(); showLevel(idx); };
+    map.appendChild(node);
+    const lbl=document.createElement('div'); lbl.className='nodeLbl';
+    lbl.style.left=p.x+'%'; lbl.style.top=(p.y+26)+'px'; lbl.textContent=l.name; map.appendChild(lbl);
+    const stars=document.createElement('div'); stars.className='nodeStars';
+    stars.style.left=p.x+'%'; stars.style.top=(p.y+52)+'px'; stars.innerHTML=starStr(st.stars); map.appendChild(stars);
+  });
+  // Jim stands at the start of the trail
+  const jim=document.createElement('div'); jim.className='decor';
+  jim.style.left='calc(62% - 54px)'; jim.style.top='1452px'; jim.style.transform='translate(-50%,-100%)'; jim.style.zIndex='6';
+  jim.appendChild(drawSprite('jim',4)); map.appendChild(jim);
+  // day / night cycle: dusk, starry night, dawn
+  const stars=document.createElement('div'); stars.id='starsLayer'; map.appendChild(stars);
+  const dn=document.createElement('div'); dn.id='dayNight'; map.appendChild(dn);
+  // EASTER EGG: click the sea, a serpent rises!
+  map.addEventListener('click', (e)=>{
+    const r=map.getBoundingClientRect();
+    const y=e.clientY-r.top, x=e.clientX-r.left;
+    if(y>470 && y<900) spawnSerpent(map, x, y); // sea band only
+  });
+  // start scrolled to the bottom (the journey begins at the inn)
+  requestAnimationFrame(()=>{ stage.scrollTop = stage.scrollHeight; });
+}
+$('#backBtn').onclick = ()=>{ SFX.swoosh(); showMap(); };
+
+function showLevel(idx){
+  const l = LEVELS[idx]; currentLevel = idx;
+  const st = state.levels[l.id];
+  setChrome(true); updateHUD();
+  show(`<div class="panel">
+    <div id="lvlSpr"></div>
+    <h3>${idx+1}. ${esc(l.name)}</h3>
+    <div class="sub">Boss: ${esc(l.boss)} · ${l.lines.length} lines · ${starStr(st.stars)}</div>
+    <button class="stageBtn ${st.learn?'done':''}" data-s="learn"><span class="ico">📖</span><span><div class="stTitle">1. LEARN IT ${st.learn?'✔':''}</div><div class="stDesc">Read each cue and line. Say it out loud!</div></span></button>
+    <button class="stageBtn ${st.drop?'done':''}" data-s="drop"><span class="ico">🧩</span><span><div class="stTitle">2. WORD DROP ${st.drop?'✔':''}</div><div class="stDesc">Missing words! Tap the right one.</div></span></button>
+    <button class="stageBtn ${st.build?'done':''}" data-s="build"><span class="ico">🔨</span><span><div class="stTitle">3. LINE BUILDER ${st.build?'✔':''}</div><div class="stDesc">Rebuild your lines piece by piece.</div></span></button>
+    <button class="stageBtn" data-s="battle"><span class="ico">⚔️</span><span><div class="stTitle">4. BOSS BATTLE!</div><div class="stDesc">Only the cue! Say your line from memory to defeat ${esc(l.boss)}!</div></span></button>
+  </div>`);
+  const sp = $('#lvlSpr'); sp.appendChild(drawSprite(l.sprite, 7));
+  document.querySelectorAll('.stageBtn').forEach(b=>{
+    b.onclick = ()=>{ SFX.tap();
+      if(b.dataset.s==='learn') playLearn(idx);
+      if(b.dataset.s==='drop') playDrop(idx);
+      if(b.dataset.s==='build') playBuild(idx);
+      if(b.dataset.s==='battle') playBattle(idx);
+    };
+  });
+}
+
+function playHeader(l, stageName, i, n){
+  return `<div id="playWrap">
+    <div id="stageHeader"><div id="stageName">${stageName}</div><div id="lineCount">LINE ${i+1}/${n}</div></div>
+    <div class="pbar miniPbar"><div class="fill" style="width:${Math.round(i/n*100)}%"></div><div class="txt"></div></div>
+    <div id="playBody"></div>
+  </div>`;
+}
+
+/* ---------- STAGE 1: LEARN ---------- */
+function playLearn(idx){
+  const l = LEVELS[idx]; let i=0;
+  function step(){
+    if(i>=l.lines.length){
+      state.levels[l.id].learn = true; save();
+      return stageDone(idx, '📖 LEARN IT COMPLETE!', 'You read every line! +10 🪙<br>Now try WORD DROP!', 10);
+    }
+    const L = l.lines[i];
+    show(playHeader(l, '📖 LEARN IT', i, l.lines.length));
+    $('#playBody').innerHTML = `
+      <div class="cueBox"><div class="cueTag">🎭 YOUR CUE (listen for this!)</div><div class="cueTxt">${esc(L.cue)}</div></div>
+      <div class="lineBox"><div class="lineTag">⭐ JIM SAYS:</div><div class="lineTxt">${esc(L.line)}</div></div>
+      <div class="speechBubble" style="font-size:20px;">Say it OUT LOUD in your best Jim voice! ${L.big?'(This is a BIG one -- read it twice!)':''}</div>
+      <div class="ctrlRow"><button class="bigBtn green" id="nextL">I SAID IT! ▶</button></div>`;
+    $('#nextL').onclick = (e)=>{ SFX.good(); addCoins(1,e); i++; step(); };
+  }
+  step();
+}
+
+/* ---------- STAGE 2: WORD DROP ---------- */
+function pickBlanks(lineWords){
+  const n = lineWords.length;
+  const count = n<=5 ? 1 : n<=12 ? 2 : 3;
+  // prefer longer, meaningful words
+  const idxs = lineWords.map((w,i)=>({w:w.replace(/[^A-Za-z']/g,''),i}))
+    .filter(o=>o.w.length>=3)
+    .sort((a,b)=>b.w.length-a.w.length)
+    .slice(0, count*2);
+  const chosen = shuffle(idxs).slice(0,count).map(o=>o.i).sort((a,b)=>a-b);
+  return chosen.length?chosen:[0];
+}
+function playDrop(idx){
+  const l = LEVELS[idx];
+  const order = shuffle(l.lines.map((_,i)=>i));
+  const pool = [];
+  l.lines.forEach(L=>words(L.line).forEach(w=>{ const c=w.replace(/[^A-Za-z']/g,''); if(c.length>=3) pool.push(c); }));
+  let i=0;
+  function step(){
+    if(i>=order.length){
+      state.levels[l.id].drop = true; save();
+      return stageDone(idx, '🧩 WORD DROP COMPLETE!', 'Every missing word found! +15 🪙<br>Now try LINE BUILDER!', 15);
+    }
+    const L = l.lines[order[i]];
+    const ws = words(L.line);
+    const blanks = pickBlanks(ws);
+    let active = 0;
+    show(playHeader(l, '🧩 WORD DROP', i, order.length));
+    function render(){
+      const lineHtml = ws.map((w,wi)=>{
+        const b = blanks.indexOf(wi);
+        if(b===-1) return esc(w);
+        if(b<active) return `<span class="blankSlot filledOk">${esc(w)}</span>`;
+        if(b===active) return `<span class="blankSlot">???</span>`;
+        return `<span class="blankSlot">&nbsp;</span>`;
+      }).join(' ');
+      const answer = ws[blanks[active]].replace(/[^A-Za-z']/g,'') || ws[blanks[active]];
+      let opts = [answer];
+      let guard=0;
+      while(opts.length<3 && guard<200){
+        guard++;
+        const cand = pool[Math.floor(Math.random()*pool.length)];
+        if(cand && cand.toLowerCase()!==answer.toLowerCase() && !opts.some(o=>o.toLowerCase()===cand.toLowerCase())) opts.push(cand);
+      }
+      while(opts.length<3) opts.push('pirate');
+      opts = shuffle(opts);
+      $('#playBody').innerHTML = `
+        <div class="cueBox"><div class="cueTag">🎭 YOUR CUE</div><div class="cueTxt">${esc(L.cue)}</div></div>
+        <div class="lineBox"><div class="lineTag">⭐ FILL IN JIM'S LINE (${active+1}/${blanks.length}):</div><div class="lineTxt">${lineHtml}</div></div>
+        <div class="chipRow">${opts.map(o=>`<button class="chip" data-w="${esc(o)}">${esc(o)}</button>`).join('')}</div>`;
+      document.querySelectorAll('.chip').forEach(ch=>{
+        ch.onclick = (e)=>{
+          if(ch.dataset.w.toLowerCase()===answer.toLowerCase()){
+            SFX.good(); bumpStreak(); addCoins(1,e);
+            active++;
+            if(active>=blanks.length){ toast('LINE COMPLETE!'); i++; setTimeout(step,500); }
+            else render();
+          } else {
+            SFX.bad(); breakStreak(); ch.classList.add('wrongFlash','used');
+            setTimeout(()=>ch.classList.remove('wrongFlash'),350);
+          }
+        };
+      });
+    }
+    render();
+  }
+  step();
+}
+
+/* ---------- STAGE 3: LINE BUILDER ---------- */
+function playBuild(idx){
+  const l = LEVELS[idx];
+  const order = shuffle(l.lines.map((_,i)=>i));
+  let i=0;
+  function step(){
+    if(i>=order.length){
+      state.levels[l.id].build = true; save();
+      return stageDone(idx, '🔨 LINE BUILDER COMPLETE!', 'You rebuilt every line! +20 🪙<br>Time for the BOSS BATTLE! ⚔️', 20);
+    }
+    const L = l.lines[order[i]];
+    const ws = words(L.line);
+    const pieces = ws.length<=9 ? ws : splitChunks(L.line, Math.ceil(ws.length/Math.min(8,Math.ceil(ws.length/4))));
+    let next=0;
+    show(playHeader(l, '🔨 LINE BUILDER', i, order.length));
+    const trayOrder = shuffle(pieces.map((_,pi)=>pi));
+    $('#playBody').innerHTML = `
+      <div class="cueBox"><div class="cueTag">🎭 YOUR CUE</div><div class="cueTxt">${esc(L.cue)}</div></div>
+      <div class="lineBox"><div class="lineTag">⭐ TAP THE PIECES IN ORDER:</div><div class="buildLine" id="buildOut"></div></div>
+      <div class="tileTray" id="tray">${trayOrder.map(pi=>`<button class="chip" data-pi="${pi}">${esc(pieces[pi])}</button>`).join('')}</div>`;
+    document.querySelectorAll('#tray .chip').forEach(ch=>{
+      ch.onclick=(e)=>{
+        if(+ch.dataset.pi===next){
+          SFX.tap(); ch.classList.add('used');
+          $('#buildOut').innerHTML += `<span class="placed">${esc(pieces[next])} </span>`;
+          next++;
+          if(next>=pieces.length){ SFX.good(); bumpStreak(); addCoins(2,e); toast('BUILT IT!'); i++; setTimeout(step,600); }
+        } else {
+          SFX.bad(); breakStreak(); ch.classList.add('wrongFlash');
+          setTimeout(()=>ch.classList.remove('wrongFlash'),350);
+        }
+      };
+    });
+  }
+  step();
+}
+
+/* ---------- STAGE 4: BOSS BATTLE ---------- */
+function playBattle(idx){
+  const l = LEVELS[idx];
+  const LEVEL_BG = {inn:'bt-wood', blackdog:'bt-wood', pew:'bt-storm', blackspot:'bt-storm', seachest:'bt-attic', squire:'bt-study', hispaniola:'bt-deck', barrel:'bt-hold', captain:'bt-deck', gunn:'bt-jungle', silvercamp:'bt-camp', cave:'bt-cave'};
+  const bg = LEVEL_BG[l.id]||'';
+  let cards = shuffle(battleCards(l));
+  const totalCards = cards.length;
+  let bossHP = 100, firstTry = {}, nailedFirst = 0, attempted = {};
+  const dmg = Math.ceil(100/totalCards);
+  function render(){
+    if(cards.length===0 || bossHP<=0) return victory();
+    const card = cards[0];
+    show(`<div id="playWrap">
+      <div id="stageHeader"><div id="stageName">⚔️ BOSS BATTLE</div><div id="lineCount">${totalCards-cards.length+1}/${totalCards}</div></div>
+      <div id="battleArena" class="${bg}">
+        <div id="bossRow">
+          <div class="fighter"><div id="jimSpr"></div><div class="fname" style="color:var(--green)">JIM</div><div class="hpbar jimHp"><div class="hpfill" style="width:100%"></div></div></div>
+          <div class="fighter"><div id="bossSpr"></div><div class="fname" style="color:var(--coral)">${esc(l.boss).toUpperCase()}</div><div class="hpbar"><div class="hpfill" id="bossFill" style="width:${bossHP}%"></div></div></div>
+        </div>
+        <div id="bossTaunt">"${esc(l.taunts[Math.floor(Math.random()*l.taunts.length)])}"</div>
+      </div>
+      <div class="cueBox"><div class="cueTag">🎭 YOUR CUE ${card.part?('· BIG SPEECH PART '+card.part+'/'+card.parts):''}</div><div class="cueTxt">${esc(card.cue)}</div></div>
+      <div class="lineBox"><div class="lineTag">⭐ SAY JIM'S LINE OUT LOUD FROM MEMORY!</div><div id="battleLine" class="lineTxt" style="min-height:40px; color:#5d8ba3;">🗣 ...say it, then check yourself!</div></div>
+      <div class="ctrlRow">
+        <button class="bigBtn gold" id="hintBtn" style="font-size:11px; padding:12px 16px;">💡 FIRST LETTERS</button>
+        <button class="bigBtn" id="revealBtn" style="font-size:11px; padding:12px 16px;">👁 REVEAL LINE</button>
+      </div>
+      <div class="gradeRow" id="gradeRow" style="display:none;">
+        <button class="gradeBtn gNail">💥 NAILED IT!</button>
+        <button class="gradeBtn gAlmost">😅 ALMOST</button>
+        <button class="gradeBtn gMiss">❌ MISSED IT</button>
+      </div>
+      <div class="smallNote" style="text-align:center;">Be honest, matey -- honest actors learn fastest!</div>
+    </div>`);
+    $('#jimSpr').appendChild(drawSprite('jim',6));
+    $('#bossSpr').appendChild(drawSprite(l.sprite,6,true));
+    const key = card.lineIdx+'_'+(card.part||0);
+    $('#hintBtn').onclick=()=>{ SFX.tap(); $('#battleLine').innerHTML = `<span class="hintTxt">${esc(firstLetters(card.line))}</span>`; };
+    $('#revealBtn').onclick=()=>{
+      SFX.swoosh();
+      $('#battleLine').innerHTML = esc(card.line); $('#battleLine').style.color='var(--white)';
+      $('#gradeRow').style.display='flex';
+      $('#revealBtn').style.display='none';
+    };
+    document.querySelector('.gNail').onclick=(e)=>{
+      SFX.hit(); bossHP = Math.max(0,bossHP-dmg);
+      if(!(key in attempted)){ nailedFirst++; }
+      attempted[key]=true;
+      bumpStreak(); addCoins(3,e);
+      $('#bossSpr').classList.add('hitFlash'); $('#battleArena').classList.add('shake');
+      $('#bossFill').style.width=bossHP+'%';
+      toast(l.cheers[Math.floor(Math.random()*l.cheers.length)], 'var(--green)');
+      cards.shift();
+      setTimeout(render, 700);
+    };
+    document.querySelector('.gAlmost').onclick=()=>{
+      SFX.good(); attempted[key]=true; bossHP = Math.max(0,bossHP-Math.ceil(dmg/2));
+      $('#bossFill').style.width=bossHP+'%';
+      toast('HALF DAMAGE! It returns...', 'var(--gold2)');
+      cards.push(cards.shift()); // requeue at end
+      setTimeout(render, 700);
+    };
+    document.querySelector('.gMiss').onclick=()=>{
+      SFX.bad(); attempted[key]=true; breakStreak();
+      $('#battleArena').classList.add('shake');
+      toast(esc(l.boss)+' ATTACKS! Try again later!', 'var(--coral)');
+      cards.push(cards.shift());
+      setTimeout(render, 800);
+    };
+  }
+  function victory(){
+    const uniqueLines = l.lines.length;
+    // approx lines nailed on first try (cards->lines): scale
+    const ratio = nailedFirst/totalCards;
+    const nailedLines = Math.round(ratio*uniqueLines);
+    const stars = ratio>=0.9 ? 3 : ratio>=0.6 ? 2 : 1;
+    const st = state.levels[l.id];
+    if(stars>st.stars) st.stars=stars;
+    if(nailedLines>st.bestNailed) st.bestNailed=nailedLines;
+    state.coins += 25; save(); updateHUD(); SFX.fanfare();
+    const newItem = LEVEL_ITEM[l.id] && !state.items[LEVEL_ITEM[l.id]];
+    if(newItem) setTimeout(()=>awardItem(LEVEL_ITEM[l.id]), 800);
+    const allDone = LEVELS.every(L=>state.levels[L.id].stars>0);
+    show(`<div class="centerCol">
+      <div id="vSpr"></div>
+      <h3 style="font-family:'Press Start 2P',monospace; color:var(--gold); font-size:16px; line-height:1.8;">${esc(l.boss).toUpperCase()}<br>DEFEATED!</h3>
+      <div class="victoryStars">${[0,1,2].map(i=>`<span class="${i<stars?'lit':'dim'}">★</span>`).join('')}</div>
+      <div class="rewardTxt">+25 🪙 treasure!<br>${nailedFirst}/${totalCards} nailed first try!</div>
+      ${stars<3?'<div class="smallNote">Battle again for 3 stars, Captain!</div>':'<div class="rewardTxt" style="color:var(--gold)">⭐ PERFECT! SMART AS PAINT! ⭐</div>'}
+      ${allDone?'<div class="speechBubble">🏆 YOU LEARNED THE WHOLE PLAY! The Hispaniola sails home! Break a leg, Jim Hawkins!</div>':''}
+      <div class="ctrlRow">
+        <button class="bigBtn green" id="vMap">🗺 MAP</button>
+        <button class="bigBtn" id="vAgain">⚔️ BATTLE AGAIN</button>
+      </div>
+    </div>`);
+    $('#vSpr').appendChild(drawSprite('jim',8));
+    $('#vMap').onclick=()=>{SFX.tap(); showMap();};
+    $('#vAgain').onclick=()=>{SFX.tap(); playBattle(idx);};
+  }
+  render();
+}
+
+function stageDone(idx, title, msg, coins){
+  state.coins += coins; save(); updateHUD(); SFX.great();
+  show(`<div class="centerCol">
+    <div id="dSpr"></div>
+    <h3 style="font-family:'Press Start 2P',monospace; color:var(--gold); font-size:14px; line-height:1.9;">${title}</h3>
+    <div class="rewardTxt">${msg}</div>
+    <div class="ctrlRow"><button class="bigBtn green" id="dNext">ONWARD! ▶</button></div>
+  </div>`);
+  $('#dSpr').appendChild(drawSprite('jim',8));
+  $('#dNext').onclick=()=>{SFX.tap(); showLevel(idx);};
+}
+
+/* waves */
+for(let i=0;i<7;i++){ const w=document.createElement('div'); w.className='wave';
+  w.style.left=(Math.random()*95)+'%'; w.style.top=(Math.random()*95)+'%';
+  w.style.animationDelay=(Math.random()*3)+'s'; document.body.appendChild(w); }
+
+showTitle();
+</script>
+</body>
+</html>
