@@ -216,6 +216,13 @@ label.f .mono-in{font-family:"Spline Sans Mono",monospace}
 .status-pick{display:flex;gap:8px}
 .status-pick button{flex:1;border:1px solid var(--line);background:var(--bg);color:var(--ink-soft);border-radius:8px;padding:9px;font-size:12.5px;letter-spacing:.06em;text-transform:uppercase;transition:.15s}
 .status-pick button.on{border-color:var(--brass-deep);background:rgba(208,169,75,.12);color:var(--brass)}
+.icon-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(44px,1fr));gap:8px;max-height:186px;overflow:auto;padding:3px;border:1px solid var(--line-soft);border-radius:9px;background:var(--bg)}
+.icon-grid::-webkit-scrollbar{width:9px}
+.icon-grid::-webkit-scrollbar-thumb{background:var(--line);border-radius:6px}
+.icon-pick{aspect-ratio:1;border:1px solid var(--line);background:var(--panel);border-radius:8px;color:var(--ink-soft);display:flex;align-items:center;justify-content:center;transition:.12s;padding:0}
+.icon-pick:hover{border-color:var(--brass-deep);color:var(--ink)}
+.icon-pick.on{border-color:var(--brass);background:rgba(208,169,75,.16);color:var(--brass)}
+.icon-pick svg{width:21px;height:21px}
 .dropzone{border:1px dashed var(--line);border-radius:9px;padding:16px;text-align:center;color:var(--ink-faint);font-size:12.5px;transition:.15s;cursor:pointer}
 .dropzone:hover{border-color:var(--brass-deep);color:var(--ink-soft)}
 .receipt-prev{display:flex;align-items:center;gap:12px;margin-top:10px}
@@ -365,6 +372,10 @@ label.f .mono-in{font-family:"Spline Sans Mono",monospace}
         </label>
       </div>
       <div class="rowset">
+        <label class="f" style="margin-bottom:8px">Icon</label>
+        <div class="icon-grid" id="iconGrid"></div>
+      </div>
+      <div class="rowset">
         <label class="f" style="margin-bottom:8px">Status</label>
         <div class="status-pick" id="statusPick">
           <button type="button" data-status="storage" class="on">Storage</button>
@@ -432,8 +443,7 @@ label.f .mono-in{font-family:"Spline Sans Mono",monospace}
 (function(){
 "use strict";
 
-var STORE="coffer.items.v1";
-var SEEDFLAG="coffer.seeded.v1";
+var STORE="coffer.items.v2";
 var items=[];
 var editingId=null;
 var draftReceipt=null;
@@ -455,9 +465,60 @@ function pct(n){var v=Number(n)||0;return (v>0?"+":"")+v.toFixed(1)+"%";}
 function esc(s){return String(s==null?"":s).replace(/[&<>"']/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];});}
 function today(){return new Date().toISOString().slice(0,10);}
 
+/* ---------- icon library ---------- */
+var ICON_DEFS=[
+["tag","Default",'<path d="M4 4h7l9 9-7 7-9-9z"/><circle cx="8" cy="8" r="1.3" fill="currentColor" stroke="none"/>'],
+["box","Box / lot",'<path d="M3 8l9-4 9 4-9 4z"/><path d="M3 8v8l9 4 9-4V8"/><path d="M12 12v8"/>'],
+["furniture","Furniture",'<rect x="3" y="10" width="18" height="6" rx="1.5"/><path d="M5 10V8a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v2"/><path d="M3 13h18"/><path d="M6 16v2M18 16v2"/>'],
+["records","Records / vinyl",'<circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="2.5"/><circle cx="12" cy="12" r="0.7" fill="currentColor" stroke="none"/>'],
+["glassware","Glassware",'<path d="M7 4h10l-1 4a4 4 0 0 1-8 0z"/><path d="M12 12v6"/><path d="M8.5 20h7"/>'],
+["ceramics","Pottery / ceramics",'<path d="M4 11h16a8 6.5 0 0 1-16 0z"/><path d="M9 8c0-1.6 1-2.6 2-2.6M14.5 8c1-2 0-3-1-3"/>'],
+["apparel","Apparel",'<path d="M8 4 4 7l2 3 2-1v8h8V9l2 1 2-3-4-3-2 2a3 3 0 0 1-4 0z"/>'],
+["shoes","Shoes",'<path d="M2 16c2 0 3-1 4-3l2-3 2 1 1 2 4 1c2 .5 3 1 4 2v2H2z"/><path d="M8 10l1 2"/>'],
+["bags","Bags / purses",'<path d="M5 8h14l1 11H4z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/>'],
+["jewelry","Jewelry",'<path d="M6 4h12l3 5-9 11L3 9z"/><path d="M3 9h18M9 4 6 9l6 11 6-11-3-5"/>'],
+["watch","Watches",'<circle cx="12" cy="12" r="5"/><path d="M12 10v2l1.5 1.5"/><path d="M9 7l.5-3h5l.5 3M9 17l.5 3h5l.5-3"/>'],
+["eyewear","Eyewear",'<path d="M2 9h5a2 2 0 0 1 2 2 2 2 0 0 0 6 0 2 2 0 0 1 2-2h5"/><rect x="3" y="9" width="6" height="5" rx="2"/><rect x="15" y="9" width="6" height="5" rx="2"/>'],
+["hats","Hats",'<path d="M4 15a8 6 0 0 1 16 0z"/><path d="M12 9v6"/><path d="M20 15c2 0 3 .6 3 1.5H4"/>'],
+["beauty","Beauty",'<rect x="8" y="9" width="8" height="11" rx="1.5"/><rect x="10" y="5" width="4" height="4"/><rect x="11" y="3" width="2" height="2"/>'],
+["electronics","Electronics",'<rect x="3" y="4" width="18" height="12" rx="1.5"/><path d="M9 20h6M12 16v4"/>'],
+["phone","Phones",'<rect x="7" y="3" width="10" height="18" rx="2"/><path d="M11 18h2"/>'],
+["camera","Cameras",'<path d="M4 8h3l1.5-2h7L17 8h3a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/><circle cx="12" cy="13" r="3.2"/>'],
+["games","Video games",'<path d="M7 8h10a4 4 0 0 1 4 4l-.7 4.3A2.4 2.4 0 0 1 16 17l-1.5-2h-5L8 17a2.4 2.4 0 0 1-4.3-.7L3 12a4 4 0 0 1 4-4z"/><path d="M6.5 11v2.5M5.2 12.2h2.6"/><circle cx="16" cy="11" r=".9" fill="currentColor" stroke="none"/><circle cx="17.6" cy="13" r=".9" fill="currentColor" stroke="none"/>'],
+["appliance","Appliances",'<rect x="5" y="3" width="14" height="18" rx="2"/><circle cx="12" cy="13" r="4"/><circle cx="8" cy="6" r=".8" fill="currentColor" stroke="none"/><path d="M11 6h5"/>'],
+["books","Books",'<path d="M4 4h6a2 2 0 0 1 2 2v13a2 2 0 0 0-2-1.5H4z"/><path d="M20 4h-6a2 2 0 0 0-2 2v13a2 2 0 0 1 2-1.5h6z"/>'],
+["comics","Comics",'<path d="M4 5h16v10h-7l-4 4v-4H4z"/><path d="M8 9h8M8 12h5"/>'],
+["media","Film / media",'<circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="6.5" r="1.3"/><circle cx="12" cy="17.5" r="1.3"/><circle cx="6.5" cy="12" r="1.3"/><circle cx="17.5" cy="12" r="1.3"/>'],
+["music","Music / audio",'<path d="M9 18V6l10-2v12"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="16.5" cy="16" r="2.5"/>'],
+["cards","Trading cards",'<rect x="6" y="3" width="12" height="18" rx="2"/><path d="M12 8l2.4 3c1 1.3 0 3-1.5 3-.6 0-1-.3-1-.3s-.4.3-1 .3c-1.5 0-2.5-1.7-1.5-3z"/><path d="M12 14v2"/>'],
+["toys","Toys",'<rect x="4" y="12" width="7" height="7" rx="1"/><rect x="13" y="12" width="7" height="7" rx="1"/><rect x="8.5" y="4.5" width="7" height="7" rx="1"/><path d="M10.5 8h3M6.5 15.5h2M15.5 15.5h2"/>'],
+["baby","Baby & kids",'<path d="M9 8h6v9a3 3 0 0 1-3 3 3 3 0 0 1-3-3z"/><rect x="10" y="5" width="4" height="3"/><rect x="11" y="3" width="2" height="2"/><path d="M9 12h6"/>'],
+["kitchen","Kitchen",'<path d="M4 10h16v4a4 4 0 0 1-4 4H8a4 4 0 0 1-4-4z"/><path d="M2 10h20"/><path d="M4 10 3 7M20 10l1-3"/>'],
+["drinkware","Drinkware",'<path d="M5 6h11v9a3 3 0 0 1-3 3H8a3 3 0 0 1-3-3z"/><path d="M16 8h2.5a2.5 2.5 0 0 1 0 5H16"/><path d="M8 3v1.5M11 3v1.5"/>'],
+["decor","Home decor",'<path d="M9 4h6l2 6H7z"/><path d="M12 10v7"/><path d="M8.5 20h7l-1-3H9.5z"/>'],
+["lighting","Lighting",'<path d="M12 3a6 6 0 0 0-4 10.5c1 1 1.5 2 1.5 3.5h5c0-1.5.5-2.5 1.5-3.5A6 6 0 0 0 12 3z"/><path d="M9.5 20h5M10 22h4"/>'],
+["textiles","Textiles / rugs",'<rect x="4" y="7" width="16" height="10" rx="1"/><path d="M4 5l1 2M8 5l1 2M12 5l1 2M16 5l1 2M20 5l-1 2M4 19l1-2M8 19l1-2M12 19l1-2M16 19l1-2M20 19l-1-2"/>'],
+["art","Art / frames",'<rect x="4" y="4" width="16" height="16" rx="1"/><path d="M4 16l4-4 3 3 4-5 5 6"/><circle cx="9" cy="9" r="1.3"/>'],
+["antiques","Antiques",'<path d="M9 3h6M10 3c0 2-3 3-3 7 0 5 2 8 5 8s5-3 5-8c0-4-3-5-3-7"/><path d="M7 8 5 9M17 8l2 1"/>'],
+["coins","Coins / currency",'<ellipse cx="9" cy="8" rx="5" ry="2.3"/><path d="M4 8v3.5c0 1.3 2.2 2.3 5 2.3s5-1 5-2.3V8"/><ellipse cx="15" cy="15" rx="5" ry="2.3"/><path d="M10 15v3.5c0 1.3 2.2 2.3 5 2.3s5-1 5-2.3V15"/>'],
+["sports","Sports & fitness",'<path d="M6.5 9v6M4 10v4M17.5 9v6M20 10v4M6.5 12h11"/>'],
+["bicycle","Bicycles",'<circle cx="6" cy="16" r="3.4"/><circle cx="18" cy="16" r="3.4"/><path d="M6 16l4-7h5M9 9l3.5 7M15 9h2.5l1 7"/><path d="M8 9h4"/>'],
+["automotive","Automotive",'<path d="M3 13l2-5a2 2 0 0 1 2-1.3h10A2 2 0 0 1 19 8l2 5"/><path d="M3 13h18v4H3z"/><circle cx="7" cy="17" r="1.6"/><circle cx="17" cy="17" r="1.6"/>'],
+["tools","Tools",'<path d="M13 5l4 4-1.5 1.5-4-4z"/><path d="M11.5 6.5 4 14a2 2 0 0 0 0 3 2 2 0 0 0 3 0l7.5-7.5"/><path d="M12.5 3.5 18.5 9.5"/>'],
+["plants","Plants",'<path d="M7 12c-2-2-2-5 0-7 1.5 2 1.5 5 0 7z"/><path d="M12 12c0-3 2-5 5-5 0 3-2 5-5 5z"/><path d="M12 12V8"/><path d="M7 12h10l-1 7H8z"/>'],
+["pet","Pet supplies",'<circle cx="7" cy="10" r="1.5"/><circle cx="12" cy="8" r="1.5"/><circle cx="17" cy="10" r="1.5"/><path d="M12 12c-3 0-5 2-5 4.5 0 1.5 1 2 2.3 2 .9 0 1.7-.5 2.7-.5s1.8.5 2.7.5c1.3 0 2.3-.5 2.3-2C17 14 15 12 12 12z"/>'],
+["office","Office / stationery",'<path d="M5 19l-1 1 1-4L16 5l3 3L8 19z"/><path d="M14 7l3 3"/>'],
+["crafts","Crafts / sewing",'<circle cx="6" cy="7" r="2.4"/><circle cx="6" cy="17" r="2.4"/><path d="M7.7 8.7 20 17M7.7 15.3 20 7"/>'],
+["luggage","Luggage",'<rect x="5" y="8" width="14" height="11" rx="2"/><path d="M9 8V6a1.5 1.5 0 0 1 1.5-1.5h3A1.5 1.5 0 0 1 15 6v2"/><path d="M9 8v11M15 8v11"/>']
+];
+var ICONS={}; ICON_DEFS.forEach(function(x){ ICONS[x[0]]=x[2]; });
+function icon(id,size){
+  var d=ICONS[id]||ICONS.tag; size=size||20;
+  return '<svg width="'+size+'" height="'+size+'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">'+d+'</svg>';
+}
+
 function load(){
   try{items=JSON.parse(localStorage.getItem(STORE))||[];}catch(e){items=[];}
-  if(!localStorage.getItem(SEEDFLAG) && items.length===0){ seed(); localStorage.setItem(SEEDFLAG,"1"); }
 }
 function save(){
   try{localStorage.setItem(STORE,JSON.stringify(items));}
@@ -577,9 +638,7 @@ function renderBoard(){
 
 function cardHtml(it){
   var col=catColor(it.category);
-  var thumb=it.receipt
-    ? '<img class="thumb" src="'+it.receipt+'" alt="">'
-    : '<div class="thumb"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg></div>';
+  var thumb='<div class="thumb" style="color:'+col+';border-color:'+col+'40;background:'+col+'14">'+icon(it.icon,22)+'</div>';
   var figures;
   if(it.status==="sold"){
     var p=profitOf(it);
@@ -766,20 +825,37 @@ function drawMarket(){
 var scrim=document.getElementById("itemScrim");
 var statusPick=document.getElementById("statusPick");
 var draftStatus="storage";
+var draftIcon="tag";
+
+function renderIconGrid(){
+  var grid=document.getElementById("iconGrid");
+  grid.innerHTML=ICON_DEFS.map(function(x){
+    return '<button type="button" class="icon-pick'+(x[0]===draftIcon?" on":"")+'" data-icon="'+x[0]+'" title="'+x[1]+'">'+icon(x[0],21)+'</button>';
+  }).join("");
+  Array.prototype.forEach.call(grid.querySelectorAll(".icon-pick"),function(b){
+    b.addEventListener("click",function(){ pickIcon(b.getAttribute("data-icon")); });
+  });
+}
+function pickIcon(id){
+  draftIcon=id;
+  Array.prototype.forEach.call(document.querySelectorAll("#iconGrid .icon-pick"),function(b){
+    b.classList.toggle("on",b.getAttribute("data-icon")===id);
+  });
+}
 
 function openAdd(){
-  editingId=null; draftReceipt=null; draftStatus="storage";
+  editingId=null; draftReceipt=null; draftStatus="storage"; draftIcon="tag";
   document.getElementById("modalTitle").textContent="Add item";
   document.getElementById("deleteItem").style.display="none";
   setField("f-name","");setField("f-category","");setField("f-market","");
   setField("f-cost","");setField("f-list","");setField("f-sold","");
   setField("f-boughtdate",today());setField("f-solddate","");setField("f-notes","");
-  setReceipt(null); pickStatus("storage"); refreshCatlist();
+  setReceipt(null); pickStatus("storage"); renderIconGrid(); refreshCatlist();
   scrim.classList.add("open"); setTimeout(function(){document.getElementById("f-name").focus();},40);
 }
 function openEdit(id){
   var it=items.filter(function(i){return i.id===id;})[0]; if(!it) return;
-  editingId=id; draftReceipt=it.receipt||null;
+  editingId=id; draftReceipt=it.receipt||null; draftIcon=it.icon||"tag";
   document.getElementById("modalTitle").textContent="Edit item";
   document.getElementById("deleteItem").style.display="inline-block";
   setField("f-name",it.name||"");setField("f-category",it.category||"");setField("f-market",it.marketplace||"");
@@ -787,7 +863,7 @@ function openEdit(id){
   setField("f-sold",it.soldPrice!=null?it.soldPrice:"");
   setField("f-boughtdate",it.boughtDate||"");setField("f-solddate",it.soldDate||"");
   setField("f-notes",it.notes||"");
-  setReceipt(it.receipt||null); pickStatus(it.status||"storage"); refreshCatlist();
+  setReceipt(it.receipt||null); pickStatus(it.status||"storage"); renderIconGrid(); refreshCatlist();
   scrim.classList.add("open");
 }
 function closeModal(){ scrim.classList.remove("open"); }
@@ -815,6 +891,7 @@ function saveFromModal(){
   if(!name){ toast("Give the item a name first."); document.getElementById("f-name").focus(); return; }
   var data={
     name:name,
+    icon:draftIcon,
     category:getField("f-category").trim(),
     marketplace:getField("f-market").trim(),
     status:draftStatus,
@@ -929,21 +1006,6 @@ function toast(msg){
   var t=document.getElementById("toast");
   t.textContent=msg; t.classList.add("show");
   clearTimeout(toastTimer); toastTimer=setTimeout(function(){ t.classList.remove("show"); },2600);
-}
-
-/* ---------- seed sample data ---------- */
-function seed(){
-  var d=new Date();
-  function ago(days){ var x=new Date(d); x.setDate(x.getDate()-days); return x.toISOString().slice(0,10); }
-  items=[
-    {id:uid(),name:"Vintage Pyrex mixing bowls",category:"Glassware",marketplace:"eBay",status:"sold",cost:12,listPrice:65,soldPrice:58,boughtDate:ago(40),soldDate:ago(9),notes:"Estate sale find, minor wear",receipt:null,created:Date.now()},
-    {id:uid(),name:"Levi's 501 denim jacket",category:"Apparel",marketplace:"Depop",status:"sold",cost:8,listPrice:45,soldPrice:42,boughtDate:ago(35),soldDate:ago(6),notes:"Thrifted, size L",receipt:null,created:Date.now()},
-    {id:uid(),name:"Nintendo GameCube + 3 games",category:"Electronics",marketplace:"Facebook Marketplace",status:"sold",cost:25,listPrice:90,soldPrice:85,boughtDate:ago(30),soldDate:ago(3),notes:"Tested, works great",receipt:null,created:Date.now()},
-    {id:uid(),name:"Mid century teak side table",category:"Furniture",marketplace:"Facebook Marketplace",status:"listed",cost:20,listPrice:120,soldPrice:null,boughtDate:ago(14),soldDate:"",notes:"Refinished top",receipt:null,created:Date.now()},
-    {id:uid(),name:"Carhartt work jacket",category:"Apparel",marketplace:"eBay",status:"listed",cost:10,listPrice:55,soldPrice:null,boughtDate:ago(10),soldDate:"",notes:"Broken in, size XL",receipt:null,created:Date.now()},
-    {id:uid(),name:"Box of vinyl records",category:"Media",marketplace:"Local / in person",status:"storage",cost:30,listPrice:null,soldPrice:null,boughtDate:ago(5),soldDate:"",notes:"Need to sort and grade condition",receipt:null,created:Date.now()},
-    {id:uid(),name:"Cast iron skillet lot",category:"Kitchen",marketplace:"",status:"storage",cost:18,listPrice:null,soldPrice:null,boughtDate:ago(2),soldDate:"",notes:"Two need re-seasoning",receipt:null,created:Date.now()}
-  ];
 }
 
 /* ---------- go ---------- */
