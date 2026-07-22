@@ -1,0 +1,1590 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Renovation Blueprint Tracker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Architects+Daughter&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#0d2143;
+  --paper-deep:#081630;
+  --line:#8fd4ff;
+  --line-faint:rgba(143,212,255,.38);
+  --line-ghost:rgba(143,212,255,.16);
+  --ink:#dff0ff;
+  --ink-dim:rgba(223,240,255,.55);
+  --grid:rgba(143,212,255,.06);
+  --grid-major:rgba(143,212,255,.11);
+  --red:#ff6b6b;
+  --orange:#ffb03a;
+  --green:#4ade80;
+  --blue:#4f8ef7;
+  --panel:#0a1b38;
+  --glow:0 0 6px rgba(120,205,255,.9), 0 0 18px rgba(80,170,255,.35);
+  --mono:'IBM Plex Mono', monospace;
+  --hand:'Architects Daughter', cursive;
+}
+*{box-sizing:border-box; margin:0; padding:0;}
+html,body{height:100%;}
+body{
+  background:
+    radial-gradient(1200px 800px at 55% 35%, #123061 0%, var(--paper) 45%, var(--paper-deep) 100%);
+  color:var(--ink);
+  font-family:var(--mono);
+  overflow:hidden;
+}
+/* blueprint grid over everything, behind content */
+body::before{
+  content:'';
+  position:fixed; inset:0; pointer-events:none;
+  background-image:
+    linear-gradient(var(--grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid) 1px, transparent 1px),
+    linear-gradient(var(--grid-major) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid-major) 1px, transparent 1px);
+  background-size:20px 20px, 20px 20px, 100px 100px, 100px 100px;
+  z-index:0;
+}
+body::after{
+  content:'';
+  position:fixed; inset:0; pointer-events:none; z-index:1;
+  box-shadow:inset 0 0 180px rgba(2,8,20,.85);
+}
+
+/* ---------- header ---------- */
+header{
+  position:relative; z-index:5;
+  height:58px; display:flex; align-items:center; gap:18px;
+  padding:0 18px;
+  border-bottom:1px solid var(--line-ghost);
+  background:rgba(8,22,48,.6); backdrop-filter:blur(4px);
+}
+.brand{display:flex; flex-direction:column; line-height:1.1;}
+.brand b{font-size:14px; letter-spacing:.22em; font-weight:600; color:var(--line); text-shadow:0 0 8px rgba(120,205,255,.6);}
+.brand span{font-size:10px; letter-spacing:.18em; color:var(--ink-dim);}
+.hprog{display:flex; align-items:center; gap:10px; margin-left:6px;}
+.hprog .bar{width:150px; height:6px; border:1px solid var(--line-faint); border-radius:4px; overflow:hidden; background:rgba(0,0,0,.25);}
+.hprog .fill{height:100%; background:linear-gradient(90deg,var(--blue),#7fd4ff); box-shadow:0 0 8px rgba(90,160,255,.9); width:0%; transition:width .5s;}
+.hprog em{font-style:normal; font-size:11px; color:var(--ink-dim); letter-spacing:.08em;}
+.spacer{flex:1;}
+.legend{display:flex; gap:12px; font-size:10px; letter-spacing:.08em; color:var(--ink-dim);}
+.legend i{display:inline-block; width:9px; height:9px; border-radius:50%; margin-right:5px; vertical-align:-1px;}
+button{
+  font-family:var(--mono); font-size:11px; letter-spacing:.12em;
+  color:var(--line); background:transparent;
+  border:1px solid var(--line-faint); border-radius:4px;
+  padding:6px 12px; cursor:pointer; transition:all .15s;
+}
+button:hover{background:rgba(143,212,255,.1); box-shadow:0 0 10px rgba(120,205,255,.35);}
+button.on{background:rgba(143,212,255,.16); box-shadow:var(--glow); border-color:var(--line);}
+button:focus-visible{outline:2px solid var(--line); outline-offset:2px;}
+.toolbar{display:flex; gap:8px; align-items:center;}
+.subtools{display:none; gap:8px; align-items:center;}
+.subtools.show{display:flex;}
+.subtools button{padding:6px 9px;}
+.tool-hint{font-size:10px; color:var(--ink-dim); max-width:220px; letter-spacing:.04em;}
+
+/* ---------- layout ---------- */
+.app{position:relative; z-index:4; display:flex; height:calc(100% - 58px); overflow:hidden;}
+
+/* level rail */
+.rail{
+  width:118px; flex:none; display:flex; flex-direction:column; justify-content:center;
+  gap:14px; padding:14px 12px; border-right:1px solid var(--line-ghost);
+}
+.rail .lvl{
+  position:relative;
+  border:1px solid var(--line-faint); border-radius:6px;
+  padding:12px 10px 10px; cursor:pointer; text-align:left;
+  opacity:.32; transition:opacity .35s, transform .35s, box-shadow .35s;
+  background:rgba(8,22,48,.5);
+}
+.rail .lvl small{display:block; font-size:9px; letter-spacing:.2em; color:var(--ink-dim);}
+.rail .lvl b{display:block; font-size:13px; letter-spacing:.12em; font-weight:600; color:var(--line); margin-top:2px;}
+.rail .lvl .mini{margin-top:8px; width:100%; height:34px;}
+.rail .lvl .mini *{stroke:var(--line); stroke-width:2; fill:none; vector-effect:non-scaling-stroke;}
+.rail .lvl.active{opacity:1; box-shadow:var(--glow); border-color:var(--line); transform:translateX(4px);}
+.rail .lvl:hover{opacity:.75;}
+.rail .lvl.active:hover{opacity:1;}
+.rail .stackline{align-self:center; width:1px; height:10px; background:var(--line-ghost);}
+
+/* canvas */
+.canvas{flex:1; position:relative; overflow:hidden;}
+.track{height:400%; display:flex; flex-direction:column; transition:transform .55s cubic-bezier(.65,.05,.25,1);}
+.slide{height:25%; flex:none; display:flex; align-items:center; justify-content:center; padding:26px 30px 26px 26px; opacity:.12; transition:opacity .55s;}
+.slide.active{opacity:1;}
+.slide svg{max-width:100%; max-height:100%; overflow:visible;}
+
+/* plan line styles + glow */
+.planlines{filter:drop-shadow(0 0 3px rgba(130,210,255,.85)) drop-shadow(0 0 12px rgba(70,160,255,.35));}
+.plan .wall{fill:none; stroke:var(--line); stroke-width:4; stroke-linecap:square; stroke-linejoin:miter;}
+.plan .deck{fill:none; stroke:var(--line); stroke-width:4; stroke-dasharray:8 6;}
+.plan .thin{fill:none; stroke:var(--line-faint); stroke-width:1.2;}
+.plan .arrow{fill:none; stroke:var(--line-faint); stroke-width:1.5;}
+.plan .ahead{fill:var(--line-faint); stroke:none;}
+.plan .stairtxt{font-family:var(--mono); font-size:10px; letter-spacing:.16em; fill:var(--ink-dim);
+  paint-order:stroke; stroke:rgba(8,22,48,.9); stroke-width:3;}
+.plan text{font-family:var(--mono); fill:var(--ink-dim);}
+.plan .dim{font-size:13px; letter-spacing:.03em;}
+.plan .zone{font-family:var(--hand); font-size:15px; fill:rgba(223,240,255,.5); letter-spacing:.06em;}
+.slide[data-level="basement"] .wall{stroke-width:3;}
+.slide[data-level="basement"] .deck{stroke-width:3;}
+.slide[data-level="basement"] .dim{font-size:10px;}
+.slide[data-level="basement"] .stairtxt{font-size:7px;}
+.slide[data-level="upper"] .dim{font-size:12px;}
+
+/* user drawn walls */
+.uwall{stroke:#ffffff; stroke-width:3.5; stroke-linecap:round; fill:none;
+  filter:drop-shadow(0 0 4px rgba(255,255,255,.7));}
+.erase-mode .uwall{cursor:pointer;}
+.erase-mode .uwall:hover{stroke:var(--red);}
+.tempwall{stroke:rgba(255,255,255,.6); stroke-width:2.5; stroke-dasharray:6 5; fill:none;}
+
+/* room markers */
+.marker{cursor:pointer;}
+.marker .hit{fill:rgba(0,0,0,.001);}
+.marker .ringbg{fill:rgba(6,17,38,.82); stroke:var(--line-ghost); stroke-width:1;}
+.marker .seg{fill:none; stroke-width:7;}
+.marker .emptyring{fill:none; stroke:var(--line-faint); stroke-width:2; stroke-dasharray:4 6;}
+.marker .pct{font-family:var(--mono); font-size:13px; font-weight:600; fill:var(--ink); text-anchor:middle;}
+.marker .pctsub{font-family:var(--mono); font-size:6.5px; letter-spacing:.1em; fill:var(--ink-dim); text-anchor:middle;}
+.marker .rname{font-family:var(--hand); font-size:14px; fill:var(--ink); text-anchor:middle;
+  paint-order:stroke; stroke:rgba(6,17,38,.85); stroke-width:3.5;}
+.marker:hover .seg{stroke-width:8.5;}
+.marker:hover .rname{fill:#fff;}
+.marker.selected .ringbg{stroke:var(--line); filter:drop-shadow(0 0 6px rgba(140,215,255,.9));}
+.edit-move .marker{cursor:grab;}
+.edit-move .marker.dragging{cursor:grabbing;}
+
+/* title block */
+.tblock{
+  position:absolute; right:22px; bottom:18px; z-index:6;
+  border:1.5px solid var(--line-faint); background:rgba(7,19,42,.85);
+  font-size:9.5px; letter-spacing:.12em; color:var(--ink-dim);
+  min-width:230px; box-shadow:0 0 14px rgba(60,140,255,.15);
+}
+.tblock .row{display:flex; border-top:1px solid var(--line-ghost);}
+.tblock .row:first-child{border-top:none;}
+.tblock .cell{padding:6px 10px; flex:1;}
+.tblock .cell b{display:block; color:var(--line); font-weight:600; font-size:11px; letter-spacing:.14em; margin-top:1px;}
+.tblock .cell + .cell{border-left:1px solid var(--line-ghost);}
+.tblock .proj{font-family:var(--hand); font-size:15px; color:var(--ink); letter-spacing:.05em;}
+
+/* ---------- room panel ---------- */
+.panel{
+  position:absolute; top:0; right:0; height:100%; width:400px; max-width:92vw;
+  background:linear-gradient(180deg, rgba(10,27,56,.97), rgba(7,18,40,.97));
+  border-left:1px solid var(--line-faint);
+  box-shadow:-14px 0 40px rgba(0,0,0,.55);
+  transform:translateX(105%); transition:transform .35s cubic-bezier(.6,.1,.3,1);
+  z-index:8; display:flex; flex-direction:column;
+}
+.panel.open{transform:translateX(0);}
+.phead{padding:16px 18px 12px; border-bottom:1px dashed var(--line-faint);}
+.phead .toprow{display:flex; align-items:flex-start; gap:10px;}
+.phead h2{font-family:var(--hand); font-size:24px; font-weight:400; color:#fff; flex:1; line-height:1.15;
+  text-shadow:0 0 10px rgba(120,205,255,.35);}
+.iconbtn{border:none; padding:4px 7px; font-size:13px;}
+.pstats{display:flex; gap:10px; margin-top:10px; flex-wrap:wrap;}
+.pstat{font-size:10px; letter-spacing:.1em; color:var(--ink-dim); border:1px solid var(--line-ghost); border-radius:3px; padding:3px 8px;}
+.pstat i{display:inline-block; width:8px; height:8px; border-radius:50%; margin-right:5px;}
+.pbar{margin-top:12px; height:7px; border:1px solid var(--line-faint); border-radius:4px; overflow:hidden; display:flex; background:rgba(0,0,0,.3);}
+.pbar span{height:100%; transition:width .4s;}
+.plist{flex:1; overflow-y:auto; padding:10px 14px 14px;}
+.plist::-webkit-scrollbar{width:8px;}
+.plist::-webkit-scrollbar-thumb{background:rgba(143,212,255,.2); border-radius:4px;}
+
+.task{border:1px solid var(--line-ghost); border-radius:5px; margin-bottom:8px; background:rgba(255,255,255,.02); overflow:hidden;}
+.task.expanded{border-color:var(--line-faint); box-shadow:0 0 10px rgba(80,160,255,.15);}
+.trow{display:flex; align-items:center; gap:10px; padding:9px 11px; cursor:pointer;}
+.trow:hover{background:rgba(143,212,255,.05);}
+.sdot{flex:none; width:15px; height:15px; border-radius:50%; border:2px solid rgba(255,255,255,.25); cursor:pointer; transition:transform .12s, box-shadow .12s;}
+.sdot:hover{transform:scale(1.25); box-shadow:0 0 8px currentColor;}
+.ttitle{flex:1; font-size:12px; line-height:1.35; letter-spacing:.02em;}
+.task[data-s="3"] .ttitle{color:var(--ink-dim); text-decoration:line-through; text-decoration-color:rgba(79,142,247,.6);}
+.tchev{font-size:10px; color:var(--ink-dim); transition:transform .2s;}
+.task.expanded .tchev{transform:rotate(90deg);}
+.tbody{display:none; padding:2px 12px 12px; border-top:1px dashed var(--line-ghost);}
+.task.expanded .tbody{display:block;}
+.statuspick{display:flex; gap:6px; margin:10px 0 4px;}
+.statuspick button{flex:1; padding:5px 2px; font-size:9px; letter-spacing:.06em; border-radius:3px; border:1px solid var(--line-ghost); color:var(--ink-dim);}
+.statuspick button.sel{color:#04101f; font-weight:600; border-color:transparent;}
+.fgrid{display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:8px;}
+.field{border:1px solid var(--line-ghost); border-radius:4px; padding:6px 8px;}
+.field.wide{grid-column:1 / -1;}
+.field label{display:block; font-size:8.5px; letter-spacing:.18em; color:var(--line); margin-bottom:3px;}
+.field .val{font-size:11px; line-height:1.45; color:var(--ink); min-height:14px; outline:none; white-space:pre-wrap;}
+.field .val:empty::before{content:attr(data-ph); color:rgba(223,240,255,.28);}
+.field .val:focus{background:rgba(143,212,255,.06);}
+.field.notes .val{font-family:var(--hand); font-size:13px;}
+.tactions{display:flex; justify-content:flex-end; margin-top:10px;}
+.tactions button{font-size:9px; padding:4px 9px; color:var(--red); border-color:rgba(255,107,107,.35);}
+.tactions button:hover{background:rgba(255,107,107,.12); box-shadow:0 0 8px rgba(255,107,107,.3);}
+
+.paddrow{display:flex; gap:8px; padding:12px 14px; border-top:1px dashed var(--line-faint);}
+.paddrow input{
+  flex:1; background:rgba(0,0,0,.3); border:1px solid var(--line-faint); border-radius:4px;
+  color:var(--ink); font-family:var(--mono); font-size:12px; padding:8px 10px; outline:none;
+}
+.paddrow input:focus{border-color:var(--line); box-shadow:0 0 8px rgba(120,205,255,.3);}
+.pfoot{padding:8px 14px 12px; display:flex; gap:8px;}
+.pfoot button.danger{color:var(--red); border-color:rgba(255,107,107,.35);}
+.empty-note{font-family:var(--hand); font-size:14px; color:var(--ink-dim); text-align:center; padding:30px 20px; line-height:1.6;}
+
+
+
+/* master donut */
+.masterbtn{width:88px; height:88px; align-self:center; border-radius:50%;
+  border:1px solid var(--line-faint); background:rgba(8,22,48,.55);
+  padding:3px; cursor:pointer; transition:box-shadow .2s, border-color .2s;}
+.masterbtn:hover{box-shadow:var(--glow); border-color:var(--line);}
+.masterbtn.on{box-shadow:var(--glow); border-color:var(--line);}
+.masterbtn svg{width:100%; height:100%; display:block;}
+.masterbtn .mpct{font-family:var(--mono); font-size:17px; font-weight:600; fill:var(--ink); text-anchor:middle;}
+.masterbtn .msub{font-family:var(--mono); font-size:7px; letter-spacing:.14em; fill:var(--ink-dim); text-anchor:middle;}
+
+/* master list sort + room tags */
+.sortrow{display:none; align-items:center; gap:8px; margin-top:10px;}
+.sortrow.show{display:flex;}
+.sortrow label{font-size:9px; letter-spacing:.18em; color:var(--line); flex:none;}
+.sortrow select{flex:1; background:rgba(0,0,0,.32); border:1px solid var(--line-faint); border-radius:4px;
+  color:var(--ink); font-family:var(--mono); font-size:11px; padding:6px 8px; outline:none;}
+.troom{display:block; font-size:9px; letter-spacing:.1em; color:var(--line); opacity:.8; margin-top:3px;}
+.tcost{flex:none; font-size:10px; color:var(--green); letter-spacing:.04em;}
+
+/* exterior site plan */
+.plan .prop{fill:none; stroke:var(--line); stroke-width:2.5; stroke-dasharray:14 7 3 7;}
+.plan .tree{fill:none; stroke:var(--line-faint); stroke-width:1.3;}
+.plan .drive{fill:none; stroke:var(--line-faint); stroke-width:1.5;}
+.plan .acre{font-family:var(--hand); font-size:18px; fill:rgba(223,240,255,.55); letter-spacing:.08em;}
+.plan .north{fill:none; stroke:var(--line-faint); stroke-width:1.5;}
+.plan .northtxt{font-family:var(--mono); font-size:14px; fill:var(--ink-dim); text-anchor:middle;}
+
+/* header budget */
+.hbudget{display:flex; flex-direction:column; line-height:1.25; margin-left:4px;}
+.hbudget b{font-size:13px; color:var(--green); font-weight:600; letter-spacing:.06em; text-shadow:0 0 8px rgba(74,222,128,.35);}
+.hbudget span{font-size:9px; letter-spacing:.14em; color:var(--ink-dim);}
+
+/* add-task + button */
+.iconbtn.addbig{font-size:17px; line-height:1; padding:3px 9px; color:var(--green); border-color:rgba(74,222,128,.4);}
+.iconbtn.addbig:hover{background:rgba(74,222,128,.12); box-shadow:0 0 10px rgba(74,222,128,.35);}
+
+/* ---------- modal ---------- */
+.mback{position:fixed; inset:0; z-index:30; background:rgba(3,9,22,.72); backdrop-filter:blur(3px);
+  display:none; align-items:center; justify-content:center; padding:20px;}
+.mback.show{display:flex;}
+.modal{width:430px; max-width:96vw; max-height:88vh; overflow-y:auto;
+  background:linear-gradient(180deg, rgba(12,31,64,.98), rgba(8,20,44,.98));
+  border:1px solid var(--line-faint); border-radius:6px; box-shadow:var(--glow), 0 20px 60px rgba(0,0,0,.6);
+  padding:18px 20px;}
+.modal h3{font-family:var(--hand); font-size:21px; font-weight:400; color:#fff; margin-bottom:12px;
+  text-shadow:0 0 10px rgba(120,205,255,.35);}
+.modal .mfield{margin-bottom:11px;}
+.modal label{display:block; font-size:9px; letter-spacing:.18em; color:var(--line); margin-bottom:4px;}
+.modal input[type=text], .modal input[type=number], .modal select, .modal textarea{
+  width:100%; background:rgba(0,0,0,.32); border:1px solid var(--line-faint); border-radius:4px;
+  color:var(--ink); font-family:var(--mono); font-size:12px; padding:8px 10px; outline:none;}
+.modal textarea{resize:vertical; min-height:52px; line-height:1.5;}
+.modal textarea.notesarea{font-family:var(--hand); font-size:14px;}
+.modal input:focus, .modal select:focus, .modal textarea:focus{border-color:var(--line); box-shadow:0 0 8px rgba(120,205,255,.3);}
+.modal select{appearance:none; background-image:linear-gradient(45deg, transparent 50%, var(--line) 50%), linear-gradient(135deg, var(--line) 50%, transparent 50%);
+  background-position:calc(100% - 16px) 55%, calc(100% - 11px) 55%; background-size:5px 5px; background-repeat:no-repeat;}
+.modal .mrow2{display:grid; grid-template-columns:1fr 1fr; gap:10px;}
+.modal .mbtns{display:flex; justify-content:flex-end; gap:10px; margin-top:16px;}
+.modal .mbtns .primary{background:rgba(74,222,128,.14); color:var(--green); border-color:rgba(74,222,128,.5);}
+.modal .mbtns .primary:hover{box-shadow:0 0 12px rgba(74,222,128,.4);}
+.modal .mbtns .danger{color:var(--red); border-color:rgba(255,107,107,.4);}
+.modal .mbtns .danger:hover{background:rgba(255,107,107,.12); box-shadow:0 0 10px rgba(255,107,107,.35);}
+.modal p.msg{font-size:12px; line-height:1.6; color:var(--ink); letter-spacing:.03em;}
+
+/* toast */
+.toast{
+  position:fixed; bottom:22px; left:50%; transform:translate(-50%, 20px);
+  background:rgba(10,27,56,.95); border:1px solid var(--line-faint); border-radius:5px;
+  color:var(--ink); font-size:11px; letter-spacing:.08em; padding:9px 16px;
+  opacity:0; pointer-events:none; transition:all .3s; z-index:20;
+  box-shadow:var(--glow);
+}
+.toast.show{opacity:1; transform:translate(-50%,0);}
+
+@media (max-width:820px){
+  .rail{width:74px; padding:10px 8px;}
+  .masterbtn{width:58px; height:58px;}
+  .masterbtn .mpct{font-size:20px;}
+  .masterbtn .msub{display:none;}
+  .rail .lvl b{font-size:10px;}
+  .rail .lvl .mini{display:none;}
+  .legend{display:none;}
+  .tool-hint{display:none;}
+  .tblock{display:none;}
+  .hprog .bar{width:80px;}
+}
+@media (prefers-reduced-motion: reduce){
+  *{transition:none !important; animation:none !important;}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand"><b>RENOVATION TRACKER</b><span>WHOLE-HOUSE BLUEPRINT</span></div>
+  <div class="hprog"><div class="bar"><div class="fill" id="hfill"></div></div><em id="hpct">0% COMPLETE</em></div>
+  <div class="hbudget"><b id="hbudget">$0</b><span id="hbudgetsub">EST. BUDGET</span></div>
+  <div class="spacer"></div>
+  <div class="legend" id="legend"></div>
+  <div class="toolbar">
+    <div class="subtools" id="subtools">
+      <button data-tool="move" class="on" title="Drag room markers">MOVE</button>
+      <button data-tool="addroom" title="Click the plan to place a new room">+ ROOM</button>
+      <button data-tool="wall" title="Click and drag to draw a wall line">DRAW</button>
+      <button data-tool="erase" title="Click a drawn line to erase it">ERASE</button>
+      <span class="tool-hint" id="toolhint"></span>
+    </div>
+    <button id="editbtn">EDIT BLUEPRINT</button>
+    <button id="sharebtn" title="Download a copy of this page with your current data baked in">SHARE COPY</button>
+    <button id="exportbtn" title="Download progress as JSON">SAVE FILE</button>
+    <button id="importbtn" title="Load a saved JSON file">LOAD</button>
+    <input type="file" id="importfile" accept="application/json" hidden>
+  </div>
+</header>
+
+<div class="app">
+  <nav class="rail" id="rail">
+    <button class="masterbtn" id="masterbtn" title="All tasks, whole house">
+      <svg id="mastersvg" viewBox="0 0 100 100"></svg>
+    </button>
+    <div class="stackline"></div>
+    <button class="lvl" data-level="exterior">
+      <small>SHEET A-0</small><b>EXTERIOR</b>
+      <svg class="mini" viewBox="0 0 100 40"><path d="M6 4 h88 v32 h-88 z M38 14 h24 v14 h-24 z"/></svg>
+    </button>
+    <div class="stackline"></div>
+    <button class="lvl" data-level="upper">
+      <small>SHEET A-3</small><b>UPPER LEVEL</b>
+      <svg class="mini" viewBox="0 0 100 40"><path d="M14 6 h20 v28 h-20 z M34 6 h52 v28 h-52 z"/></svg>
+    </button>
+    <div class="stackline"></div>
+    <button class="lvl active" data-level="main">
+      <small>SHEET A-2</small><b>MAIN LEVEL</b>
+      <svg class="mini" viewBox="0 0 100 40"><path d="M8 8 h66 v24 h-66 z M74 12 h18 v16 h-18 z M8 22 h34"/></svg>
+    </button>
+    <div class="stackline"></div>
+    <button class="lvl" data-level="basement">
+      <small>SHEET A-1</small><b>BASEMENT</b>
+      <svg class="mini" viewBox="0 0 100 40"><path d="M12 10 h60 v24 h-30 v-10 h-30 z M72 14 h16 v16 h-16 z"/></svg>
+    </button>
+  </nav>
+
+  <main class="canvas" id="canvas">
+    <div class="track" id="track">
+
+      <!-- EXTERIOR / SITE PLAN -->
+      <section class="slide" data-level="exterior">
+        <svg id="svg-exterior" viewBox="0 0 840 700" preserveAspectRatio="xMidYMid meet">
+          <g class="plan">
+            <g class="planlines">
+              <!-- property line, approx 2 acres -->
+              <rect class="prop" x="42" y="38" width="756" height="624"/>
+              <!-- house footprint (main level outline) -->
+              <g transform="translate(230,150) scale(0.5)">
+                <path class="wall" d="M75 185 H636 V611 H526 V709 L496 734 H392 V611 H368 V633 H75 Z"/>
+                <path class="wall" d="M636 259 H782 V551 H636"/>
+                <path class="deck" d="M184 185 V64 H641 V116 H714 V258 H636 V185 Z"/>
+              </g>
+              <!-- driveway from garage to property line -->
+              <path class="drive" d="M272 466 V662"/>
+              <path class="drive" d="M348 466 V662"/>
+              <!-- trees -->
+              <circle class="tree" cx="120" cy="120" r="26"/>
+              <circle class="tree" cx="700" cy="96" r="30"/>
+              <circle class="tree" cx="738" cy="560" r="26"/>
+              <circle class="tree" cx="96" cy="560" r="22"/>
+              <circle class="tree" cx="620" cy="620" r="18"/>
+              <!-- north arrow -->
+              <circle class="north" cx="756" cy="642" r="0.1" opacity="0"/>
+            </g>
+            <g class="planlines">
+              <circle class="north" cx="754" cy="618" r="17"/>
+              <path class="ahead" d="M754 606 L749 620 H759 Z"/>
+            </g>
+            <text class="northtxt" x="754" y="652">N</text>
+            <text class="acre" x="70" y="76">Lot: approx. 2.0 acres</text>
+            <text class="dim" x="420" y="30" text-anchor="middle">~295'</text>
+            <text class="dim" x="24" y="350" text-anchor="middle" transform="rotate(-90 24 350)">~295'</text>
+          </g>
+          <g class="uwalls" id="uwalls-exterior"></g>
+          <g class="markers" id="markers-exterior"></g>
+        </svg>
+      </section>
+
+      <!-- UPPER LEVEL -->
+      <section class="slide" data-level="upper">
+        <svg id="svg-upper" viewBox="0 0 504 630" preserveAspectRatio="xMidYMid meet">
+          <g class="plan">
+            <g class="planlines">
+              <rect class="wall" x="58" y="128" width="78" height="408"/>
+              <path class="wall" d="M136 128 H364 V560 H290 V535 H136 Z"/>
+              <rect class="deck" x="160" y="62" width="130" height="56"/>
+              <rect class="thin" x="170" y="312" width="72" height="72"/>
+              <line class="thin" x1="170" y1="322" x2="242" y2="322"/>
+              <line class="thin" x1="170" y1="332" x2="242" y2="332"/>
+              <line class="thin" x1="170" y1="342" x2="242" y2="342"/>
+              <line class="thin" x1="170" y1="352" x2="242" y2="352"/>
+              <line class="thin" x1="170" y1="362" x2="242" y2="362"/>
+              <line class="thin" x1="170" y1="372" x2="242" y2="372"/>
+              <line class="arrow" x1="206" y1="318" x2="206" y2="370"/>
+              <path class="ahead" d="M206 378 L201.5 369 H210.5 Z"/>
+            </g>
+            <text class="stairtxt" x="206" y="306" text-anchor="middle">DN</text>
+            <text class="dim" x="225" y="50" text-anchor="middle">11'</text>
+            <text class="dim" x="147" y="92" text-anchor="middle" transform="rotate(-90 147 92)">5.2'</text>
+            <text class="dim" x="344" y="113" text-anchor="middle">22'</text>
+            <text class="dim" x="112" y="344" text-anchor="middle" transform="rotate(-90 112 344)">34.8'</text>
+            <text class="dim" x="389" y="344" text-anchor="middle" transform="rotate(90 389 344)">36.8'</text>
+            <text class="dim" x="213" y="558" text-anchor="middle">13'</text>
+            <text class="dim" x="340" y="583" text-anchor="middle">9'</text>
+          </g>
+          <g class="uwalls" id="uwalls-upper"></g>
+          <g class="markers" id="markers-upper"></g>
+        </svg>
+      </section>
+
+      <!-- MAIN LEVEL -->
+      <section class="slide active" data-level="main">
+        <svg id="svg-main" viewBox="0 0 840 780" preserveAspectRatio="xMidYMid meet">
+          <g class="plan">
+            <g class="planlines">
+              <path class="wall" d="M75 185 H636 V611 H526 V709 L496 734 H392 V611 H368 V633 H75 Z"/>
+              <line class="wall" x1="392" y1="611" x2="526" y2="611"/>
+              <line class="wall" x1="75" y1="376" x2="368" y2="376"/>
+              <line class="wall" x1="368" y1="376" x2="368" y2="611"/>
+              <path class="wall" d="M636 259 H782 V551 H636"/>
+              <path class="deck" d="M184 185 V64 H641 V116 H714 V258 H636 V185 Z"/>
+              <rect class="thin" x="314" y="376" width="107" height="73"/>
+              <line class="thin" x1="366" y1="376" x2="366" y2="449"/>
+              <line class="thin" x1="314" y1="438" x2="366" y2="438"/>
+              <line class="thin" x1="314" y1="426" x2="366" y2="426"/>
+              <line class="thin" x1="314" y1="414" x2="366" y2="414"/>
+              <line class="thin" x1="314" y1="402" x2="366" y2="402"/>
+              <line class="thin" x1="378" y1="376" x2="378" y2="449"/>
+              <line class="thin" x1="389" y1="376" x2="389" y2="449"/>
+              <line class="thin" x1="400" y1="376" x2="400" y2="449"/>
+              <line class="thin" x1="411" y1="376" x2="411" y2="449"/>
+              <path class="arrow" d="M340 444 V398 Q340 390 348 390 H402"/>
+              <path class="ahead" d="M411 390 L402 385.5 V394.5 Z"/>
+              <path class="thin" d="M316 187 H350 L353 204 Q333 212 312 204 Z"/>
+              <ellipse class="thin" cx="333" cy="193" rx="5" ry="3"/>
+            </g>
+            <text class="stairtxt" x="331" y="466" text-anchor="middle">UP</text>
+            <text class="dim" x="411" y="53" text-anchor="middle">37.4'</text>
+            <text class="dim" x="129" y="176" text-anchor="middle">46.2'</text>
+            <text class="dim" x="429" y="178" text-anchor="middle">37.1'</text>
+            <text class="dim" x="57" y="279" text-anchor="middle" transform="rotate(90 57 279)">15.8'</text>
+            <text class="dim" x="57" y="503" text-anchor="middle" transform="rotate(90 57 503)">21.2'</text>
+            <text class="dim" x="225" y="657" text-anchor="middle">24'</text>
+            <text class="dim" x="459" y="634" text-anchor="middle">11'</text>
+            <text class="dim" x="605" y="634" text-anchor="middle">22.2'</text>
+            <text class="dim" x="655" y="580" text-anchor="middle" transform="rotate(90 655 580)">34.8'</text>
+            <text class="dim" x="800" y="406" text-anchor="middle" transform="rotate(90 800 406)">24'</text>
+          </g>
+          <g class="uwalls" id="uwalls-main"></g>
+          <g class="markers" id="markers-main"></g>
+        </svg>
+      </section>
+
+      <!-- BASEMENT -->
+      <section class="slide" data-level="basement">
+        <svg id="svg-basement" viewBox="0 0 499 430" preserveAspectRatio="xMidYMid meet">
+          <g class="plan">
+            <g class="planlines">
+              <path class="wall" d="M42 127 H380 V382 H217 V243 H42 Z"/>
+              <line class="wall" x1="126" y1="127" x2="126" y2="243"/>
+              <path class="wall" d="M145 97 V53 L234 35 L322 53 V97 H408 V127 H42 V97 Z"/>
+              <path class="deck" d="M380 163 H470 V310 H380 Z"/>
+              <rect class="thin" x="192" y="243" width="57" height="24"/>
+              <line class="thin" x1="199" y1="243" x2="199" y2="267"/>
+              <line class="thin" x1="206" y1="243" x2="206" y2="267"/>
+              <line class="thin" x1="213" y1="243" x2="213" y2="267"/>
+              <line class="thin" x1="220" y1="243" x2="220" y2="267"/>
+              <line class="thin" x1="227" y1="243" x2="227" y2="267"/>
+              <line class="thin" x1="234" y1="243" x2="234" y2="267"/>
+              <line class="thin" x1="241" y1="243" x2="241" y2="267"/>
+              <line class="arrow" x1="196" y1="255" x2="238" y2="255"/>
+              <path class="ahead" d="M245 255 L238 251.5 V258.5 Z"/>
+            </g>
+            <text class="stairtxt" x="220" y="277" text-anchor="middle">UP</text>
+            <text class="dim" x="148" y="121" text-anchor="middle">46.2'</text>
+            <text class="dim" x="30" y="184" text-anchor="middle" transform="rotate(-90 30 184)">15.8'</text>
+            <text class="dim" x="297" y="397" text-anchor="middle">22.2'</text>
+            <text class="dim" x="389" y="351" text-anchor="middle" transform="rotate(90 389 351)">34.8'</text>
+            <text class="dim" x="482" y="237" text-anchor="middle" transform="rotate(90 482 237)">20'</text>
+          </g>
+          <g class="uwalls" id="uwalls-basement"></g>
+          <g class="markers" id="markers-basement"></g>
+        </svg>
+      </section>
+
+    </div>
+
+    <div class="tblock" id="tblock">
+      <div class="row"><div class="cell"><span>PROJECT</span><b class="proj">Whole-House Renovation</b></div></div>
+      <div class="row">
+        <div class="cell">SHEET<b id="tb-sheet">A-2</b></div>
+        <div class="cell">LEVEL<b id="tb-level">MAIN</b></div>
+        <div class="cell">SCALE<b>N.T.S.</b></div>
+      </div>
+      <div class="row">
+        <div class="cell">DATE<b id="tb-date"></b></div>
+        <div class="cell">PROGRESS<b id="tb-prog">0%</b></div>
+      </div>
+    </div>
+  </main>
+
+  <!-- room panel -->
+  <aside class="panel" id="panel">
+    <div class="phead">
+      <div class="toprow">
+        <h2 id="proomname">Room</h2>
+        <button class="iconbtn addbig" id="addtaskbtn" title="Add a task">+</button>
+        <button class="iconbtn" id="renamebtn" title="Rename room">&#9998;</button>
+        <button class="iconbtn" id="closebtn" title="Close">&#10005;</button>
+      </div>
+      <div class="sortrow" id="sortrow">
+        <label>SORT BY</label>
+        <select id="sortsel">
+          <option value="status">STATUS</option>
+          <option value="effort">LEVEL OF EFFORT</option>
+          <option value="skill">SKILL LEVEL</option>
+          <option value="room">ROOM</option>
+          <option value="cost">COST (HIGH FIRST)</option>
+        </select>
+      </div>
+      <div class="pstats" id="pstats"></div>
+      <div class="pbar" id="pbar"></div>
+    </div>
+    <div class="plist" id="plist"></div>
+    <div class="pfoot">
+      <button class="danger" id="delroombtn" style="display:none">DELETE ROOM</button>
+    </div>
+  </aside>
+</div>
+
+<div class="mback" id="mback"><div class="modal" id="modal"></div></div>
+
+<div class="toast" id="toast"></div>
+
+<script type="application/json" id="embedded-state">null</script>
+<script>
+'use strict';
+/* ============================================================
+   RENOVATION BLUEPRINT TRACKER
+   ============================================================ */
+
+const STATUSES = [
+  {key:'red',    label:'NOT STARTED', color:'#ff6b6b'},
+  {key:'orange', label:'IN PROGRESS', color:'#ffb03a'},
+  {key:'green',  label:'NEARLY DONE', color:'#4ade80'},
+  {key:'blue',   label:'COMPLETE',    color:'#4f8ef7'}
+];
+const LEVELS = [
+  {id:'exterior', name:'EXTERIOR', sheet:'A-0', scale:0.95},
+  {id:'upper',    name:'UPPER',    sheet:'A-3', scale:0.78},
+  {id:'main',     name:'MAIN',     sheet:'A-2', scale:1.0},
+  {id:'basement', name:'BASEMENT', sheet:'A-1', scale:0.55}
+];
+const LEVEL_ORDER = ['exterior','upper','main','basement'];
+
+let _uid = 1;
+function uid(){ return 'id' + (_uid++) + '_' + Math.random().toString(36).slice(2,7); }
+function T(t, skill, effort, tools, mat, notes){
+  return {id:uid(), t:t, s:0, skill:skill||'', effort:effort||'', tools:tools||'', mat:mat||'', notes:notes||''};
+}
+
+/* ------------------ seed data (from task list) ------------------ */
+function buildSeed(){
+  _uid = 1;
+  const rooms = [];
+  function R(level, name, x, y, tasks){ rooms.push({id:uid(), level:level, name:name, x:x, y:y, tasks:tasks||[]}); }
+
+  /* ---- MAIN LEVEL ---- */
+  R('main','Office',140,281,[
+    T('Repair or replace crown molding','Intermediate','Medium','Miter saw, nail gun or hammer, caulk gun','Crown molding, finish nails, construction adhesive, wood filler, caulk, primer, paint','Complete before final wall and ceiling touch-ups.'),
+    T('Replace fluorescent fixtures with new lighting','Licensed electrician recommended','Medium','Voltage tester, screwdrivers, wire strippers, ladder','New fixtures or LEDs, electrical boxes if needed, wire connectors, mounting hardware','Confirm existing boxes and wiring can support the replacements.'),
+    T('Optional popcorn ceiling removal','Intermediate','High','Ceiling scraper, drywall knives, sander, respirator','Plastic sheeting, tape, water sprayer, joint compound, primer, ceiling paint','Test for asbestos before disturbing older texture.'),
+    T('Install new flooring','Intermediate','High','Saw or flooring cutter, tapping block, pull bar','Flooring, underlayment, transition strips, spacers, leveling compound','Complete ceiling and major painting work first.'),
+    T('Finish trim around the door','Intermediate','Medium','Miter saw, nail gun or hammer','Door casing, finish nails, caulk, wood filler, primer, paint',''),
+    T('Repair messy paint around outlets','Basic','Low','Putty knife, sanding block, small brush','Spackle, sandpaper, primer, matching wall paint','Remove outlet covers before repairing and repainting.'),
+    T('Replace outlet and switch covers','Basic','Low','Screwdriver','Matching outlet and switch plates','')
+  ]);
+  R('main','Living Room',300,300,[
+    T('Repair or reposition light switch near door','Licensed electrician recommended','Medium','Voltage tester, screwdrivers, wire strippers','Switch, box extender or replacement box, cover plate, wire connectors','Determine if the issue is the switch, box placement, wiring, or wall opening.'),
+    T('Install new flooring','Intermediate','High','Flooring cutter or saw, tapping block, spacers','Flooring, underlayment, transitions, leveling materials',''),
+    T('Optional masonry painting','Basic to intermediate','Medium','Stiff brush, roller, masonry brush','Masonry cleaner, masonry primer, masonry paint','Check for moisture or efflorescence before painting.'),
+    T('Touch up paint above the windows','Basic','Low','Putty knife, sanding block, brush','Spackle, primer, matching paint',''),
+    T('Install or repair baseboards','Intermediate','Medium','Miter saw, nail gun or hammer','Baseboard, finish nails, caulk, wood filler, primer, paint','Install after flooring.'),
+    T('Address porch light outlet or connection','Licensed electrician','Medium','Voltage tester, standard electrical tools','Weather-rated box, cover, fixture components, wire connectors','Exterior components should be weather-rated and GFCI protected where required.'),
+    T('Repair or replace the four light fixtures','Intermediate or licensed electrician','Medium','Ladder, voltage tester, screwdrivers','Replacement fixtures, bulbs, covers, mounting hardware','')
+  ]);
+  R('main','Dining Area',511,285,[
+    T('Move cabinets to the new location','Advanced','High','Drill, level, stud finder','Cabinet fasteners, blocking, shims, trim and countertop materials',''),
+    T('Paint walls','Basic','Medium','Rollers and brushes','Spackle, primer, paint',''),
+    T('Finish drywall around the opening','Intermediate','Medium','Drill, drywall knives, sander','Drywall, corner bead, tape, compound, primer, paint',''),
+    T('Complete electrical work before closing walls','Licensed electrician','Medium','Electrical tools','Wiring, electrical boxes, receptacles, covers',''),
+    T('Install cedar ceiling planks','Intermediate to advanced','High','Miter saw, nail gun, ladder','Cedar planks, fasteners, furring strips, finish','')
+  ]);
+  R('main','Kitchen',548,412,[
+    T('Paint cabinets','Intermediate','High','Drill, brushes, foam rollers, drying racks','Degreaser, sandpaper or deglosser, bonding primer, cabinet enamel, filler, new hardware','Label doors and hardware before removal.'),
+    T('Secure the dishwasher','Intermediate','Low to medium','Drill, screwdriver, level','Mounting brackets, screws, anti-tip hardware','Verify mounting does not damage a stone countertop.'),
+    T('Install outlet covers','Basic','Low','Screwdriver','Outlet plates, GFCI covers where applicable',''),
+    T('Install light switch covers','Basic','Low','Screwdriver','Switch plates',''),
+    T('Add an outlet near the stove','Licensed electrician','Medium to high','Electrical installation tools','Electrical box, receptacle, cable, cover plate, breaker or circuit components','Circuit and location requirements depend on the appliance and code.'),
+    T('Install new flooring','Intermediate','High','Flooring cutter or saw, tapping block, spacers','Water-resistant flooring, underlayment, transitions, leveling materials','Resolve cabinet, plumbing, drywall, and electrical work first.'),
+    T('Replace industrial lights with recessed LEDs','Licensed electrician','High','Hole saw, voltage tester, electrical tools, ladder','Recessed LED fixtures, wiring, connectors, switches, drywall patching supplies','Confirm joist locations, IC ratings, and circuit capacity.'),
+    T('Complete or rebuild the island','Intermediate to advanced','High','Drill, level, saw','Cabinet boxes or framing, countertop, trim, fasteners, electrical components','Scope depends on repair, finish, relocation, or rebuild.'),
+    T('Finish drywall at corner of dining opening','Intermediate','Medium','Drill, drywall knives, sanding tools','Drywall, corner bead, screws, joint tape, compound, primer, paint',''),
+    T('Move cabinets to the opposite side','Advanced','High','Drill, level, stud finder, saw','Cabinet fasteners, shims, blocking, trim, countertop materials','Confirm plumbing, electrical, framing, and countertop implications first.'),
+    T('Paint walls','Basic','Medium','Rollers, brushes, trays','Cleaner, spackle, primer, wall paint',''),
+    T('Cover or repair the drywall hole','Intermediate','Medium','Drywall saw, drill, drywall knives','Drywall patch, backing strips, screws, tape, compound, primer, paint',''),
+    T('Activate the dead outlet','Licensed electrician','Medium','Circuit tracer, multimeter, electrical tools','Wiring, receptacle, box components, cover','Complete before closing the wall with drywall.'),
+    T('Install cedar ceiling planks','Intermediate to advanced','High','Miter saw, nail gun, ladder','Cedar planks, furring strips, finish nails, adhesive, stain or clear finish','Complete recessed lighting and electrical first.'),
+    T('Resolve or remove the unused water line','Licensed plumber recommended','Medium','Plumbing tools for the pipe material','Approved cap, shutoff valve, fittings, access panel','Identify the source and purpose before cutting or capping.')
+  ]);
+  R('main','Alcove / Corner Room',575,516,[
+    T('Remove carpet tack strips','Basic','Low to medium','Pry bar, hammer, pliers, gloves','Heavy-duty trash bags, floor patching material',''),
+    T('Install new flooring','Intermediate','High','Saw or flooring cutter, tapping block, spacers','Flooring, underlayment, transitions, floor patch',''),
+    T('Scrape paint from windows','Basic','Medium','Window scraper','Glass cleaner, razor blades, painter tape','Avoid scraping dry glass or damaging painted frames.'),
+    T('Replace doorknob and lock','Basic','Low','Screwdriver, drill if needed','Knob or lever set, latch, strike plate, screws',''),
+    T('Install a new light fixture cover','Basic','Low','Screwdriver, ladder','Correct-size globe, shade, or diffuser','Confirm the fixture model and attachment method first.'),
+    T('Replace outlet and switch covers','Basic','Low','Screwdriver','Matching cover plates',''),
+    T('Caulk the trim','Basic','Low','Caulk gun, damp rag','Paintable acrylic latex caulk',''),
+    T('Replace floor register','Basic','Low','Tape measure, screwdriver','Correct-size floor register or grille',''),
+    T('Correct recessed or shallow outlet','Intermediate or licensed electrician','Low to medium','Voltage tester, screwdriver','Box extender, longer device screws, cover plate','Do not use the cover plate to pull the outlet forward.'),
+    T('Touch up below the countertop','Basic','Low','Putty knife, sanding block, brush','Spackle, primer, matching paint','')
+  ]);
+  R('main','Entryway',488,565,[
+    T('Install new flooring','Intermediate','Medium to high','Flooring cutter or saw','Flooring, underlayment, transitions, floor patch',''),
+    T('Install new ceiling LEDs','Licensed electrician recommended','Medium','Ladder, voltage tester, electrical tools','LED fixtures, wiring components, mounting hardware',''),
+    T('Install or finish trim around the front door','Intermediate','Medium','Miter saw, nail gun or hammer','Door casing, extension jamb material, caulk, filler, primer, paint',''),
+    T('Replace light covers','Basic','Low','Screwdriver, ladder','Compatible fixture covers or diffusers','')
+  ]);
+  R('main','Mudroom',428,498,[
+    T('Install new flooring','Intermediate','Medium to high','Flooring cutter or saw','Moisture-resistant flooring, underlayment, transitions',''),
+    T('Install new ceiling LEDs','Licensed electrician recommended','Medium','Electrical tools, ladder','LED fixtures and electrical components',''),
+    T('Remove unnecessary ceiling two-by-fours','Intermediate to advanced','Medium','Pry bar, reciprocating saw if appropriate','Replacement ceiling material, patching supplies','Determine whether boards are structural before removal.'),
+    T('Reroute or remove closet-light cord','Licensed electrician','Medium to high','Electrical tools','Approved cable, junction boxes, connectors, switch or fixture parts','Concealed wiring must use approved cable and accessible boxes.'),
+    T('Build and install shelving','Intermediate','Medium','Drill, level, stud finder, saw','Shelving boards, brackets or cabinet parts, anchors, screws',''),
+    T('Paint walls and trim','Basic','Medium','Rollers and brushes','Cleaner, spackle, primer, paint',''),
+    T('Paint the garage door','Basic','Medium','Brush and roller','Degreaser, sandpaper, bonding primer, durable door paint',''),
+    T('Install crown molding','Intermediate','Medium','Miter saw, nail gun','Crown molding, fasteners, caulk, filler, primer, paint',''),
+    T('Install baseboards','Intermediate','Medium','Miter saw, nail gun','Baseboard, fasteners, caulk, filler, paint','Install after flooring.')
+  ]);
+  R('main','Lower Stairway',343,425,[
+    T('Enclose wall with exposed studs and wiring','Advanced','High','Drill, drywall tools','Electrical boxes or cable protection, insulation, drywall, tape, compound, primer, paint','Wiring must be inspected and corrected before closing the wall.'),
+    T('Remove stair carpet','Basic to intermediate','Medium','Pry bar, pliers, utility knife, gloves','Trash bags, patching materials, replacement stair finish',''),
+    T('Remove tack strips and staples','Basic','Medium','Pry bar, pliers, staple puller','Floor filler if needed',''),
+    T('Repair and paint stairway walls','Basic to intermediate','Medium','Putty knife, sanding tools, brushes, rollers','Joint compound, sandpaper, primer, paint',''),
+    T('Install new handrail','Intermediate','Medium','Drill, level, stud finder','Handrail, brackets, structural screws, blocking','Height and mounting should comply with local code.')
+  ]);
+  R('main','Main Floor Bathroom',430,586,[]);
+  R('main','Garage',215,505,[]);
+  R('main','Uncovered Deck',426,118,[]);
+  R('main','Screened Porch',709,405,[]);
+  R('main','Uncovered Porch',458,668,[]);
+
+  /* ---- UPPER LEVEL ---- */
+  R('upper','Uncovered Deck',225,90,[]);
+  R('upper','Primary Bedroom',225,215,[
+    T('Replace the ceiling fan','Licensed electrician recommended','Medium','Voltage tester, electrical tools, ladder','Ceiling fan, fan-rated box if required, mounting hardware',''),
+    T('Optional popcorn ceiling removal','Intermediate','High','Ceiling scraper, drywall knives, sander, respirator','Plastic sheeting, sprayer, joint compound, primer, ceiling paint','Test older texture for asbestos before disturbing it.'),
+    T('Disassemble the built-in bed','Intermediate','Medium','Drill, sockets, pry bar as needed','Moving blankets, hardware bags, wall patching supplies',''),
+    T('Install a replacement bed','Basic','Low to medium','Basic hand tools','Bed frame, mattress support, mounting hardware',''),
+    T('Touch up closet walls and trim','Basic','Low to medium','Putty knife, sanding block, brush','Spackle, caulk, primer, paint','')
+  ]);
+  R('upper',"Ben's Bedroom",332,265,[
+    T('Clean or replace carpet','Basic for cleaning; pro for replacement','Medium to high','Carpet cleaner or installation tools','Cleaner and stain treatment, or carpet, pad, tack strips, transitions',''),
+    T('Replace the ceiling fan','Licensed electrician recommended','Medium','Voltage tester, electrical tools, ladder','Ceiling fan, fan-rated box if unsuitable, hardware',''),
+    T('Mount television','Intermediate','Low to medium','Drill, level, stud finder','TV mount, lag screws, cable management',''),
+    T('General cleaning and organization','Basic','Medium','Vacuum, basic cleaning tools','Cleaning supplies, trash bags, storage bins',''),
+    T('Repair wall damage','Basic to intermediate','Medium','Putty knife, sanding block','Spackle or joint compound, mesh patch, primer, paint',''),
+    T('Install closet lighting','Basic for battery; electrician for hardwired','Low to medium','Drill, electrical tools as applicable','LED closet fixture, switch or motion sensor, wiring or battery unit',''),
+    T('Optional room painting','Basic','Medium to high','Rollers and brushes','Spackle, primer, paint','')
+  ]);
+  R('upper',"Maizy's Bedroom",325,432,[
+    T('Clean or replace carpet','Basic for cleaning; pro for replacement','Medium to high','Carpet cleaner or installation tools','Carpet cleaner, or replacement carpet and padding',''),
+    T('Replace the ceiling fan','Licensed electrician recommended','Medium','Voltage tester, electrical tools, ladder','Ceiling fan, fan-rated box if required',''),
+    T('General cleaning and organization','Basic','Medium','Vacuum, basic cleaning tools','Cleaning supplies, trash bags, storage bins',''),
+    T('Optional room painting','Basic','Medium to high','Rollers and brushes','Spackle, primer, paint','')
+  ]);
+  R('upper','Main Hall Bathroom',192,412,[
+    T('Remove wallpaper','Basic','High','Scraper, sponge','Wallpaper remover, warm water, scoring tool, plastic sheeting',''),
+    T('Repair walls after wallpaper removal','Intermediate','Medium','Drywall knives, sanding block','Joint compound, sanding materials, primer',''),
+    T('Replace the light fixture','Licensed electrician recommended','Low to medium','Voltage tester, electrical tools','Vanity light, bulbs, wire connectors, hardware',''),
+    T('Clean the mirror','Basic','Low','Glass-safe scraper if needed','Glass cleaner, microfiber cloth, mineral remover',''),
+    T('Install new flooring','Intermediate','High','Flooring cutter or saw','Waterproof flooring, underlayment, flange extender, transitions','Remove the toilet before flooring around it.'),
+    T('Replace the toilet','Intermediate or plumber','Medium','Wrenches, level','Toilet, wax ring or seal, closet bolts, supply line, shims, caulk',''),
+    T('Install new shelving','Basic to intermediate','Medium','Drill, level, stud finder','Shelves, brackets, anchors, screws',''),
+    T('Replace the showerhead','Basic','Low','Adjustable wrench','Showerhead, thread-seal tape',''),
+    T('Optional full tub and shower replacement','Advanced with licensed plumber','Very high','Demolition, plumbing, carpentry tools','Tub or shower unit, surround, waterproofing, drain and plumbing parts',''),
+    T('Paint the trim','Basic','Medium','Brush','Cleaner, sandpaper, primer, trim paint',''),
+    T('Replace light switches and covers','Intermediate or licensed electrician','Low to medium','Voltage tester, screwdrivers','Switches, covers, wire connectors','')
+  ]);
+  R('upper',"Maizy's Bathroom",205,498,[
+    T('Vanity: install new flooring','Intermediate','High','Flooring cutter or saw','Waterproof flooring, underlayment, transitions',''),
+    T('Vanity: remove remaining wallpaper','Basic','Medium to high','Scraper and sponge','Wallpaper remover, scoring tool, water, plastic sheeting',''),
+    T('Vanity: sand adhesive residue from walls','Basic to intermediate','Medium','Sanding block or orbital sander with dust control','Sandpaper, adhesive remover, primer',''),
+    T('Vanity: repair wall damage','Intermediate','Medium','Drywall knives, sanding tools','Joint compound, patch material, primer',''),
+    T('Vanity: replace bulbs','Basic','Low','Ladder if needed','Correct-size LED bulbs',''),
+    T('Vanity: paint cabinets','Intermediate','High','Drill, brushes, foam roller','Degreaser, deglosser, bonding primer, cabinet enamel',''),
+    T('Vanity: optional countertop replacement','Advanced','High','Plumbing and carpentry tools','Countertop, sink, faucet, drain fittings, caulk',''),
+    T('Vanity: general cleaning','Basic','Medium','Scrub brushes and cloths','Bathroom cleaner, disinfectant, mineral remover',''),
+    T('Shower: remove remaining wallpaper','Basic','Medium','Sponge and scraper','Wallpaper remover, scoring tool',''),
+    T('Shower: remove the shower door','Intermediate','Medium','Screwdriver, drill, utility knife','Caulk remover, wall patching materials','Tempered glass is heavy and can shatter if twisted or struck.'),
+    T('Shower: install curtain and rod','Basic','Low','Drill, level','Shower rod, anchors, curtain, liner, hooks',''),
+    T('Shower: optional full shower replacement','Advanced with licensed plumber','Very high','Demolition, carpentry, plumbing tools','Base or tub, surround, waterproofing, drain and plumbing parts',''),
+    T('Shower: replace showerhead','Basic','Low','Adjustable wrench','Showerhead, thread-seal tape',''),
+    T('Shower: replace register or vent grille','Basic','Low','Screwdriver, tape measure','Correct-size grille or register',''),
+    T('Shower: repair or replace bathroom light','Licensed electrician recommended','Medium','Voltage tester, electrical tools','Fixture, bulbs, exhaust-fan light components if combined',''),
+    T('Shower: diagnose the broken toilet','Intermediate or plumber','Medium','Wrenches, sponge, bucket','Fill valve, flapper, flush valve, supply line, seals, or new toilet',''),
+    T('Shower: replace toilet if necessary','Intermediate or plumber','Medium','Wrenches and level','Toilet, seal, bolts, supply line, shims, caulk',''),
+    T('Shower: replace switches and covers','Intermediate or licensed electrician','Low to medium','Voltage tester, electrical tools','Switches, GFCI or standard covers','')
+  ]);
+  R('upper','Coffee Area',262,412,[
+    T('Build coffee shelves','Intermediate','Medium','Drill, level, stud finder, saw','Shelves, brackets, anchors, screws, stain or paint',''),
+    T('Diagnose hot water availability','Licensed plumber recommended','Medium to high','Plumbing diagnostic tools','Depends on sink, dispenser, or connection planned','Determine if hot water is absent, slow, disconnected, or never installed.'),
+    T('Repair or replace lights','Licensed electrician recommended','Medium','Voltage tester, ladder, electrical tools','Fixtures, bulbs, wiring components','')
+  ]);
+  R('upper','Upstairs Hall',290,350,[
+    T('Remove the hollow gray stereo-like wall unit','Intermediate','Medium','Screwdriver, pry bar, voltage tester','Drywall patching materials, primer, paint','Check for electrical, speaker, intercom, HVAC, or alarm wiring first.'),
+    T('Install new LED lighting','Licensed electrician recommended','Medium','Electrical tools, ladder','LED fixtures, boxes or wiring components',''),
+    T('Remove the old smoke detector','Basic; electrician if hardwired','Low','Screwdriver, voltage tester if hardwired','Replacement smoke or smoke and CO alarm','Replace rather than removing required alarm coverage.'),
+    T('Paint the wood surfaces','Basic','Medium','Brush, roller','Cleaner, sandpaper, bonding primer, paint','')
+  ]);
+  R('upper','2nd-Floor Landing',206,292,[
+    T('Optional masonry painting','Basic to intermediate','Medium','Stiff brush, roller','Masonry cleaner, primer, masonry paint',''),
+    T('Test and repair the wall switch','Licensed electrician recommended','Low to medium','Voltage tester, multimeter, electrical tools','Replacement switch, cover, wire connectors',''),
+    T('Remove carpeted wall covering','Basic to intermediate','Medium','Pry bar, scraper, pliers','Adhesive remover, patching compound, primer, paint','Removed material may be salvageable or sellable.'),
+    T('Continue wall repairs and painting','Basic','Medium','Drywall knives, sanding tools, brushes','Spackle or joint compound, primer, paint',''),
+    T('Continue or replace handrail','Intermediate','Medium','Drill, level, stud finder','Handrail, brackets, structural screws',''),
+    T('Remove remaining carpet','Basic to intermediate','Medium','Utility knife, pry bar, pliers','Disposal bags, floor repair supplies','')
+  ]);
+  R('upper','Attic',97,336,[
+    T('Declutter and clean','Basic','High','Shop vacuum, broom','Trash bags, storage bins, labels, masks, cleaning supplies',''),
+    T('Sort and sell unneeded items','Basic','High','Camera or phone for listings','Boxes, labels, cleaning materials',''),
+    T('Mount cabinets','Intermediate','Medium','Drill, level, stud finder','Structural screws, blocking, shims, cabinet rails','Confirm walls or framing can support the weight.'),
+    T('Install carpet','Intermediate or professional','High','Carpet installation tools','Carpet, pad, tack strips or attic floor system, transitions','Complete insulation, wiring, window, and dryer vent work first.'),
+    T('Insulate the attic space','Advanced','High','Utility knife, stapler, respirator','Insulation, baffles, air-sealing foam or caulk, PPE','Do not block soffit ventilation; keep clearances around heat sources.'),
+    T('Create safe access around ceiling wires','Licensed electrician','High','Electrical tools','Cable supports, running boards, junction boxes, conduit','Do not bury junction boxes or leave wiring exposed to traffic.'),
+    T('Run the dryer vent to the exterior','Advanced','High','Hole saw, drill, snips','Rigid metal duct, elbows, exterior hood with damper, foil tape, supports','No plastic or foil flex duct in concealed spaces. Keep the run short.'),
+    T('Install the hexagon window','Advanced or professional','Very high','Saw, level, framing and roofing tools','Window unit, framing lumber, flashing, sealant, exterior trim, insulation','Affects framing, weatherproofing, insulation, and cladding.'),
+    T('Improve attic lighting','Licensed electrician recommended','Medium to high','Electrical tools','LED fixtures, switches, wiring and boxes',''),
+    T('Remove packing peanuts from roof insulation','Basic','Medium to high','HEPA shop vacuum if appropriate','Heavy-duty bags, respirator, gloves','Verify the material is packaging foam and not old insulation.')
+  ]);
+
+  /* ---- BASEMENT (blank slates, add tasks as needed) ---- */
+  R('basement','Family Room',239,192,[]);
+  R('basement','Bsmt Dining',323,167,[]);
+  R('basement','Bsmt Kitchen',327,247,[]);
+  R('basement','Bsmt Bedroom 1',151,185,[]);
+  R('basement','Bsmt Bedroom 2',337,318,[]);
+  R('basement','Laundry',232,314,[]);
+  R('basement','Bsmt Bath',272,344,[]);
+  R('basement','Storage',84,182,[]);
+  R('basement','Covered Patio',231,66,[]);
+  R('basement','Covered Deck',425,236,[]);
+
+  /* ---- EXTERIOR ---- */
+  R('exterior','Roof',420,240,[]);
+  R('exterior','Siding & Trim',560,140,[]);
+  R('exterior','Driveway',310,590,[]);
+  R('exterior','Front Yard',560,560,[]);
+  R('exterior','Back Yard',170,300,[]);
+  R('exterior','Landscaping',680,300,[]);
+
+  return {v:4, active:'main', rooms:rooms, walls:{exterior:[], upper:[], main:[], basement:[]}};
+}
+
+/* ------------------ persistence ------------------ */
+const KEY = 'reno-blueprint-tracker';
+const store = {
+  async load(){
+    try{
+      if (window.storage && window.storage.get){
+        const r = await window.storage.get(KEY);
+        if (r && r.value) return JSON.parse(r.value);
+      }
+    }catch(e){}
+    try{
+      const v = localStorage.getItem(KEY);
+      if (v) return JSON.parse(v);
+    }catch(e){}
+    return null;
+  },
+  async save(data){
+    const s = JSON.stringify(data);
+    try{
+      if (window.storage && window.storage.set){ await window.storage.set(KEY, s); return; }
+    }catch(e){}
+    try{ localStorage.setItem(KEY, s); }catch(e){}
+  }
+};
+let saveTimer = null;
+function persist(){
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(function(){ state.ts = Date.now(); store.save(state); }, 350);
+}
+
+/* ------------------ state ------------------ */
+let state = null;
+let editMode = false;
+let tool = 'move';
+let openRoomId = null;
+let masterMode = false;
+const expanded = new Set();
+
+const $ = function(s){ return document.querySelector(s); };
+const $$ = function(s){ return Array.from(document.querySelectorAll(s)); };
+const SVGNS = 'http://www.w3.org/2000/svg';
+
+function roomById(id){ return state.rooms.find(function(r){ return r.id === id; }); }
+function levelMeta(id){ return LEVELS.find(function(l){ return l.id === id; }); }
+
+function counts(room){
+  const c = [0,0,0,0];
+  room.tasks.forEach(function(t){ c[t.s]++; });
+  return c;
+}
+function pctComplete(room){
+  const n = room.tasks.length;
+  if (!n) return null;
+  return Math.round(100 * counts(room)[3] / n);
+}
+
+/* ------------------ toast ------------------ */
+let toastTimer = null;
+function toast(msg){
+  const el = $('#toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(function(){ el.classList.remove('show'); }, 2200);
+}
+
+
+/* ------------------ modals ------------------ */
+const EFFORTS = ['Low','Low to medium','Medium','Medium to high','High','Very high'];
+const SKILLS = ['Basic','Basic to intermediate','Intermediate','Intermediate to advanced','Advanced','Licensed electrician','Licensed plumber','Licensed professional'];
+function fmtNum(n){ return Math.round(n).toLocaleString('en-US'); }
+function fmtMoney(n){ return '$' + fmtNum(n); }
+
+function showModal(html){ $('#modal').innerHTML = html; $('#mback').classList.add('show'); }
+function hideModal(){ $('#mback').classList.remove('show'); $('#modal').innerHTML = ''; }
+$('#mback').addEventListener('click', function(e){ if (e.target.id === 'mback') hideModal(); });
+document.addEventListener('keydown', function(e){ if (e.key === 'Escape') hideModal(); });
+
+function promptModal(title, val){
+  return new Promise(function(res){
+    showModal('<h3>' + esc(title) + '</h3>' +
+      '<div class="mfield"><input type="text" id="m-in" value="' + esc(val || '') + '"></div>' +
+      '<div class="mbtns"><button id="m-cancel">CANCEL</button><button class="primary" id="m-ok">OK</button></div>');
+    const inp = $('#m-in'); inp.focus(); inp.select();
+    $('#m-ok').onclick = function(){ const v = inp.value.trim(); hideModal(); res(v || null); };
+    $('#m-cancel').onclick = function(){ hideModal(); res(null); };
+    inp.onkeydown = function(e){ if (e.key === 'Enter') $('#m-ok').click(); };
+  });
+}
+function confirmModal(msg, okLabel){
+  return new Promise(function(res){
+    showModal('<h3>Confirm</h3><p class="msg">' + esc(msg) + '</p>' +
+      '<div class="mbtns"><button id="m-cancel">CANCEL</button><button class="danger" id="m-ok">' + (okLabel || 'DELETE') + '</button></div>');
+    $('#m-ok').onclick = function(){ hideModal(); res(true); };
+    $('#m-cancel').onclick = function(){ hideModal(); res(false); };
+  });
+}
+
+function taskModal(){
+  const room = roomById(openRoomId);
+  if (!room) return;
+  function opts(arr){ return '<option value=""></option>' + arr.map(function(o){ return '<option>' + esc(o) + '</option>'; }).join(''); }
+  showModal(
+    '<h3>New Task \u00b7 ' + esc(room.name) + '</h3>' +
+    '<div class="mfield"><label>TASK</label><input type="text" id="mt-title" placeholder="What needs doing?"></div>' +
+    '<div class="mrow2">' +
+      '<div class="mfield"><label>STATUS</label><select id="mt-status">' + STATUSES.map(function(st, i){ return '<option value="' + i + '">' + st.label + '</option>'; }).join('') + '</select></div>' +
+      '<div class="mfield"><label>EST. COST ($)</label><input type="number" id="mt-cost" min="0" step="1" placeholder="0"></div>' +
+    '</div>' +
+    '<div class="mrow2">' +
+      '<div class="mfield"><label>LEVEL OF EFFORT</label><select id="mt-effort">' + opts(EFFORTS) + '</select></div>' +
+      '<div class="mfield"><label>SKILL LEVEL</label><select id="mt-skill">' + opts(SKILLS) + '</select></div>' +
+    '</div>' +
+    '<div class="mfield"><label>TOOLS</label><textarea id="mt-tools" placeholder="Comma-separated"></textarea></div>' +
+    '<div class="mfield"><label>MATERIALS</label><textarea id="mt-mat" placeholder="Comma-separated"></textarea></div>' +
+    '<div class="mfield"><label>NOTES</label><textarea id="mt-notes" class="notesarea"></textarea></div>' +
+    '<div class="mbtns"><button id="m-cancel">CANCEL</button><button class="primary" id="m-ok">ADD TASK</button></div>'
+  );
+  $('#mt-title').focus();
+  $('#m-cancel').onclick = hideModal;
+  $('#m-ok').onclick = function(){
+    const title = $('#mt-title').value.trim();
+    if (!title){ $('#mt-title').focus(); return; }
+    const t = T(title, $('#mt-skill').value, $('#mt-effort').value, $('#mt-tools').value.trim(), $('#mt-mat').value.trim(), $('#mt-notes').value.trim());
+    t.s = parseInt($('#mt-status').value, 10) || 0;
+    t.cost = parseFloat($('#mt-cost').value) || 0;
+    room.tasks.push(t);
+    hideModal();
+    renderPanel(); renderMarkers(room.level); renderHeader(); persist();
+    const list = $('#plist'); list.scrollTop = list.scrollHeight;
+  };
+}
+
+/* ------------------ markers ------------------ */
+function svgEl(tag, attrs){
+  const el = document.createElementNS(SVGNS, tag);
+  for (const k in attrs) el.setAttribute(k, attrs[k]);
+  return el;
+}
+
+function renderMarkers(levelId){
+  const g = document.getElementById('markers-' + levelId);
+  g.innerHTML = '';
+  const scale = levelMeta(levelId).scale;
+  state.rooms.filter(function(r){ return r.level === levelId; }).forEach(function(room){
+    const mk = svgEl('g', {class:'marker' + (room.id === openRoomId ? ' selected' : ''), transform:'translate(' + room.x + ',' + room.y + ') scale(' + scale + ')'});
+    mk.dataset.id = room.id;
+
+    mk.appendChild(svgEl('circle', {class:'hit', r:38}));
+    mk.appendChild(svgEl('circle', {class:'ringbg', r:29}));
+
+    const total = room.tasks.length;
+    const r = 22, C = 2 * Math.PI * r;
+    if (!total){
+      mk.appendChild(svgEl('circle', {class:'emptyring', r:r}));
+      const plus = svgEl('text', {class:'pct', y:5});
+      plus.textContent = '+';
+      mk.appendChild(plus);
+    } else {
+      const c = counts(room);
+      let acc = 0;
+      for (let i = 0; i < 4; i++){
+        const f = c[i] / total;
+        if (f <= 0) continue;
+        const seg = svgEl('circle', {
+          class:'seg', r:r,
+          stroke:STATUSES[i].color,
+          'stroke-dasharray': (f * C) + ' ' + C,
+          'stroke-dashoffset': String(-acc * C),
+          transform:'rotate(-90)'
+        });
+        mk.appendChild(seg);
+        acc += f;
+      }
+      const pt = svgEl('text', {class:'pct', y:3});
+      pt.textContent = pctComplete(room) + '%';
+      mk.appendChild(pt);
+      const sub = svgEl('text', {class:'pctsub', y:12});
+      sub.textContent = 'DONE';
+      mk.appendChild(sub);
+    }
+    const name = svgEl('text', {class:'rname', y:46});
+    name.textContent = room.name;
+    mk.appendChild(name);
+    g.appendChild(mk);
+  });
+}
+
+function renderWalls(levelId){
+  const g = document.getElementById('uwalls-' + levelId);
+  g.innerHTML = '';
+  (state.walls[levelId] || []).forEach(function(w, i){
+    const ln = svgEl('line', {class:'uwall', x1:w[0], y1:w[1], x2:w[2], y2:w[3]});
+    ln.dataset.idx = i;
+    g.appendChild(ln);
+  });
+}
+
+function renderAllLevels(){
+  LEVEL_ORDER.forEach(function(id){ renderMarkers(id); renderWalls(id); });
+  renderHeader();
+}
+
+function renderHeader(){
+  let total = 0, done = 0, cost = 0, costLeft = 0;
+  state.rooms.forEach(function(r){
+    total += r.tasks.length;
+    done += counts(r)[3];
+    r.tasks.forEach(function(t){ const c = t.cost || 0; cost += c; if (t.s < 3) costLeft += c; });
+  });
+  const pct = total ? Math.round(100 * done / total) : 0;
+  $('#hfill').style.width = pct + '%';
+  $('#hpct').textContent = pct + '% COMPLETE \u00b7 ' + done + '/' + total;
+  $('#tb-prog').textContent = pct + '%';
+  $('#hbudget').textContent = fmtMoney(cost);
+  $('#hbudgetsub').textContent = 'EST. BUDGET \u00b7 ' + fmtMoney(costLeft) + ' TO GO';
+  renderMasterDonut();
+}
+
+function renderMasterDonut(){
+  const svg = $('#mastersvg');
+  svg.innerHTML = '';
+  const c = [0, 0, 0, 0];
+  let total = 0;
+  state.rooms.forEach(function(r){ r.tasks.forEach(function(t){ c[t.s]++; total++; }); });
+  const g = svgEl('g', {transform:'translate(50,50)'});
+  g.appendChild(svgEl('circle', {r:47, fill:'rgba(6,17,38,.85)', stroke:'rgba(143,212,255,.16)', 'stroke-width':1}));
+  const r = 38, C = 2 * Math.PI * r;
+  if (!total){
+    g.appendChild(svgEl('circle', {r:r, fill:'none', stroke:'var(--line-faint)', 'stroke-width':2, 'stroke-dasharray':'4 6'}));
+  } else {
+    let acc = 0;
+    for (let i = 0; i < 4; i++){
+      const f = c[i] / total;
+      if (f <= 0) continue;
+      g.appendChild(svgEl('circle', {
+        r:r, fill:'none', stroke:STATUSES[i].color, 'stroke-width':11,
+        'stroke-dasharray':(f * C) + ' ' + C,
+        'stroke-dashoffset':String(-acc * C),
+        transform:'rotate(-90)'
+      }));
+      acc += f;
+    }
+  }
+  const pct = total ? Math.round(100 * c[3] / total) : 0;
+  const pt = svgEl('text', {class:'mpct', y:2});
+  pt.textContent = pct + '%';
+  g.appendChild(pt);
+  const sub = svgEl('text', {class:'msub', y:15});
+  sub.textContent = 'HOUSE';
+  g.appendChild(sub);
+  svg.appendChild(g);
+}
+
+/* ------------------ level switching ------------------ */
+function setLevel(id){
+  state.active = id;
+  const idx = LEVEL_ORDER.indexOf(id);
+  $('#track').style.transform = 'translateY(-' + (idx * 25) + '%)';
+  $$('.slide').forEach(function(s){ s.classList.toggle('active', s.dataset.level === id); });
+  $$('.rail .lvl').forEach(function(b){ b.classList.toggle('active', b.dataset.level === id); });
+  const m = levelMeta(id);
+  $('#tb-sheet').textContent = m.sheet;
+  $('#tb-level').textContent = m.name;
+  closePanel();
+  persist();
+}
+
+/* ------------------ panel ------------------ */
+function openPanel(id){
+  masterMode = false;
+  $('#masterbtn').classList.remove('on');
+  openRoomId = id;
+  renderPanel();
+  $('#panel').classList.add('open');
+  renderMarkers(roomById(id).level);
+}
+function closePanel(){
+  if (masterMode){
+    masterMode = false;
+    $('#panel').classList.remove('open');
+    $('#masterbtn').classList.remove('on');
+    return;
+  }
+  if (!openRoomId) return;
+  const lvl = roomById(openRoomId) ? roomById(openRoomId).level : null;
+  openRoomId = null;
+  $('#panel').classList.remove('open');
+  if (lvl) renderMarkers(lvl);
+}
+
+function esc(s){
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function taskHTML(t, room, withRoomTag){
+  const st = STATUSES[t.s];
+  const exp = expanded.has(t.id);
+  return '' +
+  '<div class="task' + (exp ? ' expanded' : '') + '" data-tid="' + t.id + '" data-rid="' + room.id + '" data-s="' + t.s + '">' +
+    '<div class="trow">' +
+      '<span class="sdot" title="' + st.label + ' (click to cycle)" style="background:' + st.color + '; color:' + st.color + '"></span>' +
+      '<span class="ttitle">' + esc(t.t) +
+        (withRoomTag ? '<span class="troom">' + esc(room.name) + ' \u00b7 ' + levelMeta(room.level).name + '</span>' : '') +
+      '</span>' +
+      (t.cost ? '<span class="tcost">' + fmtMoney(t.cost) + '</span>' : '') +
+      '<span class="tchev">&#9654;</span>' +
+    '</div>' +
+    '<div class="tbody">' +
+      '<div class="statuspick">' +
+        STATUSES.map(function(s2, i){
+          const sel = i === t.s;
+          return '<button data-setstatus="' + i + '"' + (sel ? ' class="sel" style="background:' + s2.color + '"' : '') + '>' + s2.label + '</button>';
+        }).join('') +
+      '</div>' +
+      '<div class="fgrid">' +
+        '<div class="field"><label>SKILL LEVEL</label><div class="val" contenteditable="true" data-f="skill" data-ph="tap to add">' + esc(t.skill) + '</div></div>' +
+        '<div class="field"><label>EFFORT</label><div class="val" contenteditable="true" data-f="effort" data-ph="tap to add">' + esc(t.effort) + '</div></div>' +
+        '<div class="field wide"><label>EST. COST</label><div class="val" contenteditable="true" data-f="cost" data-ph="$0">' + (t.cost ? fmtMoney(t.cost) : '') + '</div></div>' +
+        '<div class="field wide"><label>TOOLS</label><div class="val" contenteditable="true" data-f="tools" data-ph="tap to add">' + esc(t.tools) + '</div></div>' +
+        '<div class="field wide"><label>MATERIALS</label><div class="val" contenteditable="true" data-f="mat" data-ph="tap to add">' + esc(t.mat) + '</div></div>' +
+        '<div class="field wide notes"><label>NOTES</label><div class="val" contenteditable="true" data-f="notes" data-ph="jot a note...">' + esc(t.notes) + '</div></div>' +
+      '</div>' +
+      '<div class="tactions"><button data-deltask="1">DELETE TASK</button></div>' +
+    '</div>' +
+  '</div>';
+}
+
+function statChips(c, total, cost, costLeft){
+  $('#pstats').innerHTML = STATUSES.map(function(st, i){
+    return '<span class="pstat"><i style="background:' + st.color + '"></i>' + c[i] + ' ' + st.label + '</span>';
+  }).join('') + '<span class="pstat" id="roomcost" style="color:var(--green)">' + fmtMoney(cost) + ' EST. \u00b7 ' + fmtMoney(costLeft) + ' LEFT</span>';
+  $('#pbar').innerHTML = total
+    ? STATUSES.map(function(st, i){
+        return '<span style="width:' + (100 * c[i] / total) + '%; background:' + st.color + '"></span>';
+      }).join('')
+    : '';
+}
+
+function rankIn(list, v){
+  if (!v) return list.length + 2;
+  v = v.toLowerCase();
+  const exact = list.findIndex(function(o){ return o.toLowerCase() === v; });
+  if (exact >= 0) return exact;
+  const inc = list.findIndex(function(o){ return v.indexOf(o.toLowerCase()) >= 0; });
+  return inc >= 0 ? inc + 0.5 : list.length + 2;
+}
+
+let sortKey = 'status';
+const SORTERS = {
+  status: function(a, b){ return a.task.s - b.task.s; },
+  effort: function(a, b){ return rankIn(EFFORTS, a.task.effort) - rankIn(EFFORTS, b.task.effort); },
+  skill:  function(a, b){ return rankIn(SKILLS, a.task.skill) - rankIn(SKILLS, b.task.skill); },
+  room:   function(a, b){ return a.room.name.localeCompare(b.room.name); },
+  cost:   function(a, b){ return (b.task.cost || 0) - (a.task.cost || 0); }
+};
+
+function renderPanel(){
+  if (masterMode){ renderMasterPanel(); return; }
+  const room = roomById(openRoomId);
+  if (!room) return;
+  $('#proomname').textContent = room.name;
+  $('#addtaskbtn').style.display = '';
+  $('#renamebtn').style.display = '';
+  $('#sortrow').classList.remove('show');
+  $('#delroombtn').style.display = editMode ? 'inline-block' : 'none';
+
+  const c = counts(room), total = room.tasks.length;
+  let rc = 0, rl = 0;
+  room.tasks.forEach(function(t){ const cc = t.cost || 0; rc += cc; if (t.s < 3) rl += cc; });
+  statChips(c, total, rc, rl);
+
+  const list = $('#plist');
+  if (!total){
+    list.innerHTML = '<div class="empty-note">No tasks yet for this room.<br>Hit the green + above to add the first one.</div>';
+    return;
+  }
+  list.innerHTML = room.tasks.map(function(t){ return taskHTML(t, room, false); }).join('');
+}
+
+function renderMasterPanel(){
+  $('#proomname').textContent = 'All Tasks';
+  $('#addtaskbtn').style.display = 'none';
+  $('#renamebtn').style.display = 'none';
+  $('#delroombtn').style.display = 'none';
+  $('#sortrow').classList.add('show');
+
+  const c = [0, 0, 0, 0];
+  let total = 0, cost = 0, costLeft = 0;
+  const flat = [];
+  state.rooms.forEach(function(r){
+    r.tasks.forEach(function(t){
+      c[t.s]++; total++;
+      const cc = t.cost || 0; cost += cc; if (t.s < 3) costLeft += cc;
+      flat.push({room:r, task:t});
+    });
+  });
+  statChips(c, total, cost, costLeft);
+
+  flat.sort(SORTERS[sortKey] || SORTERS.status);
+  const list = $('#plist');
+  list.innerHTML = total
+    ? flat.map(function(x){ return taskHTML(x.task, x.room, true); }).join('')
+    : '<div class="empty-note">No tasks anywhere yet.</div>';
+}
+
+function openMaster(){
+  masterMode = true;
+  const prev = openRoomId;
+  openRoomId = null;
+  renderPanel();
+  $('#panel').classList.add('open');
+  $('#masterbtn').classList.add('on');
+  if (prev){ const pr = roomById(prev); if (pr) renderMarkers(pr.level); }
+}
+
+/* ------------------ panel events ------------------ */
+$('#closebtn').addEventListener('click', closePanel);
+
+$('#renamebtn').addEventListener('click', function(){
+  const room = roomById(openRoomId);
+  if (!room) return;
+  promptModal('Rename room', room.name).then(function(name){
+    if (!name) return;
+    room.name = name;
+    renderPanel();
+    renderMarkers(room.level);
+    persist();
+  });
+});
+
+$('#delroombtn').addEventListener('click', function(){
+  const room = roomById(openRoomId);
+  if (!room) return;
+  confirmModal('Delete "' + room.name + '" and its ' + room.tasks.length + ' task(s)?').then(function(ok){
+    if (!ok) return;
+    const lvl = room.level;
+    state.rooms = state.rooms.filter(function(r){ return r.id !== room.id; });
+    openRoomId = null;
+    $('#panel').classList.remove('open');
+    renderMarkers(lvl);
+    renderHeader();
+    persist();
+  });
+});
+
+$('#addtaskbtn').addEventListener('click', taskModal);
+
+$('#plist').addEventListener('click', function(e){
+  const taskEl = e.target.closest('.task');
+  if (!taskEl) return;
+  const room = roomById(taskEl.dataset.rid);
+  if (!room) return;
+  const task = room.tasks.find(function(t){ return t.id === taskEl.dataset.tid; });
+  if (!task) return;
+
+  if (e.target.classList.contains('sdot')){
+    task.s = (task.s + 1) % 4;
+    renderPanel(); renderMarkers(room.level); renderHeader(); persist();
+    return;
+  }
+  const setS = e.target.closest('[data-setstatus]');
+  if (setS){
+    task.s = parseInt(setS.dataset.setstatus, 10);
+    renderPanel(); renderMarkers(room.level); renderHeader(); persist();
+    return;
+  }
+  if (e.target.closest('[data-deltask]')){
+    confirmModal('Delete task "' + task.t + '"?').then(function(ok){
+      if (!ok) return;
+      room.tasks = room.tasks.filter(function(t2){ return t2.id !== task.id; });
+      expanded.delete(task.id);
+      renderPanel(); renderMarkers(room.level); renderHeader(); persist();
+    });
+    return;
+  }
+  if (e.target.closest('.trow')){
+    if (expanded.has(task.id)) expanded.delete(task.id); else expanded.add(task.id);
+    taskEl.classList.toggle('expanded');
+    return;
+  }
+});
+
+/* save contenteditable fields on focus loss */
+$('#plist').addEventListener('focusout', function(e){
+  const val = e.target.closest('.val');
+  if (!val) return;
+  const taskEl = val.closest('.task');
+  if (!taskEl) return;
+  const room = roomById(taskEl.dataset.rid);
+  if (!room) return;
+  const task = room.tasks.find(function(t){ return t.id === taskEl.dataset.tid; });
+  if (!task) return;
+  if (val.dataset.f === 'cost'){
+    task.cost = parseFloat(val.innerText.replace(/[^0-9.]/g, '')) || 0;
+    val.innerText = task.cost ? fmtMoney(task.cost) : '';
+    const src = masterMode ? state.rooms : [room];
+    let rc = 0, rl = 0;
+    src.forEach(function(r2){ r2.tasks.forEach(function(t2){ const cc = t2.cost || 0; rc += cc; if (t2.s < 3) rl += cc; }); });
+    const chip = $('#roomcost');
+    if (chip) chip.textContent = fmtMoney(rc) + ' EST. \u00b7 ' + fmtMoney(rl) + ' LEFT';
+    renderHeader();
+  } else {
+    task[val.dataset.f] = val.innerText.trim();
+  }
+  persist();
+});
+
+/* ------------------ master view ------------------ */
+$('#masterbtn').addEventListener('click', function(){
+  if (masterMode) closePanel(); else openMaster();
+});
+$('#sortsel').addEventListener('change', function(){
+  sortKey = this.value;
+  renderPanel();
+});
+
+/* ------------------ rail ------------------ */
+$$('.rail .lvl').forEach(function(b){
+  b.addEventListener('click', function(){ setLevel(b.dataset.level); });
+});
+
+/* ------------------ edit mode + tools ------------------ */
+function setTool(t){
+  tool = t;
+  $$('#subtools [data-tool]').forEach(function(b){ b.classList.toggle('on', b.dataset.tool === t); });
+  document.body.classList.toggle('erase-mode', t === 'erase');
+  document.body.classList.toggle('edit-move', editMode && t === 'move');
+  const hints = {
+    move:'Drag a donut to reposition it. Click to open.',
+    addroom:'Click anywhere on the plan to place a room.',
+    wall:'Click and drag on the plan to draw a wall.',
+    erase:'Click a white drawn line to erase it.'
+  };
+  $('#toolhint').textContent = editMode ? hints[t] : '';
+}
+$('#editbtn').addEventListener('click', function(){
+  editMode = !editMode;
+  $('#editbtn').classList.toggle('on', editMode);
+  $('#editbtn').textContent = editMode ? 'DONE EDITING' : 'EDIT BLUEPRINT';
+  $('#subtools').classList.toggle('show', editMode);
+  setTool(editMode ? tool : 'move');
+  if (openRoomId) renderPanel();
+});
+$$('#subtools [data-tool]').forEach(function(b){
+  b.addEventListener('click', function(){ setTool(b.dataset.tool); });
+});
+
+/* ------------------ pointer interactions on each svg ------------------ */
+function svgPoint(svg, evt){
+  const pt = svg.createSVGPoint();
+  pt.x = evt.clientX; pt.y = evt.clientY;
+  return pt.matrixTransform(svg.getScreenCTM().inverse());
+}
+
+LEVEL_ORDER.forEach(function(levelId){
+  const svg = document.getElementById('svg-' + levelId);
+  let drag = null;      /* {roomId, moved, dx, dy, el} */
+  let wallDraw = null;  /* {x1,y1, temp} */
+
+  svg.addEventListener('pointerdown', function(e){
+    if (state.active !== levelId) return;
+    const p = svgPoint(svg, e);
+    const mkEl = e.target.closest('.marker');
+
+    if (editMode && tool === 'wall'){
+      wallDraw = {x1:p.x, y1:p.y, temp:svgEl('line', {class:'tempwall', x1:p.x, y1:p.y, x2:p.x, y2:p.y})};
+      svg.appendChild(wallDraw.temp);
+      svg.setPointerCapture(e.pointerId);
+      e.preventDefault();
+      return;
+    }
+    if (editMode && tool === 'erase'){
+      if (e.target.classList.contains('uwall')){
+        const idx = parseInt(e.target.dataset.idx, 10);
+        state.walls[levelId].splice(idx, 1);
+        renderWalls(levelId);
+        persist();
+      }
+      return;
+    }
+    if (editMode && tool === 'addroom' && !mkEl){
+      const rx = Math.round(p.x), ry = Math.round(p.y);
+      promptModal('New room name', '').then(function(name){
+        if (!name) return;
+        state.rooms.push({id:uid(), level:levelId, name:name, x:rx, y:ry, tasks:[]});
+        renderMarkers(levelId);
+        persist();
+        toast('Room added. Click it to add tasks.');
+      });
+      return;
+    }
+    if (mkEl){
+      const room = roomById(mkEl.dataset.id);
+      if (!room) return;
+      drag = {roomId:room.id, moved:false, dx:p.x - room.x, dy:p.y - room.y, el:mkEl, startX:p.x, startY:p.y};
+      svg.setPointerCapture(e.pointerId);
+      e.preventDefault();
+    }
+  });
+
+  svg.addEventListener('pointermove', function(e){
+    const p = svgPoint(svg, e);
+    if (wallDraw){
+      let x2 = p.x, y2 = p.y;
+      /* snap to axis when nearly straight */
+      if (Math.abs(x2 - wallDraw.x1) < Math.abs(y2 - wallDraw.y1) * 0.18) x2 = wallDraw.x1;
+      else if (Math.abs(y2 - wallDraw.y1) < Math.abs(x2 - wallDraw.x1) * 0.18) y2 = wallDraw.y1;
+      wallDraw.temp.setAttribute('x2', x2);
+      wallDraw.temp.setAttribute('y2', y2);
+      return;
+    }
+    if (drag){
+      if (!editMode || tool !== 'move'){
+        /* view mode: allow tiny movement without treating as drag */
+        return;
+      }
+      const room = roomById(drag.roomId);
+      if (Math.hypot(p.x - drag.startX, p.y - drag.startY) > 3) drag.moved = true;
+      if (drag.moved){
+        room.x = Math.round(p.x - drag.dx);
+        room.y = Math.round(p.y - drag.dy);
+        const scale = levelMeta(levelId).scale;
+        drag.el.setAttribute('transform', 'translate(' + room.x + ',' + room.y + ') scale(' + scale + ')');
+        drag.el.classList.add('dragging');
+      }
+    }
+  });
+
+  svg.addEventListener('pointerup', function(e){
+    if (wallDraw){
+      const x2 = parseFloat(wallDraw.temp.getAttribute('x2'));
+      const y2 = parseFloat(wallDraw.temp.getAttribute('y2'));
+      wallDraw.temp.remove();
+      if (Math.hypot(x2 - wallDraw.x1, y2 - wallDraw.y1) > 6){
+        state.walls[levelId].push([Math.round(wallDraw.x1), Math.round(wallDraw.y1), Math.round(x2), Math.round(y2)]);
+        renderWalls(levelId);
+        persist();
+      }
+      wallDraw = null;
+      return;
+    }
+    if (drag){
+      const wasMoved = drag.moved;
+      const id = drag.roomId;
+      drag.el.classList.remove('dragging');
+      drag = null;
+      if (wasMoved){ persist(); }
+      else { openPanel(id); }
+    }
+  });
+
+  svg.addEventListener('pointercancel', function(){
+    if (wallDraw){ wallDraw.temp.remove(); wallDraw = null; }
+    if (drag){ drag.el.classList.remove('dragging'); drag = null; }
+  });
+});
+
+/* ------------------ export / import ------------------ */
+$('#sharebtn').addEventListener('click', function(){
+  state.ts = Date.now();
+  store.save(state);
+  const clone = document.documentElement.cloneNode(true);
+  clone.querySelectorAll('.markers, .uwalls, #plist, #modal, #mastersvg, #pstats, #pbar').forEach(function(el){ el.innerHTML = ''; });
+  const p = clone.querySelector('#panel'); if (p) p.classList.remove('open');
+  const mb = clone.querySelector('#mback'); if (mb) mb.classList.remove('show');
+  const eb = clone.querySelector('#editbtn'); if (eb){ eb.classList.remove('on'); eb.textContent = 'EDIT BLUEPRINT'; }
+  const st = clone.querySelector('#subtools'); if (st) st.classList.remove('show');
+  const mbn = clone.querySelector('#masterbtn'); if (mbn) mbn.classList.remove('on');
+  const es = clone.querySelector('#embedded-state');
+  if (es) es.textContent = JSON.stringify(state).replace(/<\//g, '<\\/');
+  const html = '<!DOCTYPE html>\n' + clone.outerHTML;
+  const blob = new Blob([html], {type:'text/html'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'renovation-blueprint-' + new Date().toISOString().slice(0,10) + '.html';
+  a.click();
+  URL.revokeObjectURL(a.href);
+  toast('Shareable copy saved. Anyone who opens it sees your latest data.');
+});
+
+$('#exportbtn').addEventListener('click', function(){
+  const blob = new Blob([JSON.stringify(state, null, 2)], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'renovation-tracker-' + new Date().toISOString().slice(0,10) + '.json';
+  a.click();
+  URL.revokeObjectURL(a.href);
+  toast('Progress saved to file.');
+});
+$('#importbtn').addEventListener('click', function(){ $('#importfile').click(); });
+$('#importfile').addEventListener('change', function(e){
+  const f = e.target.files[0];
+  if (!f) return;
+  const rd = new FileReader();
+  rd.onload = function(){
+    try{
+      const data = JSON.parse(rd.result);
+      if (!data.rooms || !data.walls) throw new Error('bad file');
+      state = data;
+      closePanel();
+      renderAllLevels();
+      setLevel(state.active && LEVEL_ORDER.indexOf(state.active) >= 0 ? state.active : 'main');
+      persist();
+      toast('Progress loaded.');
+    }catch(err){
+      toast('That file could not be read.');
+    }
+  };
+  rd.readAsText(f);
+  e.target.value = '';
+});
+
+/* ------------------ legend + boot ------------------ */
+$('#legend').innerHTML = STATUSES.map(function(st){
+  return '<span><i style="background:' + st.color + '"></i>' + st.label + '</span>';
+}).join('');
+$('#tb-date').textContent = new Date().toLocaleDateString('en-US', {month:'2-digit', day:'2-digit', year:'numeric'});
+
+function migrate(s){
+  if (!s.v) s.v = 1;
+  if (s.v < 2){
+    s.rooms.forEach(function(r){ r.name = r.name.replace(/Maisie/g, 'Maizy'); });
+    const cf = s.rooms.find(function(r){ return r.level === 'upper' && r.name === 'Coffee Area'; });
+    if (cf){ cf.x = 262; cf.y = 412; }
+    const adds = [
+      {level:'main', name:'Uncovered Deck', x:426, y:118},
+      {level:'main', name:'Screened Porch', x:709, y:405},
+      {level:'main', name:'Uncovered Porch', x:458, y:668},
+      {level:'upper', name:'Uncovered Deck', x:225, y:90},
+      {level:'basement', name:'Covered Patio', x:231, y:66},
+      {level:'basement', name:'Covered Deck', x:425, y:236}
+    ];
+    adds.forEach(function(a){
+      if (!s.rooms.some(function(r){ return r.level === a.level && r.name === a.name; })){
+        s.rooms.push({id:uid(), level:a.level, name:a.name, x:a.x, y:a.y, tasks:[]});
+      }
+    });
+    s.v = 2;
+  }
+  if (s.v < 3){
+    if (!s.walls.exterior) s.walls.exterior = [];
+    const exAdds = [
+      {level:'exterior', name:'Roof', x:420, y:240},
+      {level:'exterior', name:'Siding & Trim', x:560, y:140},
+      {level:'exterior', name:'Driveway', x:310, y:590},
+      {level:'exterior', name:'Front Yard', x:560, y:560},
+      {level:'exterior', name:'Back Yard', x:170, y:300},
+      {level:'exterior', name:'Landscaping', x:680, y:300}
+    ];
+    exAdds.forEach(function(a){
+      if (!s.rooms.some(function(r){ return r.level === a.level && r.name === a.name; })){
+        s.rooms.push({id:uid(), level:a.level, name:a.name, x:a.x, y:a.y, tasks:[]});
+      }
+    });
+    s.v = 3;
+  }
+  if (s.v < 4){
+    if (!s.rooms.some(function(r){ return r.level === 'main' && r.name === 'Main Floor Bathroom'; })){
+      s.rooms.push({id:uid(), level:'main', name:'Main Floor Bathroom', x:430, y:586, tasks:[]});
+    }
+    s.v = 4;
+  }
+  return s;
+}
+
+(async function boot(){
+  const saved = await store.load();
+  let embedded = null;
+  try{
+    embedded = JSON.parse(document.getElementById('embedded-state').textContent);
+  }catch(e){}
+  const candidates = [saved, embedded].filter(function(x){ return x && x.rooms; });
+  candidates.sort(function(a, b){ return (b.ts || 0) - (a.ts || 0); });
+  state = candidates.length ? migrate(candidates[0]) : buildSeed();
+  if (!state.walls) state.walls = {upper:[], main:[], basement:[]};
+  renderAllLevels();
+  setLevel(state.active && LEVEL_ORDER.indexOf(state.active) >= 0 ? state.active : 'main');
+})();
+</script>
+</body>
+</html>
